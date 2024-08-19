@@ -22,7 +22,8 @@ layout: main
       {{content | markdownify}}
       <div class="page-footer">
         <div class="page-share">
-          <a href="https://x.com/intent/tweet?text={{ page.title }}&url={{ site.url }}{{ page.url }}" title="Compartir en X" rel="nofollow" target="_blank">X</a>
+          <a href="https://twitter.com/intent/tweet?text={{ page.title | urlencode }}&url={{ site.url }}{{ page.url | urlencode }}" title="Compartir en X" rel="nofollow" target="_blank">X</a>
+
           <a href="https://facebook.com/sharer.php?u={{ site.url }}{{ page.url }}" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
           <!--<a href="https://plus.google.com/share?url={{ site.url }}{{ page.url }}" title="Share on Google+" rel="nofollow" target="_blank">Google+</a>-->
         </div>
