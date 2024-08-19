@@ -26,7 +26,8 @@ layout: main
 			<a href="https://x.com/intent/tweet?text={{ page.title | urlencode }}&url={{ site.url }}{{ page.url | urlencode }}" title="Compartir en X" rel="nofollow" target="_blank">X</a>
 
 			<!-- Botón de Compartir en Facebook -->
-			<a href="https://www.facebook.com/sharer/sharer.php?u={{ site.url }}{{ page.url | urlencode }}" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
+			<a href="#" onclick="shareOnFacebook()" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
+
 
           <!--<a href="https://plus.google.com/share?url={{ site.url }}{{ page.url }}" title="Share on Google+" rel="nofollow" target="_blank">Google+</a>-->
         </div>
@@ -40,3 +41,23 @@ layout: main
     </div> <!-- End Wrap Content -->
   </div> <!-- End Page Content -->
 </article> <!-- End Article Page -->
+
+	
+
+<script>
+	
+	// Función para botón compartir en Facebook, app o pagina web
+  function shareOnFacebook() {
+    const url = encodeURIComponent(window.location.href);
+    const fbAppUrl = `fb://feed?link=${url}`;
+    const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+
+    // Intentar abrir la aplicación de Facebook
+    window.location.href = fbAppUrl;
+
+    // Si la aplicación no está instalada, redirigir a la web después de un breve retraso
+    setTimeout(() => {
+      window.location.href = fbWebUrl;
+    }, 500); // Tiempo de espera en milisegundos
+  }
+</script>
