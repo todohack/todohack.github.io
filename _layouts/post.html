@@ -55,8 +55,11 @@ function shareOnFacebook() {
   // Copiar la URL al portapapeles
   copyToClipboard(pageUrl);
 
-  // Redirigir al usuario a la página de compartir en Facebook
-  window.open(fbWebUrl, '_blank', 'width=600,height=400'); // Abre la página de compartir en una ventana emergente
+  // Usar un enfoque de redirección condicional para evitar la apertura de una nueva pestaña del blog
+  // Intentar abrir la página de compartir en una nueva ventana sin cambiar la URL actual
+  setTimeout(() => {
+    window.location.href = fbWebUrl;
+  }, 100); // Retraso breve para permitir que el portapapeles copie antes de redirigir
 }
 
 // Función para copiar al portapapeles
@@ -69,6 +72,6 @@ function copyToClipboard(text) {
   document.body.removeChild(textArea);
 
   // Opcional: Mensaje de confirmación
-  alert('El enlace se copió al portapapeles.');
+  alert('El enlace de este blog se copió al portapapeles.');
 }
 </script>
