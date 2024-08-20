@@ -42,27 +42,33 @@ layout: main
   </div> <!-- End Page Content -->
 </article> <!-- End Article Page -->
 
-
 <script>
-// Función para compartir en Facebook
+// Función para compartir en Facebook y copiar URL al portapapeles
 function shareOnFacebook() {
-  // Variables del entorno de plantillas
+  // URL de la página actual
   const pageUrl = '{{ site.url }}{{ page.url | urlencode }}';
   const encodedUrl = encodeURIComponent(pageUrl);
 
   // URL para compartir en Facebook
   const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
-  // Detectar si el usuario está en un dispositivo móvil
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  // Copiar la URL al portapapeles
+  copyToClipboard(pageUrl);
 
-  // Redirigir según el dispositivo
-  if (isMobile) {
-    // En dispositivos móviles, redirigir a la URL de compartir en Facebook en la web
-    window.location.href = fbWebUrl;
-  } else {
-    // En PC, redirigir a la misma URL pero abrir en una nueva pestaña o ventana
-    window.open(fbWebUrl, '_blank');
-  }
+  // Redirigir al usuario a la página de compartir en Facebook
+  window.open(fbWebUrl, '_blank'); // Abre la página de compartir en una nueva pestaña
+}
+
+// Función para copiar al portapapeles
+function copyToClipboard(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textArea);
+
+  // Opcional: Mensaje de confirmación (si lo deseas)
+  alert('El enlace se copió al portapapeles.');
 }
 </script>
