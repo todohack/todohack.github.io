@@ -44,22 +44,12 @@ layout: main
 </article> <!-- End Article Page -->
 
 <script>
-// Función para el botón compartir en Facebook
+// Función para el botón de compartir en Facebook
 function shareOnFacebook() {
   const url = encodeURIComponent(window.location.href);
-  const fbAppUrl = `fb://sharer/sharer.php?u=${url}`;
-  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+  const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
 
-  // Crear un iframe invisible para intentar abrir la aplicación de Facebook
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = fbAppUrl;
-  document.body.appendChild(iframe);
-
-  // Redirigir a la versión web después de un breve retraso
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-    window.location.href = fbWebUrl;
-  }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
+  // Abre el enlace de compartir en una nueva ventana
+  window.open(fbShareUrl, '_blank', 'width=600,height=400');
 }
 </script>
