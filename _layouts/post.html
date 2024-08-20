@@ -55,10 +55,15 @@ function shareOnFacebook() {
   // Copiar la URL al portapapeles
   copyToClipboard(pageUrl);
 
-  // Usar un enfoque de redirección condicional para evitar la apertura de una nueva pestaña del blog
-  // Intentar abrir la página de compartir en una nueva ventana sin cambiar la URL actual
+  // Redirigir y cerrar la pestaña actual
   setTimeout(() => {
-    window.location.href = fbWebUrl;
+    // Cerrar la pestaña actual (si fue abierta por el script)
+    if (window.opener) {
+      window.close();
+    } else {
+      // En caso de que no se pueda cerrar la pestaña, simplemente redirigir
+      window.location.href = fbWebUrl;
+    }
   }, 100); // Retraso breve para permitir que el portapapeles copie antes de redirigir
 }
 
@@ -72,6 +77,6 @@ function copyToClipboard(text) {
   document.body.removeChild(textArea);
 
   // Opcional: Mensaje de confirmación
-  alert('El enlace de este blog se copió al portapapeles.');
+  alert('El enlace se copió al portapapeles.');
 }
 </script>
