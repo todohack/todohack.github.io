@@ -44,11 +44,17 @@ layout: main
 </article> <!-- End Article Page -->
 
 <script>
-// Función para el botón de compartir en Facebook
+// Función para copiar al portapapeles y compartir en Facebook
 function shareOnFacebook() {
-  const url = encodeURIComponent(window.location.href);
-  const fbAppUrl = `fb://sharer/sharer.php?u=${url}`;
-  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+  const url = window.location.href;
+  const encodedUrl = encodeURIComponent(url);
+
+  // Copiar el enlace al portapapeles
+  copyToClipboard(url);
+
+  // Intentar abrir la aplicación de Facebook
+  const fbAppUrl = `fb://sharer/sharer.php?u=${encodedUrl}`;
+  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
   // Crear un iframe invisible para intentar abrir la aplicación de Facebook
   const iframe = document.createElement('iframe');
@@ -61,5 +67,15 @@ function shareOnFacebook() {
     document.body.removeChild(iframe);
     window.location.href = fbWebUrl;
   }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
+}
+
+// Función para copiar al portapapeles
+function copyToClipboard(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textArea);
 }
 </script>
