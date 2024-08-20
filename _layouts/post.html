@@ -70,18 +70,9 @@ function shareOnFacebook() {
 
   // Retrasar la redirección para dar tiempo al mensaje
   setTimeout(() => {
-    // Crear un iframe invisible para intentar abrir la aplicación de Facebook
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = fbAppUrl;
-    document.body.appendChild(iframe);
-
-    // Redirigir a la versión web después de un breve retraso
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      window.location.href = fbWebUrl;
-    }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
-  }, 1000); // Tiempo de espera en milisegundos antes de intentar abrir la aplicación de Facebook
+    // Redirigir a la versión web después de un retraso
+    window.location.href = fbWebUrl;
+  }, 1500); // Tiempo de espera en milisegundos, ajusta si es necesario
 }
 
 // Función para copiar al portapapeles
