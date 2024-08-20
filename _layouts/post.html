@@ -56,7 +56,7 @@ function shareOnFacebook() {
   copyToClipboard(pageUrl);
 
   // Redirigir al usuario a la página de compartir en Facebook
-  window.open(fbWebUrl, '_blank'); // Abre la página de compartir en una nueva pestaña
+  window.open(fbWebUrl, '_blank', 'width=600,height=400'); // Abre la página de compartir en una ventana emergente
 }
 
 // Función para copiar al portapapeles
@@ -68,7 +68,7 @@ function copyToClipboard(text) {
   document.execCommand('copy');
   document.body.removeChild(textArea);
 
-  // Opcional: Mensaje de confirmación (si lo deseas)
+  // Opcional: Mensaje de confirmación
   alert('El enlace se copió al portapapeles.');
 }
 </script>
