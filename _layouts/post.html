@@ -58,27 +58,30 @@ function shareOnFacebook() {
   // Copiar el enlace al portapapeles
   copyToClipboard(fullUrl);
 
-  // Mostrar el mensaje de éxito
+  // Mostrar el mensaje de éxito y redirigir después de un retraso
   showCopyMessage();
 
   // Codifica la URL para la consulta
   const encodedUrl = encodeURIComponent(fullUrl);
 
-  // Intentar abrir la aplicación de Facebook
+  // Definir las URLs de Facebook
   const fbAppUrl = `fb://sharer/sharer.php?u=${encodedUrl}`;
   const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
-  // Crear un iframe invisible para intentar abrir la aplicación de Facebook
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = fbAppUrl;
-  document.body.appendChild(iframe);
-
-  // Redirigir a la versión web después de un breve retraso
+  // Retrasar la redirección para dar tiempo al mensaje
   setTimeout(() => {
-    document.body.removeChild(iframe);
-    window.location.href = fbWebUrl;
-  }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
+    // Crear un iframe invisible para intentar abrir la aplicación de Facebook
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = fbAppUrl;
+    document.body.appendChild(iframe);
+
+    // Redirigir a la versión web después de un breve retraso
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      window.location.href = fbWebUrl;
+    }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
+  }, 1000); // Tiempo de espera en milisegundos antes de intentar abrir la aplicación de Facebook
 }
 
 // Función para copiar al portapapeles
