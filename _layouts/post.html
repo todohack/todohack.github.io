@@ -28,10 +28,6 @@ layout: main
 			<!-- Botón de Compartir en Facebook -->
 			<a href="#" onclick="shareOnFacebook()" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
 			
-			<!-- Mensaje de notificación -->
-			<div id="copyMessage" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #4CAF50; color: white; border-		radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); z-index: 1000;">
-  El enlace se copió al portapapeles.
-			</div>
 
           <!--<a href="https://plus.google.com/share?url={{ site.url }}{{ page.url }}" title="Share on Google+" rel="nofollow" target="_blank">Google+</a>-->
         </div>
@@ -50,45 +46,20 @@ layout: main
 <script>
 // Función para el botón de compartir en Facebook
 function shareOnFacebook() {
-  // Variables del entorno de plantillas
-  const pageTitle = '{{ page.title | urlencode }}';
-  const pageUrl = '{{ site.url }}{{ page.url | urlencode }}';
-  const fullUrl = `${pageUrl}`;
+  const url = encodeURIComponent(window.location.href);
+  const fbAppUrl = `fb://sharer/sharer.php?u=${url}`;
+  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
 
-  // Copiar el enlace al portapapeles
-  copyToClipboard(fullUrl);
+  // Crear un iframe invisible para intentar abrir la aplicación de Facebook
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = fbAppUrl;
+  document.body.appendChild(iframe);
 
-  // Mostrar el mensaje de éxito
-  showCopyMessage();
-
-  // Codifica la URL para la consulta
-  const encodedUrl = encodeURIComponent(fullUrl);
-
-  // URL para compartir en Facebook
-  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-
-  // Redirigir a la página de compartir en Facebook después de un retraso
+  // Redirigir a la versión web después de un breve retraso
   setTimeout(() => {
-    window.open(fbWebUrl, '_blank'); // Abre en una nueva pestaña o ventana
-  }, 1000); // Tiempo de espera en milisegundos
-}
-
-// Función para copiar al portapapeles
-function copyToClipboard(text) {
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textArea);
-}
-
-// Función para mostrar el mensaje de copia
-function showCopyMessage() {
-  const message = document.getElementById('copyMessage');
-  message.style.display = 'block';
-  setTimeout(() => {
-    message.style.display = 'none';
-  }, 3000); // Mostrar el mensaje durante 3 segundos
+    document.body.removeChild(iframe);
+    window.location.href = fbWebUrl;
+  }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
 }
 </script>
