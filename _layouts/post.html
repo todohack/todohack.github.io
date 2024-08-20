@@ -44,22 +44,25 @@ layout: main
 
 
 <script>
-// Función para el botón de compartir en Facebook
+// Función para compartir en Facebook
 function shareOnFacebook() {
-  const url = encodeURIComponent(window.location.href);
-  const fbAppUrl = `fb://sharer/sharer.php?u=${url}`;
-  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+  // Variables del entorno de plantillas
+  const pageUrl = '{{ site.url }}{{ page.url | urlencode }}';
+  const encodedUrl = encodeURIComponent(pageUrl);
 
-  // Crear un iframe invisible para intentar abrir la aplicación de Facebook
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = fbAppUrl;
-  document.body.appendChild(iframe);
+  // URL para compartir en Facebook
+  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
-  // Redirigir a la versión web después de un breve retraso
-  setTimeout(() => {
-    document.body.removeChild(iframe);
+  // Detectar si el usuario está en un dispositivo móvil
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+  // Redirigir según el dispositivo
+  if (isMobile) {
+    // En dispositivos móviles, redirigir a la URL de compartir en Facebook en la web
     window.location.href = fbWebUrl;
-  }, 1000); // Tiempo de espera en milisegundos, ajusta si es necesario
+  } else {
+    // En PC, redirigir a la misma URL pero abrir en una nueva pestaña o ventana
+    window.open(fbWebUrl, '_blank');
+  }
 }
 </script>
