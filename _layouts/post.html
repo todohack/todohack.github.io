@@ -46,26 +46,12 @@ layout: main
 	
 
 <script>
-// Función para botón compartir en Facebook, app o página web
+// Función para el botón compartir en Facebook
 function shareOnFacebook() {
   const url = encodeURIComponent(window.location.href);
-  const fbAppUrl = `fb://feed?link=${url}`;
-  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+  const fbShareUrl = `https://www.facebook.com/dialog/share?app_id=YOUR_APP_ID&display=popup&href=${url}&redirect_uri=${url}`;
 
-  // Crear un iframe invisible para detectar si la aplicación está instalada
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = fbAppUrl;
-  document.body.appendChild(iframe);
-
-  // Redirigir a la versión web después de un breve retraso
-  setTimeout(() => {
-    window.location.href = fbWebUrl;
-  }, 1000); // Tiempo de espera en milisegundos, ajusta según sea necesario
-
-  // Eliminar el iframe después de su uso
-  iframe.onload = () => {
-    document.body.removeChild(iframe);
-  };
+  // Abre la ventana emergente para compartir en Facebook
+  window.open(fbShareUrl, '_blank', 'width=600,height=400');
 }
 </script>
