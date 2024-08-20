@@ -27,8 +27,11 @@ layout: main
 
 			<!-- Botón de Compartir en Facebook -->
 			<a href="#" onclick="shareOnFacebook()" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
-
-
+			
+			<!-- Mensaje de notificación -->
+			<div id="copyMessage" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px; background-color: #4CAF50; color: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+  El enlace se copió al portapapeles.
+			</div>
 
           <!--<a href="https://plus.google.com/share?url={{ site.url }}{{ page.url }}" title="Share on Google+" rel="nofollow" target="_blank">Google+</a>-->
         </div>
@@ -43,16 +46,21 @@ layout: main
   </div> <!-- End Page Content -->
 </article> <!-- End Article Page -->
 
+
+
 <script>
 // Función para el botón de compartir en Facebook
 function shareOnFacebook() {
-  // Variables del entorno de plantillas, reemplaza los valores con tus variables específicas
+  // Variables del entorno de plantillas
   const pageTitle = '{{ page.title | urlencode }}';
   const pageUrl = '{{ site.url }}{{ page.url | urlencode }}';
   const fullUrl = `${pageUrl}`;
 
   // Copiar el enlace al portapapeles
   copyToClipboard(fullUrl);
+
+  // Mostrar el mensaje de éxito
+  showCopyMessage();
 
   // Codifica la URL para la consulta
   const encodedUrl = encodeURIComponent(fullUrl);
@@ -82,5 +90,14 @@ function copyToClipboard(text) {
   textArea.select();
   document.execCommand('copy');
   document.body.removeChild(textArea);
+}
+
+// Función para mostrar el mensaje de copia
+function showCopyMessage() {
+  const message = document.getElementById('copyMessage');
+  message.style.display = 'block';
+  setTimeout(() => {
+    message.style.display = 'none';
+  }, 3000); // Mostrar el mensaje durante 3 segundos
 }
 </script>
