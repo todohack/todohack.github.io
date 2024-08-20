@@ -44,13 +44,18 @@ layout: main
 </article> <!-- End Article Page -->
 
 <script>
-// Función para copiar al portapapeles y compartir en Facebook
+// Función para el botón de compartir en Facebook
 function shareOnFacebook() {
-  const url = window.location.href;
-  const encodedUrl = encodeURIComponent(url);
+  // Variables del entorno de plantillas, reemplaza los valores con tus variables específicas
+  const pageTitle = '{{ page.title | urlencode }}';
+  const pageUrl = '{{ site.url }}{{ page.url | urlencode }}';
+  const fullUrl = `${pageUrl}`;
 
   // Copiar el enlace al portapapeles
-  copyToClipboard(url);
+  copyToClipboard(fullUrl);
+
+  // Codifica la URL para la consulta
+  const encodedUrl = encodeURIComponent(fullUrl);
 
   // Intentar abrir la aplicación de Facebook
   const fbAppUrl = `fb://sharer/sharer.php?u=${encodedUrl}`;
