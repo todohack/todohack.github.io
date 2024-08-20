@@ -29,6 +29,7 @@ layout: main
 			<a href="#" onclick="shareOnFacebook()" title="Compartir en Facebook" rel="nofollow" target="_blank">Facebook</a>
 
 
+
           <!--<a href="https://plus.google.com/share?url={{ site.url }}{{ page.url }}" title="Share on Google+" rel="nofollow" target="_blank">Google+</a>-->
         </div>
         <div class="page-tag">
@@ -45,19 +46,26 @@ layout: main
 	
 
 <script>
-	
-	// Función para botón compartir en Facebook, app o pagina web
-  function shareOnFacebook() {
-    const url = encodeURIComponent(window.location.href);
-    const fbAppUrl = `fb://feed?link=${url}`;
-    const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+// Función para botón compartir en Facebook, app o página web
+function shareOnFacebook() {
+  const url = encodeURIComponent(window.location.href);
+  const fbAppUrl = `fb://feed?link=${url}`;
+  const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
 
-    // Intentar abrir la aplicación de Facebook
-    window.location.href = fbAppUrl;
+  // Crear un iframe invisible para detectar si la aplicación está instalada
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = fbAppUrl;
+  document.body.appendChild(iframe);
 
-    // Si la aplicación no está instalada, redirigir a la web después de un breve retraso
-    setTimeout(() => {
-      window.location.href = fbWebUrl;
-    }, 500); // Tiempo de espera en milisegundos
-  }
+  // Redirigir a la versión web después de un breve retraso
+  setTimeout(() => {
+    window.location.href = fbWebUrl;
+  }, 1000); // Tiempo de espera en milisegundos, ajusta según sea necesario
+
+  // Eliminar el iframe después de su uso
+  iframe.onload = () => {
+    document.body.removeChild(iframe);
+  };
+}
 </script>
