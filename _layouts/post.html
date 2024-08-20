@@ -58,21 +58,19 @@ function shareOnFacebook() {
   // Copiar el enlace al portapapeles
   copyToClipboard(fullUrl);
 
-  // Mostrar el mensaje de éxito y redirigir después de un retraso
+  // Mostrar el mensaje de éxito
   showCopyMessage();
 
   // Codifica la URL para la consulta
   const encodedUrl = encodeURIComponent(fullUrl);
 
-  // Definir las URLs de Facebook
-  const fbAppUrl = `fb://sharer/sharer.php?u=${encodedUrl}`;
+  // URL para compartir en Facebook
   const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
-  // Retrasar la redirección para dar tiempo al mensaje
+  // Redirigir a la página de compartir en Facebook después de un retraso
   setTimeout(() => {
-    // Redirigir a la versión web después de un retraso
-    window.location.href = fbWebUrl;
-  }, 1500); // Tiempo de espera en milisegundos, ajusta si es necesario
+    window.open(fbWebUrl, '_blank'); // Abre en una nueva pestaña o ventana
+  }, 1000); // Tiempo de espera en milisegundos
 }
 
 // Función para copiar al portapapeles
