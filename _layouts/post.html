@@ -54,16 +54,13 @@ function shareOnFacebook() {
   // Copiar la URL al portapapeles
   copyToClipboard(pageUrl);
 
-  // Redirigir a la página de compartir en Facebook
+  // Abrir la ventana de compartir en Facebook
   const newWindow = window.open(fbWebUrl, '_blank', 'width=600,height=400');
 
-  // Intentar cerrar la pestaña actual después de un breve retraso
-  setTimeout(() => {
-    if (newWindow) {
-      newWindow.focus(); // Asegurarse de que la ventana emergente tenga el foco
-    }
-    window.location.href = 'about:blank'; // Redirige la pestaña actual a una página vacía
-  }, 500); // Retraso para permitir que la ventana emergente se abra primero
+  // Intentar enfocar la ventana emergente
+  if (newWindow) {
+    newWindow.focus();
+  }
 }
 
 // Función para copiar al portapapeles
