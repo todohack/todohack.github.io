@@ -1,26 +1,24 @@
 title: Todohack
-description: > # this means to ignore newlines until "baseurl:"
-  Bienvenidos al mundo de la Ciberseguridad y el Hacking Ético
+description: >
+  Bienvenidos a la Ciberseguridad y el Hacking Ético
 permalink: ':title/'
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://todohack.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-#site-twitter: if your site has a twitter account, enter it here
+baseurl: ""
+url: "https://todohack.github.io"
 
 # Author Settings
-author: Juan Calderón # add your name
-author-img: HackerJucazu.jpg # add your photo
-about-author: Especialista en Ciberseguridad, Soportista en sistemas, con pasión por el hacking ético y el conocimiento # add description
-# social-twitter: # add your Twitter handle
-# social-facebook: # add your Facebook handle
-social-github: todohack # add your Github handle
-social-linkedin: jcz-it/ # add your Linkedin handle
-social-email: hackerjucazu@gmail.com # add your Email address
+author: TodoHack
+author-img: todohack.jpg
+about-author: Soy un Especialista en Ciberseguridad, experimentado soportista en sistemas, con mucha pasión por el hacking ético y con hambre de conocimiento
+social-github: todohack
+social-linkedin: jcz-it/
+social-email: hackerjucazu@gmail.com
 
 # Disqus
-# discus-identifier: mr-brown # add your discus identifier
-
+disqus:
+shortname: todohack
+  
 # Tracker
-# analytics: # Google Analytics
+analytics: Google Analytics
 
 # Build Settings
 markdown: kramdown
@@ -32,4 +30,8 @@ plugins:
 paginate: 8
 paginate_path: "/page/:num"
 
-# exclude: ["node_modules", "gulpfile.js", "package.json", "yarn.lock"]
+defaults:
+
+  - type: "posts"
+  - layout: "post"
+  - comments: true

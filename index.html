@@ -10,10 +10,31 @@ layout: main
   <div class="post-content">
     <h2 class="post-title"><a href="{{post.url | prepend: site.baseurl}}">{{post.title}}</a></h2>
     <p>{{ post.content | strip_html | truncatewords: 15 }}</p>
-    <span class="post-date">{{post.date | date: '%Y, %b %d'}}&nbsp;&nbsp;&nbsp;—&nbsp;</span>
-    <span class="post-words">{% capture words %}{{ post.content | number_of_words }}{% endcapture %}{% unless words contains "-" %}{{ words | plus: 250 | divided_by: 250 | append: " minute read" }}{% endunless %}</span>
+    <span class="post-date">{{post.date | date: '%b, %d, %Y'}}&nbsp;&nbsp;&nbsp;—&nbsp;</span>
+    <span class="post-words">{% capture words %}{{ post.content | number_of_words }}{% endcapture %}{% unless words contains "-" %}{{ words | plus: 250 | divided_by: 250 | append: " minuto(s) de lectura" }}{% endunless %}</span>
   </div>
 </article>
 {% endfor %}
+
+<script>
+        // Mapa de nombres de meses en inglés a español
+        const meses = {
+            'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr',
+            'May': 'May', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Ago',
+            'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic'
+        };
+
+        // Obtener el elemento con la fecha
+        const fechaElemento = document.querySelector('.post-date');
+        
+        // Obtener el texto del elemento
+        let fechaTexto = fechaElemento.textContent;
+
+        // Reemplazar el nombre del mes en inglés con el español
+        fechaTexto = fechaTexto.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, match => meses[match]);
+
+        // Actualizar el contenido del elemento con la fecha en español
+        fechaElemento.textContent = fechaTexto;
+    </script>
 
 {% include pagination.html %}

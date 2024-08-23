@@ -41,7 +41,9 @@ layout: main
           {% endfor %}
         </div>
       </div>
+      {% if page.comments == true and site.disqus.shortname %}
       {% include disqus.html %}
+      {% endif %}
     </div> <!-- End Wrap Content -->
   </div> <!-- End Page Content -->
 </article> <!-- End Article Page -->
