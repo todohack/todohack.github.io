@@ -17,7 +17,7 @@ layout: main
     <div class="wrap-content">
       <header class="header-page">
         <h1 class="page-title">{{page.title}}</h1>
-        <div class="page-date"><span>{{page.date | date: '%Y, %b %d'}}&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+        <div class="page-date"><span>{{page.date | date: '%b, %d, %Y'}}&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
       </header>
       {{content | markdownify}}
       <div class="page-footer">
@@ -47,6 +47,29 @@ layout: main
     </div> <!-- End Wrap Content -->
   </div> <!-- End Page Content -->
 </article> <!-- End Article Page -->
+
+<script>
+        // Mapa de nombres de meses en inglés a español
+        const meses = {
+            'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr',
+            'May': 'May', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Ago',
+            'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic'
+        };
+
+        // Obtener el elemento con la fecha
+        const fechaElemento = document.querySelector('.post-date');
+        
+        // Obtener el texto del elemento
+        let fechaTexto = fechaElemento.textContent;
+
+        // Reemplazar el nombre del mes en inglés con el español
+        fechaTexto = fechaTexto.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, match => meses[match]);
+
+        // Actualizar el contenido del elemento con la fecha en español
+        fechaElemento.textContent = fechaTexto;
+</script>
+
+
 
 <script>
 // Función para compartir en Facebook y copiar URL al portapapeles
