@@ -17,7 +17,7 @@ layout: main
     <div class="wrap-content">
       <header class="header-page">
         <h1 class="page-title">{{page.title}}</h1>
-        <div class="page-date"><span>{{ page.date | fecha_en_espanol: '%B, %d, %Y' }}&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+        <div class="page-date"><span id="date">{{ page.date | date: '%b/%d, %Y' }}&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
       </header>
       {{content | markdownify}}
       <div class="page-footer">
@@ -49,26 +49,40 @@ layout: main
 </article> <!-- End Article Page -->
 
 <script>
-        // Mapa de nombres de meses en inglés a español
-        const meses = {
-            'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr',
-            'May': 'May', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Ago',
-            'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic'
+        // Traducción de los nombres de los meses al español
+        const monthTranslations = {
+            'Jan': 'Ene',
+            'Feb': 'Feb',
+            'Mar': 'Mar',
+            'Apr': 'Abr',
+            'May': 'May',
+            'Jun': 'Jun',
+            'Jul': 'Jul',
+            'Aug': 'Ago',
+            'Sep': 'Sep',
+            'Oct': 'Oct',
+            'Nov': 'Nov',
+            'Dec': 'Dic'
         };
 
-        // Obtener el elemento con la fecha
-        const fechaElemento = document.querySelector('.post-date');
-        
-        // Obtener el texto del elemento
-        let fechaTexto = fechaElemento.textContent;
+        function translateMonth(dateString) {
+            // Extrae el mes, el día y el año del string de la fecha
+            const [month, dayYear] = dateString.split('/');
+            const [day, year] = dayYear.split(', ');
+            
+            // Traduce el mes usando el objeto de traducción
+            const translatedMonth = monthTranslations[month] || month;
+            
+            return `${translatedMonth}/${day}, ${year}`;
+        }
 
-        // Reemplazar el nombre del mes en inglés con el español
-        fechaTexto = fechaTexto.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, match => meses[match]);
-
-        // Actualizar el contenido del elemento con la fecha en español
-        fechaElemento.textContent = fechaTexto;
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateElement = document.getElementById('date');
+            const originalDateText = dateElement.textContent.trim();
+            const translatedDateText = translateMonth(originalDateText);
+            dateElement.textContent = translatedDateText;
+        });
 </script>
-
 
 
 <script>
