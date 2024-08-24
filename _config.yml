@@ -14,8 +14,14 @@ social-linkedin: jcz-it/
 social-email: hackerjucazu@gmail.com
 
 # Disqus
-#disqus:
-#shortname: todohack
+disqus:
+    shortname: "todohack"
+    
+defaults:
+
+type: "posts"
+layout: "post"
+comments: true
   
 # Tracker
 analytics: Google Analytics
@@ -29,9 +35,3 @@ plugins:
 
 paginate: 8
 paginate_path: "/page/:num"
-
-defaults:
-
-  #- type: "posts"
-  #- layout: "post"
-  #- comments: true
