@@ -1512,8 +1512,6 @@ h1.page-title {
 
 /*Main*/
 
-/*Main*/
-
 ol {
     background-color: #F0F0F0;
     padding: 36px;
@@ -1528,5 +1526,5 @@ h2#política-de-comentarios {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     margin-bottom: 20px;
-    color: #4D4D4D;
+    color: #003366;
 }
