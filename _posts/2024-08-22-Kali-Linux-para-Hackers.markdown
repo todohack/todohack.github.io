@@ -45,7 +45,7 @@ El Kali que vamos a utilizar ya cuenta con las configuraciones básicas que nece
 Primero, descomprime el archivo descargado previamente y obtendrás algo similar a lo que se muestra a continuación, asumiendo que lo descargaste desde el enlace anterior:
 
 <div style="text-align: center;">
-  <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali1.png" style="width: 20%;" alt="Paso 1"/>
+  <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali1.1.png" style="width: 20%;" alt="Paso 1.1"/>
 </div>
 
 ### Ejecución
@@ -174,7 +174,7 @@ Ya tenemos Kali Linux listo y funcional, pero para optimizarlo con más funciona
 Si quieres actuar como un *hacker* profesional, lo primero que debemos hacer es cambiar la contraseña predeterminada, que es fácil y vulnerable. Puedes hacerlo con el siguiente comando:
 
 <div style="display: flex; justify-content: left; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali13.1.png" style="max-width: 80%; height: auto;" alt="Paso 12.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali12.1.png" style="max-width: 80%; height: auto;" alt="Paso 12.1" />
 </div>
 
 > Aunque puede tomarnos algo de tiempo, nos ayudará a cultivar el hábito de establecer contraseñas para acciones importantes y protegernos adecuadamente.  
@@ -219,7 +219,7 @@ Entre las mejoras que aporta:
 Primero, creemos una carpeta en el escritorio de nuestra máquina para mantener el orden. Podemos hacerlo mediante la línea de comandos:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali14.1.png" style="max-width: 80%; height: auto;" alt="Paso 14.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali13.1.png" style="max-width: 80%; height: auto;" alt="Paso 13.1" />
 </div>
 
 {% highlight bash %}
@@ -238,7 +238,7 @@ Primero, creemos una carpeta en el escritorio de nuestra máquina para mantener 
 Ahora realizaremos la descarga del **Pimpmykali** dentro de la carpeta de la siguiente forma:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali15.1.png" style="max-width: 80%; height: auto;" alt="Paso 15.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali14.1.png" style="max-width: 80%; height: auto;" alt="Paso 14.1" />
 </div>
 
 Enlace del Repositorio: [https://github.com/Dewalt-arch/pimpmykali](https://github.com/Dewalt-arch/pimpmykali "De Dewalt-arch")
@@ -255,7 +255,7 @@ Enlace del Repositorio: [https://github.com/Dewalt-arch/pimpmykali](https://gith
 Ya con la descarga del **Pimpmykali** en nuestra máquina, debemos movernos dentro de la carpeta que acabamos de descargar para instalarlo:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali16.1.png" style="max-width: 80%; height: auto;" alt="Paso 16.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali15.1.png" style="max-width: 80%; height: auto;" alt="Paso 15.1" />
 </div>
 
 {% highlight bash %}
@@ -279,7 +279,7 @@ changelog.txt fixed-http-shellshock.nse pimpmykali.sh README.md # Contenido
 Ejecutamos el archivo **pimpmykali.sh** de esta forma:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali17.1.png" style="max-width: 80%; height: auto;" alt="Paso 17.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali16.1.png" style="max-width: 80%; height: auto;" alt="Paso 16.1" />
 </div>
 
 {% highlight bash %}
@@ -293,7 +293,7 @@ Ejecutamos el archivo **pimpmykali.sh** de esta forma:
 Realizar esto nos abre el menú de **Pimp my Kali**:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali18.1.png" style="max-width: 80%; height: auto;" alt="Paso 18.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali17.1.png" style="max-width: 80%; height: auto;" alt="Paso 17.1" />
 </div>
 
 En el menú principal del *script* se muestran varias opciones que puedes utilizar en diferentes momentos. Es importante entender cada una para evitar realizar cambios innecesarios. Las opciones más utilizadas que ofrece este código son:
@@ -308,7 +308,7 @@ Para el efecto de este manual, vamos a utilizar la opción ***N*** que nos aplic
 Al terminar la instalación de todos los paquetes se nos muestra una imagen como la siguiente:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali19.1.png" style="max-width: 80%; height: auto;" alt="Paso 19.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali18.1.png" style="max-width: 80%; height: auto;" alt="Paso 18.1" />
 </div>
 
 #### Actualización
@@ -318,13 +318,13 @@ Para terminar el proceso no olvidemos actualizar todas las herramientas de las s
 Podemos volver a ejecutar el *script* y dar en la opción 9:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali19.2.png" style="max-width: 80%; height: auto;" alt="Paso 19.2" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali18.2.png" style="max-width: 80%; height: auto;" alt="Paso 18.2" />
 </div>
 
-Pero también podemos recurrir a forma normal:
+Pero también podemos recurrir a forma convencional:
 
 <div style="display: flex; justify-content: center; align-items;">
-   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali20.1.png" style="max-width: 80%; height: auto;" alt="Paso 20.1" />
+   <img src="{{ site.baseurl }}/assets/img/PasosKali/Kali19.1.png" style="max-width: 80%; height: auto;" alt="Paso 19.1" />
 </div>
 
 {% highlight bash %}
@@ -341,6 +341,8 @@ Pero también podemos recurrir a forma normal:
 {% endhighlight %}
 
 > Es posible que el script de **pimpmykali** ya haya realizado este proceso, pero al hacerlo manualmente te aseguras de que todo esté actualizado correctamente y de limpiar el disco.
+
+> Nota adicional: Es posible que necesites desactivar el antivirus en el sistema principal, ya que algunos enlaces a repositorios pueden ser detectados como sospechosos. Esto ocurre porque no están incluidos en las listas de confianza para Kali Linux, lo que puede bloquear las descargas de programas desde estos enlaces.
 
 Así que con esto completaríamos nuestra instalación de **Kali Linux para Hackers**, espero que te haya ayudado.
 
@@ -365,6 +367,6 @@ Muchas gracias por leer este artículo. Por favor, deja tu comentario para saber
 
 Utiliza estos enlaces para volver a arriba o salir de la publicación:
 
-- [Volver a Inicio]({{ site.baseurl }}/Kali-Linux-para-Hackers/ "Regresar a la Introducción")
-- [Ir a la portada del blog]({{ site.baseurl }}/ "Ir a la pantalla principal")
+- [Volver a Inicio]({{ site.baseurl }}/Kali-Linux-para-Hackers/ "Regresar al inicio de la página")
+- [Portada del blog]({{ site.baseurl }}/ "Ir a la pantalla principal")
 
