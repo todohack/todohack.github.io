@@ -437,7 +437,7 @@ template {
 }
 
 .highlight {
-  background-color: #faf9f9;
+  background-color: #1c1c1c;
   -webkit-border-radius: 3px;
           border-radius: 3px;
   margin: 0;
@@ -800,11 +800,11 @@ img + em {
 }
 
 blockquote {
-  border-left: 5px solid #000;
+  border-left: 5px solid #003366;
   padding-left: 1.1rem;
   margin-left: 1rem;
   font-style: italic;
-  color: #ada8a8;
+  color: #4D4D4D;
 }
 
 pre {
@@ -823,6 +823,7 @@ pre code {
   white-space: pre-wrap;
   word-wrap: break-word;
   word-break: break-all;
+  color: #e0e0e0;
 }
 
 table {
@@ -889,6 +890,7 @@ table tfoot td {
 
 .post, .article-page {
   background-color: #F0F0F0;
+  border-radius: 20px;
 }
 
 ::-moz-selection {
@@ -1211,9 +1213,12 @@ a.newer-posts:hover {
           transform: translateX(-5px);
 }
 
+
+
 /* - - - - - - - - - - Post Page Styles - - - - - - - - - - */
 .wrap-content {
   padding: 20px;
+  border-radius: 20px
 }
 
 .header-page {
@@ -1385,6 +1390,8 @@ span {
 
 .page-content {
     background-color: #F0F0F0;
+    border-radius: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 h1.page-title {
