@@ -24,7 +24,7 @@ Hola de nuevo *hacker*, hay múltiples versiones del kernel de Linux para *pente
 
 Para descargar la versión oficial, dirígete a la siguiente página: [Kali Linux](https://www.kali.org/get-kali/#kali-virtual-machines "Kali Linux")
 
-## Descargar Virtualizadores
+## Descargar virtualizadores
 
 Es Recomendable montar tu máquina virtual en **VMware** (Actualmente para uso personal es gratis) - Enlace: [VMware](https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware+Workstation+Pro "VMware for personal use")  
 
@@ -124,9 +124,9 @@ Para la configuración de red, la opción **NAT** funcionará perfectamente para
 
 Por otro lado, si utilizamos **Bridged** o **Adaptador puente**, estos dispositivos sí aparecerán en el escaneo. Esta última opción es más adecuada en entornos empresariales, donde se están *hackeando* vulnerabilidades y se requiere una integración completa con la red.
 
-La elección depende de tus necesidades y preferencias, pero es importante aclararlo, ya que no muchas personas explican por qué existen estas opciones.
+> La elección depende de tus necesidades y preferencias, pero es importante aclararlo, ya que no muchas personas explican por qué existen estas opciones.
 
-En *VMware*, aparecen las siguientes opciones:
+En *VMware*, aparece esta selección:
 
 <div style="display: flex; justify-content: center; align-items: center; max-width: 80%; height: auto; margin: 0 auto;">
   <a class="Paso 5.1" href="{{ site.baseurl }}/assets/img/PasosKali/Kali5.1.png" data-lightbox="Paso 5.1">
@@ -144,13 +144,13 @@ Para *VirtualBox* tenemos este menú:
 
 > Puedes observar que hay casillas adicionales, en las imagenes anteriores. Sin embargo, es importante que, si decides utilizarlas, investigues su función o aprendas para qué sirven antes de modificarlas. Pueden causar que tu Kali se quede sin acceso a Internet o no pueda detectar otros equipos en la red.
 
-### Primer Arranque
+### Primer arranque
 
 Ejecutaremos nuestra máquina, usando cualquiera de las siguientes opciones:
 
 **Power on this virtual machine** en *VMware*
 
-<div style="display: flex; justify-content: left; align-items: left; max-width: 80%; height: auto; margin: 0 auto;">
+<div style="display: flex; justify-content: center; align-items: center; max-width: 80%; height: auto; margin: 0 auto;">
   <a class="Paso 6.1" href="{{ site.baseurl }}/assets/img/PasosKali/Kali6.1.png" data-lightbox="Paso 6.1">
     <img class="Paso 6.1" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali6.1-min.png" alt="Paso 6.1" />
   </a>
@@ -158,7 +158,7 @@ Ejecutaremos nuestra máquina, usando cualquiera de las siguientes opciones:
 
 **Iniciar** en *VirtualBox
 
-<div style="display: flex; justify-content: left; align-items:; max-width: 80%; height: auto; margin: 0 auto;">
+<div style="display: flex; justify-content: center; align-items: center; max-width: 80%; height: auto; margin: 0 auto;">
   <a class="Paso 6.2" href="{{ site.baseurl }}/assets/img/PasosKali/Kali6.2.png" data-lightbox="Paso 6.2">
     <img class="Paso 6.2" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali6.2-min.png" alt="Paso 6.2" />
   </a>
@@ -167,12 +167,12 @@ Ejecutaremos nuestra máquina, usando cualquiera de las siguientes opciones:
 A continuación, iniciará Kali:
 
 
-<div style="display: flex; justify-content: center; align-items: center; gap: 200px;">
+<div style="display: flex; justify-content: center; align-items: center; gap: 30px;">
   <a href="{{ site.baseurl }}/assets/img/PasosKali/Kali7.1.png" data-lightbox="Paso 7.1">
-    <img class="lightbox-image" style= "max-width: 150%; height: auto;" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali7.1-min.png" alt="Paso 7.1" />
+    <img class="lightbox-image" style="max-width: 90%;" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali7.1-min.png" alt="Paso 7.1" />
   </a>
   <a href="{{ site.baseurl }}/assets/img/PasosKali/Kali8.1.png" data-lightbox="Paso 8.1">
-    <img class="lightbox-image" style= "max-width: 75%; height: auto;" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali8.1-min.png" alt="Paso 8.1" />
+    <img class="lightbox-image" style="max-width: 60%;" src="{{ site.baseurl }}/assets/img/PasosKali/miniaturas/Kali8.1-min.png" alt="Paso 8.1" />
   </a>
 </div>
 
@@ -238,7 +238,7 @@ passwd: password updated successfully
 
 Ya que tenemos estos 2 detalles importantes, vamos a *chulear* el sistema con herramientas superiores para futuros ataques y explotaciones.
 
-### PimpmyKali
+### Pimpmykali
 
 No nos olvidemos de esta gran suite de soluciones para nuestro Kali, que fue recopilada y mejorada por [Dewalt-arch](https://github.com/Dewalt-arch "Dewalt-arch"). En realidad podríamos decir que simplifica nuestra vida para tener un sistema más completo y ahorrarnos dolores de cabeza a futuro.
 
@@ -411,6 +411,6 @@ Muchas gracias por leer este artículo. Por favor, deja tu comentario para saber
 
 Utiliza estos enlaces para volver a arriba o salir de la publicación:
 
-- [Volver a Inicio]({{ site.baseurl }}/Kali-Linux-para-Hackers/ "Regresar al inicio de la página")
+- [Volver al Inicio]({{ site.baseurl }}/Kali-Linux-para-Hackers/ "Regresar al inicio de este post")
 - [Portada del blog]({{ site.baseurl }}/ "Ir a la pantalla principal")
 
