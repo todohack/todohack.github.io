@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/assets/css/site.css"
+        ],
+        "createdAt": "2026-11-02T10:53:17.296Z",
+        "reason": "Claude triage: L369 es el eje gris neutro (2px, var(--line)) de la línea de tiempo de Sobre mí, no un acento de color en una tarjeta; las franjas de color reales se eliminaron en el pulido"
+      }
+    ]
+  }
+}

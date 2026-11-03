@@ -1,0 +1,198 @@
+{
+  "_ayuda": "Edita este archivo y corre `node build.js`. Las secciones con lista vacía no se muestran.",
+  "title": "Todohack",
+  "tagline": "Ciberseguridad y hacking ético",
+  "description": "Blog y portafolio de TodoHack sobre ciberseguridad, hacking ético y seguridad en la nube: incidentes reales explicados con una lección práctica.",
+  "url": "https://todohack.github.io",
+  "author": "TodoHack",
+  "role": "Ciberseguridad · Hacking ético · Cloud · Programación",
+  "authorImg": "todohack.jpg",
+  "ogImage": "og-todohack.jpg",
+  "disqus": "todohack",
+  "cv": "",
+  "social": {
+    "github": "todohack",
+    "linkedin": "jcz-it"
+  },
+  "headline": "Casi todos los ataques empiezan por algo que alguien olvidó.",
+  "intro": "Una clave olvidada en un repositorio. Un servidor sin parchear. Una llamada a la mesa de ayuda. Aquí desarmo incidentes reales para ver cómo empezaron y qué los habría frenado.",
+  "focus": [
+    {
+      "title": "Hacking ético",
+      "text": "Cómo se explota una debilidad, para saber cerrarla antes."
+    },
+    {
+      "title": "Defensa y respuesta",
+      "text": "Cómo se reconoce un ataque mientras está ocurriendo."
+    },
+    {
+      "title": "Seguridad en la nube",
+      "text": "Por qué hoy la identidad pesa más que el firewall."
+    },
+    {
+      "title": "Automatización segura",
+      "text": "Scripts que ahorran horas sin abrir puertas nuevas."
+    }
+  ],
+  "about": [
+    "Detrás de **TodoHack** estoy yo: me dedico a la tecnología desde hace más de diez años. Empecé reparando equipos, pasé varios años en soporte técnico y hoy trabajo con **infraestructura en la nube y desarrollo de herramientas internas**, siempre con la seguridad como parte del diseño y no como un añadido.",
+    "El **hacking ético** es lo que más me apasiona. Practico en laboratorios, estudio cómo ocurren los ataques reales y uso ese conocimiento para construir sistemas más difíciles de romper: identidades bien gobernadas, permisos mínimos, separación de funciones y trazabilidad.",
+    "Me formé con una **Maestría en Ciberseguridad** y certificaciones en pentesting, SOC, forense y cumplimiento. Sigo aprendiendo cada semana, y este sitio es mi forma de ordenar lo que aprendo y compartirlo.",
+    "Si buscas a alguien para un equipo de **seguridad ofensiva, seguridad cloud, SOC o DevSecOps**, me encantará conversar."
+  ],
+  "experience": [
+    {
+      "period": "Actualidad",
+      "role": "Especialista cloud y desarrollo de herramientas internas",
+      "org": "Empresa de software empresarial",
+      "text": "Operación de servicios en Microsoft Azure y bases de datos SQL Server para clientes de una plataforma de gestión empresarial. Diseño y desarrollo de aplicaciones internas que automatizan monitoreo, respaldos, despliegues y reportes, con control de acceso e identidades integrados desde el inicio."
+    },
+    {
+      "period": "7 años",
+      "role": "Analista de soporte técnico",
+      "org": "Sector financiero",
+      "text": "Soporte a usuarios internos a nivel nacional, gestión de accesos, documentación técnica y capacitaciones."
+    },
+    {
+      "period": "8 años",
+      "role": "Técnico en computación",
+      "org": "Independiente",
+      "text": "Reparación, mantenimiento y soporte de equipos y redes."
+    }
+  ],
+  "education": [
+    {
+      "period": "2024 – 2025",
+      "name": "Maestría en Ciberseguridad",
+      "org": "Immune Technology Institute",
+      "text": "Gestión de incidentes y riesgos, análisis de malware y criptografía."
+    },
+    {
+      "period": "2022 – 2024",
+      "name": "Certificado profesional en ciberseguridad y diplomado en redes",
+      "org": "Formación universitaria"
+    },
+    {
+      "period": "2015 – 2017",
+      "name": "Técnico medio en desarrollo de software",
+      "org": "Formación técnica"
+    }
+  ],
+  "certifications": [
+    {
+      "group": "Hacking ético",
+      "items": [
+        "PMJ · Pentester Mentor Junior (Hacker Mentor)",
+        "EHCA",
+        "CEHPC (CertiProf)",
+        "Pentesting web, móvil y WiFi",
+        "Python para pentesters",
+        "TryHackMe"
+      ]
+    },
+    {
+      "group": "SOC y forense",
+      "items": [
+        "Analista SOC",
+        "Ingeniero SIEM",
+        "Análisis forense digital",
+        "OSINT",
+        "Ingeniería social"
+      ]
+    },
+    {
+      "group": "Gobierno y cumplimiento",
+      "items": [
+        "Auditor interno ISO 27001",
+        "Cyber Leader (CertiProf)",
+        "Protección de datos (GDPR)"
+      ]
+    },
+    {
+      "group": "Cloud y redes",
+      "items": [
+        "Microsoft Azure Fundamentals (AZ-900)",
+        "Cisco CCNA 1–3",
+        "Seguridad de redes"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "group": "Ofensiva",
+      "items": [
+        "Pentesting web, móvil y WiFi",
+        "Metasploit, Burp Suite, Nmap",
+        "Python para pentesting",
+        "OSINT e ingeniería social"
+      ]
+    },
+    {
+      "group": "Defensiva",
+      "items": [
+        "SOC y SIEM",
+        "Análisis de tráfico con Wireshark",
+        "Respuesta a incidentes y forense digital",
+        "Análisis de malware"
+      ]
+    },
+    {
+      "group": "Seguridad cloud",
+      "items": [
+        "Azure: App Service, VMs, Storage, VNet y NSG",
+        "Entra ID, RBAC, MFA y AVD",
+        "Mínimo privilegio y auditoría",
+        "Windows Server, IIS y Linux"
+      ]
+    },
+    {
+      "group": "Gobierno",
+      "items": [
+        "ISO 27001 (auditor interno)",
+        "GDPR y protección de datos",
+        "Gestión de riesgos",
+        "Criptografía aplicada"
+      ]
+    },
+    {
+      "group": "Desarrollo y automatización",
+      "items": [
+        "C# y .NET (ASP.NET Core, Blazor)",
+        "Python, PowerShell y React",
+        "SQL Server y T-SQL",
+        "Pruebas automatizadas, Git e IA con TDD"
+      ]
+    },
+    {
+      "group": "Idiomas",
+      "items": [
+        "Español nativo",
+        "Inglés profesional"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Aprobaciones con separación de funciones",
+      "text": "Patrón para cambios sensibles: aprobación obligatoria, MFA, permisos temporales que se revierten solos y un registro de auditoría encadenado que revela cualquier manipulación."
+    },
+    {
+      "name": "Monitoreo de servicios",
+      "text": "Agente y API propios para vigilar disponibilidad y anomalías, con alertas al equipo, control de acceso por roles y una amplia batería de pruebas automatizadas."
+    },
+    {
+      "name": "Respaldos automáticos sin secretos guardados",
+      "text": "Copias programadas hacia almacenamiento en la nube usando identidades del sistema en lugar de contraseñas en archivos."
+    },
+    {
+      "name": "Laboratorio de hacking ético",
+      "url": "/Kali-Linux-para-Hackers/",
+      "text": "Guía para montar un entorno de pentesting con Kali Linux virtualizado, la base de mis prácticas."
+    },
+    {
+      "name": "Todohack",
+      "url": "https://github.com/todohack/todohack.github.io",
+      "text": "Este sitio: generador estático propio en Node sin dependencias y análisis de incidentes con técnicas MITRE ATT&CK y lecciones defensivas."
+    }
+  ]
+}
