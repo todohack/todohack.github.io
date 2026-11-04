@@ -727,6 +727,26 @@ S['octubre-negro-2026'] = {
   },
 };
 
+S['microsoft-authenticator-authmask'] = {
+  inks: [INK.blue, INK.yellow, INK.red],
+  m: { kicker: 'CASO 17 — IDENTIDAD', lines: ['AuthMask'], size: 128, y: 330, sub: ['Microsoft Authenticator · Android', 'CVE-2026-80097 · corregido en 6.2606.4246'] },
+  art() {
+    // dos apps dicen «soy Teams»: la real y la disfrazada; Authenticator entrega el pase a las dos
+    const card = (x, y, w, h) => frame(x, y, w, h, 3, 'rx="14"');
+    const key = (x, y) => `<circle cx="${f(x)}" cy="${f(y)}" r="20" fill="none" stroke-width="7"/>` + rect(x + 18, y - 4, 70, 9, 'rx="3"') + rect(x + 62, y + 4, 9, 18) + rect(x + 78, y + 4, 9, 14);
+    const bx = 1180, by = 330, bw = 320, bh = 170;
+    let blue = card(bx, by, bw, bh) + T(bx + bw / 2, by + 78, 22, 'AUTHENTICATOR', { mono: true, a: 'middle', w: 700, ls: 2 }) + T(bx + bw / 2, by + 116, 15, 'entrega el pase', { mono: true, a: 'middle', ls: 1.5 });
+    blue += card(740, 140, 300, 130) + T(890, 200, 26, 'TEAMS', { mono: true, a: 'middle', w: 700, ls: 3 }) + T(890, 238, 15, 'app real', { mono: true, a: 'middle', ls: 1.5 });
+    blue += `<path d="M1040 205 C1110 205 1110 380 ${bx} 380" fill="none" stroke-width="4" stroke-dasharray="3 10" stroke-linecap="round"/>` + key(1080, 300);
+    // la impostora: mismo nombre, máscara con dos ojos
+    let red = rect(740, 560, 300, 130, 'rx="14"') + `<path d="M1040 625 C1110 625 1110 450 ${bx} 450" fill="none" stroke-width="4" stroke-dasharray="3 10" stroke-linecap="round"/>` + key(1080, 545);
+    const mask = `<path d="M790 590 q50 -26 100 0 q50 -26 100 0 v26 q-50 30 -100 6 q-50 24 -100 -6z" fill="${PAPER}" stroke="none"/>` + `<ellipse cx="840" cy="604" rx="16" ry="9" stroke="none"/><ellipse cx="940" cy="604" rx="16" ry="9" stroke="none"/>`;
+    red += mask + T(890, 668, 26, '«TEAMS»', { mono: true, a: 'middle', w: 700, ls: 3 }).replace('<text ', `<text fill="${PAPER}" `);
+    const glow = halftone(700, 480, 520, 300, 11, (x, y) => .75 - Math.hypot(x - 890, y - 625) / 330, 25);
+    return ink(INK.yellow, glow, .85) + ink(INK.blue, blue, .88) + ink(INK.red, red, .95);
+  },
+};
+
 const META = {
   'Primer-Post': ['2024-08-18', '#PRESENTACIÓN', 'N.º 00'], 'Kali-Linux-para-Hackers': ['2024-08-22', '#LABORATORIO', 'LAB 01'], 'Virtualizadores': ['2024-08-26', '#VIRTUALIZACIÓN', 'LAB 02'],
   'deepseek-base-de-datos-expuesta': ['2025-02-01', 'T1595 · T1530', 'CASO 01'], 'bybit-robo-1500-millones': ['2025-02-26', 'T1195 · T1565', 'CASO 02'], 'ms-coop-llamada-mesa-de-ayuda': ['2025-05-09', 'T1656 · T1078', 'CASO 03'],
@@ -734,7 +754,7 @@ const META = {
   'collins-aerospace-aeropuertos': ['2025-09-25', 'T1486', 'CASO 07'], 'f5-codigo-big-ip-robado': ['2025-10-19', 'T1195.002 · T1190', 'CASO 08'], 'jaguar-land-rover-ciberataque': ['2025-10-24', 'T1486 · T1489', 'CASO 09'],
   'espionaje-dirigido-por-ia': ['2025-11-17', 'IA · APT', 'CASO 10'], 'stryker-equipos-borrados': ['2026-03-15', 'T1485 · T1561', 'CASO 11'], 'trivy-escaner-envenenado': ['2026-03-24', 'T1195.002 · T1552', 'CASO 12'],
   'canvas-shinyhunters-escuelas': ['2026-05-11', 'T1567 · T1491', 'CASO 13'], 'chatbot-meta-cuentas-instagram': ['2026-06-04', 'T1656 · T1098', 'CASO 14'],
-  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
+  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
 };
 
 // número de serie = orden cronológico dentro de LAB/CASO/CERT; fecha = la del archivo del post
