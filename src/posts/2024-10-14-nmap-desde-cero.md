@@ -1,6 +1,8 @@
 ---
 title: "Nmap desde cero: reconoce tu laboratorio"
 description: Los comandos de Nmap que de verdad vas a usar, explicados uno a uno y practicados sobre tu propia red de laboratorio.
+gancho: "Todo internet se puede escanear en menos de seis minutos."
+gancho_texto: "Herramientas como masscan recorren todas las direcciones IPv4 en un puerto. Si tu servidor está expuesto, asume que alguien ya lo vio."
 tags: [laboratorio, reconocimiento, kali]
 ---
 

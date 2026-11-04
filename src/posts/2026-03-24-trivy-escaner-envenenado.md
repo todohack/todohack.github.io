@@ -1,6 +1,8 @@
 ---
 title: "Trivy envenenado: tu escáner de seguridad robaba secretos"
 description: La herramienta que revisaba vulnerabilidades en miles de pipelines fue convertida en un ladrón de credenciales. Todo por una limpieza incompleta.
+gancho: "El escáner que debía cuidar tus secretos fue el que los robó."
+gancho_texto: "Reescribieron 75 de las 76 versiones de trivy-action. Miles de pipelines confiaban en ellas por su etiqueta."
 tags: [supply-chain, cicd, devsecops]
 ---
 

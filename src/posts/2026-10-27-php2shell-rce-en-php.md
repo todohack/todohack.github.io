@@ -1,6 +1,8 @@
 ---
 title: "php2shell: dos fallos en el núcleo de PHP permiten tomar el servidor"
 description: Ejecución remota de código sin autenticación en casi cualquier servidor web con PHP. Ya se está explotando, y solo actualizar lo corrige.
+gancho: "Un fallo en el motor de PHP pasó más de diez años sin que nadie lo viera."
+gancho_texto: "Lo encontraron con ayuda de IA. Afectaba a casi cualquier servidor web con PHP."
 tags: [vulnerabilidades, web, parcheo]
 ---
 

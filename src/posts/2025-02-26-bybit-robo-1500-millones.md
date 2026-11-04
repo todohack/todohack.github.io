@@ -1,6 +1,8 @@
 ---
 title: "Bybit: 1.500 millones robados sin tocar su infraestructura"
 description: El mayor robo cripto de la historia no atacó a Bybit, atacó la interfaz web en la que confiaban sus firmantes.
+gancho: "Firmaron una transferencia normal. Les costó 1.500 millones de dólares."
+gancho_texto: "Los firmantes de Bybit vieron en pantalla lo que esperaban ver. La interfaz en la que confiaban les mentía."
 tags: [cripto, supply-chain, apt]
 ---
 

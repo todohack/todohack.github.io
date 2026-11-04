@@ -342,14 +342,18 @@ const groups = (xs, cls) => `<div class="${cls}">${xs.map(g => `<div><h3>${esc(g
 
 // ---------- Inicio (portafolio + últimos posts) ----------
 const latest = posts.slice(0, 6);
+// Bienvenida: un mensaje por post (gancho/gancho_texto, o título/descripción) + datos sueltos de site.json.
+// Un post nuevo añade su mensaje solo; el primero de site.json es el que se ve sin JavaScript.
+const welcome = [...site.welcome, ...posts.map(p => ({ h: p.gancho || p.title, p: p.gancho_texto || p.description, href: `/${p.slug}/` }))];
+assert(welcome.every(w => w.h && w.p), 'bienvenida: hay un mensaje sin titular o sin texto');
 write('index.html', layout({
   url: '/', nav: 'home',
   body: `<section class="hero">
   <div class="welcome">
-    <h1 class="welcome-h">${esc(site.welcome[0].h)}</h1>
-    <p class="hero-lead"><span class="welcome-p">${esc(site.welcome[0].p)}</span> <a class="welcome-link" href="${esc(site.welcome[0].href || '/blog/')}"${site.welcome[0].href ? '' : ' hidden'}>Leer el caso →</a></p>
+    <h1 class="welcome-h">${esc(welcome[0].h)}</h1>
+    <p class="hero-lead"><span class="welcome-p">${esc(welcome[0].p)}</span> <a class="welcome-link" href="${esc(welcome[0].href || '/blog/')}"${welcome[0].href ? '' : ' hidden'}>Leer el caso →</a></p>
   </div>
-  <script type="application/json" id="welcome-data">${JSON.stringify(site.welcome).replace(/</g, '\\u003c')}</script>
+  <script type="application/json" id="welcome-data">${JSON.stringify(welcome).replace(/</g, '\\u003c')}</script>
   <p class="hero-actions"><a class="btn" href="/sobre-mi/">Ver mi perfil</a> <a class="btn btn-ghost" href="https://www.linkedin.com/in/${site.social.linkedin}" target="_blank" rel="noopener">Contactar por LinkedIn</a></p>
   ${proofList()}
   <ul class="focus">${site.focus.map(f => `<li><strong>${esc(f.title)}</strong>${esc(f.text)}</li>`).join('')}</ul>

@@ -25,31 +25,6 @@
       "href": "/octubre-negro-2026/"
     },
     {
-      "h": "Firmaron una transferencia normal. Les costó 1.500 millones de dólares.",
-      "p": "Los firmantes de Bybit vieron en pantalla lo que esperaban ver. La interfaz en la que confiaban les mentía.",
-      "href": "/bybit-robo-1500-millones/"
-    },
-    {
-      "h": "A M&S y Co-op no les rompieron nada: les bastó una llamada.",
-      "p": "Los atacantes se hicieron pasar por empleados y la mesa de ayuda les restableció la contraseña.",
-      "href": "/ms-coop-llamada-mesa-de-ayuda/"
-    },
-    {
-      "h": "Una app decía «soy Teams» y Microsoft Authenticator le creía.",
-      "p": "Así funcionaba AuthMask: sin permisos especiales, se llevaba el acceso a tu cuenta de trabajo.",
-      "href": "/microsoft-authenticator-authmask/"
-    },
-    {
-      "h": "Seis golpes en un solo día: así fue el 21 de octubre de 2026.",
-      "p": "PHP, GitLab, Node.js, LiteLLM… Lo llamaron el Octubre Negro, y no fue un ataque coordinado.",
-      "href": "/octubre-negro-2026/"
-    },
-    {
-      "h": "El escáner que debía cuidar tus secretos fue el que los robó.",
-      "p": "Reescribieron 75 de las 76 versiones de trivy-action. Miles de pipelines confiaban en ellas por su etiqueta.",
-      "href": "/trivy-escaner-envenenado/"
-    },
-    {
       "h": "En 1947 encontraron una polilla dentro de una computadora.",
       "p": "La pegaron en la bitácora como el primer «bug» encontrado de verdad. Los de hoy se esconden mucho mejor."
     },
@@ -58,34 +33,94 @@
       "p": "El gusano Morris infectó miles de máquinas por un error de cálculo de su propio autor. Un fallo pequeño puede volverse global."
     },
     {
-      "h": "El parche de EternalBlue salió dos meses antes que WannaCry.",
-      "p": "Quien actualizó a tiempo se salvó. Quien no, vio sus archivos cifrados.",
-      "href": "/maquinas-pmj-pentesting/"
+      "h": "En 1971, Creeper saltaba de computadora en computadora diciendo «atrápame si puedes».",
+      "p": "Poco después nació Reaper, el primer programa creado para perseguirlo. Antivirus y virus nacieron casi juntos."
     },
     {
-      "h": "Tu contraseña puede cruzar la red escrita tal cual.",
-      "p": "Con Wireshark y una web sin cifrado, se ve en pantalla. Pruébalo en tu laboratorio, no en la red de otro.",
-      "href": "/wireshark-tu-primera-captura/"
+      "h": "El primer virus de PC traía la dirección y el teléfono de sus autores.",
+      "p": "Se llamaba Brain y apareció en 1986. Hoy los atacantes hacen todo lo posible por no dejar ni una huella."
     },
     {
-      "h": "Todo internet se puede escanear en menos de seis minutos.",
-      "p": "Herramientas como masscan recorren todas las direcciones IPv4 en un puerto. Si tu servidor está expuesto, asume que alguien ya lo vio.",
-      "href": "/nmap-desde-cero/"
+      "h": "El hacker más buscado de los 90 entraba más con llamadas que con código.",
+      "p": "Kevin Mitnick repetía que la ingeniería social era su mejor herramienta. Las personas siguen siendo la puerta más fácil."
     },
     {
-      "h": "El remitente de un correo es lo más fácil de falsificar.",
-      "p": "Las cabeceras no mienten tanto. Leerlas lleva dos minutos y te salva de más de un phishing.",
-      "href": "/es-phishing-lee-las-cabeceras/"
+      "h": "Stuxnet fue el primer código conocido que rompió máquinas físicas.",
+      "p": "Saboteó centrifugadoras nucleares en Irán sin que los operadores vieran nada raro en sus pantallas."
     },
     {
-      "h": "Un fallo en el motor de PHP pasó más de diez años sin que nadie lo viera.",
-      "p": "Lo encontraron con ayuda de IA. Afectaba a casi cualquier servidor web con PHP.",
-      "href": "/php2shell-rce-en-php/"
+      "h": "Heartbleed estuvo más de dos años en OpenSSL antes de que alguien lo viera.",
+      "p": "Un fallo en el código que cifraba buena parte de la web permitía leer la memoria del servidor."
     },
     {
-      "h": "Borraron equipos en todo el mundo sin usar malware.",
-      "p": "Stryker no encontró ransomware ni malware. La pista apunta a la consola que administra los equipos.",
-      "href": "/stryker-equipos-borrados/"
+      "h": "Una línea de texto en un log bastaba para tomar un servidor.",
+      "p": "Así era Log4Shell, en diciembre de 2021. Tocó a casi cualquier aplicación Java que registrara lo que escribían los usuarios."
+    },
+    {
+      "h": "El ataque a SolarWinds llegó dentro de una actualización firmada.",
+      "p": "Miles de organizaciones instalaron el malware confiando en que venía del fabricante. Y venía."
+    },
+    {
+      "h": "Un retraso de medio segundo destapó una puerta trasera en Linux.",
+      "p": "En 2024, un ingeniero notó que SSH tardaba un poco más y encontró el código malicioso escondido en XZ Utils."
+    },
+    {
+      "h": "Mirai tumbó grandes webs usando cámaras con la contraseña de fábrica.",
+      "p": "En 2016, una red de dispositivos domésticos infectados dejó sin servicio a Twitter, Netflix y Reddit en buena parte de EE. UU."
+    },
+    {
+      "h": "Una sola contraseña filtrada dejó sin combustible a la costa este de EE. UU.",
+      "p": "Colonial Pipeline, 2021: una cuenta de VPN sin verificación en dos pasos fue suficiente para el ransomware."
+    },
+    {
+      "h": "Equifax tenía el parche disponible. No lo aplicó a tiempo.",
+      "p": "Un fallo conocido en Apache Struts acabó exponiendo los datos de unos 147 millones de personas en 2017."
+    },
+    {
+      "h": "A Target le robaron 40 millones de tarjetas entrando por el proveedor del aire acondicionado.",
+      "p": "Los atacantes usaron las credenciales de una empresa de climatización con acceso a su red. Tu seguridad incluye la de tus proveedores."
+    },
+    {
+      "h": "WannaCry llegó a paralizar hospitales del sistema de salud británico.",
+      "p": "Mayo de 2017: citas canceladas y ambulancias desviadas por un ransomware que usaba un fallo ya parcheado."
+    },
+    {
+      "h": "El 19 de julio de 2024, 8,5 millones de equipos Windows se quedaron en pantalla azul.",
+      "p": "No fue un ataque: fue una actualización defectuosa de CrowdStrike. Lo que te protege también puede tumbarte."
+    },
+    {
+      "h": "Tu 2FA por SMS depende de que nadie convenza a tu operadora.",
+      "p": "Con el SIM swapping, el atacante se queda con tu número y recibe tus códigos. Una app o una llave física son más seguras."
+    },
+    {
+      "h": "Una passkey no se puede teclear en una página falsa.",
+      "p": "La clave nunca sale de tu dispositivo y solo funciona en el sitio real. Por eso el phishing no puede robarla.",
+      "href": "/contrasenas-2fa-y-passkeys/"
+    },
+    {
+      "h": "El candado del navegador no significa que la web sea legítima.",
+      "p": "Solo dice que la conexión va cifrada. Las páginas de phishing también tienen candado."
+    },
+    {
+      "h": "Shodan no busca páginas web: busca aparatos conectados a internet.",
+      "p": "Cámaras, servidores y hasta sistemas industriales aparecen ahí, muchas veces sin que su dueño lo sepa."
+    },
+    {
+      "h": "Un «zero day» es un fallo que el fabricante conoce desde hace cero días.",
+      "p": "Es decir, no hay parche. Por eso valen tanto, para los que atacan y para los que defienden."
+    },
+    {
+      "h": "El ransomware de hoy no solo cifra tus archivos: también se los lleva.",
+      "p": "Si no pagas por recuperarlos, amenazan con publicarlos. Tener copias ya no basta."
+    },
+    {
+      "h": "Tres copias, dos soportes distintos, una fuera de casa.",
+      "p": "Es la regla 3-2-1 de las copias de seguridad. Antigua, aburrida y todavía la que te salva de un ransomware."
+    },
+    {
+      "h": "Tu laboratorio de hacking cabe en una laptop.",
+      "p": "Una máquina virtual con Kali y otra vulnerable para practicar. Sin tocar la red de nadie.",
+      "href": "/Virtualizadores/"
     }
   ],
   "focus": [

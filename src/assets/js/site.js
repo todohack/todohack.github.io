@@ -307,23 +307,44 @@ if (welcome && welcomeData) {
     h.textContent = m.h;
     show();
   } else {
-    // Se fija la altura final para que el texto revuelto no mueva la página.
+    // Cada letra va por su cuenta: invisible, cambiada por otra o ya bien. Avanza a saltos, no con fundido.
+    // Las invisibles conservan su hueco y la altura queda fija, así que el titular no mueve la página.
     h.textContent = m.h;
     h.style.minHeight = h.offsetHeight + 'px';
     h.setAttribute('aria-label', m.h);
-    const glyphs = '!<>-_\/[]{}=+*^?#$%&01';
-    const order = [...m.h].map((c, k) => k / m.h.length * 0.7 + Math.random() * 0.3);
-    const t0 = performance.now(), dur = 900;
-    welcome.classList.add('is-ready', 'is-glitching');
-    const frame = now => {
-      const k = Math.min(1, (now - t0) / dur);
-      h.textContent = [...m.h].map((c, j) => c === ' ' || order[j] <= k ? c : glyphs[Math.random() * glyphs.length | 0]).join('');
-      if (k < 1) return requestAnimationFrame(frame);
+    const glyphs = 'ABCDEFGHKMNPRSTXZabdeghkmnpqrsxz0123456789#$%&@';
+    const rnd = () => glyphs[Math.random() * glyphs.length | 0];
+    const cells = [...m.h].map(c => {
+      const el = document.createElement('span');
+      el.setAttribute('aria-hidden', 'true');
+      el.textContent = c;
+      const r = Math.random();
+      return { el, c, state: c === ' ' ? 'ok' : r < .45 ? 'off' : r < .8 ? 'bad' : 'ok' };
+    });
+    h.replaceChildren(...cells.map(x => x.el));
+    const paint = x => {
+      x.el.className = x.state === 'ok' ? '' : 'g-' + x.state;
+      x.el.textContent = x.state === 'bad' ? rnd() : x.c;
+    };
+    cells.forEach(paint);
+    welcome.classList.add('is-ready');
+    const steps = 13;
+    let n = 0;
+    const tick = () => {
+      n++;
+      const k = n / steps;
+      for (const x of cells) {
+        if (x.c === ' ') continue;
+        if (n >= steps) x.state = 'ok';
+        else if (x.state !== 'ok') { if (Math.random() < k * .6) x.state = 'ok'; else if (Math.random() < .35) x.state = x.state === 'off' ? 'bad' : 'off'; }
+        else if (k < .7 && Math.random() < .06) x.state = Math.random() < .5 ? 'off' : 'bad';
+        paint(x);
+      }
+      if (n < steps) return setTimeout(tick, 55 + Math.random() * 45);
       h.textContent = m.h;
       h.removeAttribute('aria-label');
       h.style.minHeight = '';
-      welcome.classList.remove('is-glitching');
     };
-    requestAnimationFrame(frame);
+    setTimeout(tick, 120);
   }
 }

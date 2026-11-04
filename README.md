@@ -23,6 +23,8 @@ Crea `src/posts/AAAA-MM-DD-slug.md`:
 ---
 title: "Título"
 description: Una frase para Google y redes sociales.
+gancho: "Opcional: frase corta que aparece en la bienvenida del inicio."
+gancho_texto: "Opcional: el texto que la acompaña."
 tags: [ransomware, identidad]
 ---
 
@@ -38,6 +40,8 @@ Texto en Markdown.
 ```
 
 Las etiquetas tienen que existir en `TAG_TEMA` (en `build.js`); si falta alguna, el build avisa.
+
+Cada post entra solo en la bienvenida rotativa del inicio, con su `gancho` o, si no tiene, con su título y descripción. Los datos sueltos que no son de ningún post están en `welcome`, dentro de `src/site.json`.
 
 ## Portadas
 

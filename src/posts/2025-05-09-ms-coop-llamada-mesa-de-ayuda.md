@@ -1,6 +1,8 @@
 ---
 title: "M&S y Co-op: les bastó una llamada a la mesa de ayuda"
 description: Dos gigantes del comercio británico cayeron por el mismo punto débil, un soporte técnico que restablecía contraseñas por teléfono.
+gancho: "A M&S y Co-op no les rompieron nada: les bastó una llamada."
+gancho_texto: "Los atacantes se hicieron pasar por empleados y la mesa de ayuda les restableció la contraseña."
 tags: [ingenieria-social, ransomware, identidad]
 ---
 

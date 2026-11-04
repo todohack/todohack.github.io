@@ -1,6 +1,8 @@
 ---
 title: "¿Es phishing? Aprende a leer las cabeceras de un correo"
 description: El remitente que ves se puede falsificar. Las cabeceras no mienten tanto: aprende a revisar SPF, DKIM y DMARC en dos minutos.
+gancho: "El remitente de un correo es lo más fácil de falsificar."
+gancho_texto: "Las cabeceras no mienten tanto. Leerlas lleva dos minutos y te salva de más de un phishing."
 tags: [phishing, correo, ingenieria-social]
 ---
 

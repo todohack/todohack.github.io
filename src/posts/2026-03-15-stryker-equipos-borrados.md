@@ -1,6 +1,8 @@
 ---
 title: "Stryker: equipos borrados en todo el mundo en un solo día"
 description: Sin ransomware y sin pedir rescate, el objetivo era destruir. Así se protege la consola capaz de borrar toda tu flota de equipos.
+gancho: "Borraron equipos en todo el mundo sin usar malware."
+gancho_texto: "Stryker no encontró ransomware ni malware. La pista apunta a la consola que administra los equipos."
 tags: [wiper, hacktivismo, identidad]
 ---
 

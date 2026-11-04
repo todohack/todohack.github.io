@@ -1,6 +1,8 @@
 ---
 title: "Microsoft Authenticator: una app falsa podía robar tu cuenta de trabajo"
 description: Qué fue AuthMask (CVE-2026-80097), la falla de Microsoft Authenticator en Android que dejaba a una app sin permisos llevarse tu acceso al correo, Teams y archivos del trabajo, y qué hacer hoy.
+gancho: "Una app decía «soy Teams» y Microsoft Authenticator le creía."
+gancho_texto: "Así funcionaba AuthMask: sin permisos especiales, se llevaba el acceso a tu cuenta de trabajo."
 tags: [identidad, vulnerabilidades, parcheo]
 ---
 

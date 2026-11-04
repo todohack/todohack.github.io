@@ -1,6 +1,8 @@
 ---
 title: "Wireshark: tu primera captura de tráfico"
 description: Captura, filtra y entiende lo que viaja por tu red de laboratorio, y descubre con tus propios ojos por qué HTTP sin cifrar es un riesgo.
+gancho: "Tu contraseña puede cruzar la red escrita tal cual."
+gancho_texto: "Con Wireshark y una web sin cifrado, se ve en pantalla. Pruébalo en tu laboratorio, no en la red de otro."
 tags: [laboratorio, redes, wireshark]
 ---
 
