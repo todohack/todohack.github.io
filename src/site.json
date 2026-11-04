@@ -14,8 +14,80 @@
     "github": "todohack",
     "linkedin": "jcz-it"
   },
-  "headline": "Casi todos los ataques empiezan por algo que alguien olvidó.",
-  "intro": "Una clave olvidada en un repositorio. Un servidor sin parchear. Una llamada a la mesa de ayuda. Aquí desarmo incidentes reales para ver cómo empezaron y qué los habría frenado.",
+  "welcome": [
+    {
+      "h": "Casi todos los ataques empiezan por algo que alguien olvidó.",
+      "p": "Una clave en un repositorio. Un servidor sin parchear. Una llamada a la mesa de ayuda. Aquí desarmo incidentes reales para ver cómo empezaron y qué los habría frenado."
+    },
+    {
+      "h": "Una clave olvidada desde mayo abrió la puerta de LiteLLM.",
+      "p": "Nadie la revocó. En octubre de 2026, alguien la usó para publicar una versión con un ladrón de credenciales.",
+      "href": "/octubre-negro-2026/"
+    },
+    {
+      "h": "Firmaron una transferencia normal. Les costó 1.500 millones de dólares.",
+      "p": "Los firmantes de Bybit vieron en pantalla lo que esperaban ver. La interfaz en la que confiaban les mentía.",
+      "href": "/bybit-robo-1500-millones/"
+    },
+    {
+      "h": "A M&S y Co-op no les rompieron nada: les bastó una llamada.",
+      "p": "Los atacantes se hicieron pasar por empleados y la mesa de ayuda les restableció la contraseña.",
+      "href": "/ms-coop-llamada-mesa-de-ayuda/"
+    },
+    {
+      "h": "Una app decía «soy Teams» y Microsoft Authenticator le creía.",
+      "p": "Así funcionaba AuthMask: sin permisos especiales, se llevaba el acceso a tu cuenta de trabajo.",
+      "href": "/microsoft-authenticator-authmask/"
+    },
+    {
+      "h": "Seis golpes en un solo día: así fue el 21 de octubre de 2026.",
+      "p": "PHP, GitLab, Node.js, LiteLLM… Lo llamaron el Octubre Negro, y no fue un ataque coordinado.",
+      "href": "/octubre-negro-2026/"
+    },
+    {
+      "h": "El escáner que debía cuidar tus secretos fue el que los robó.",
+      "p": "Reescribieron 75 de las 76 versiones de trivy-action. Miles de pipelines confiaban en ellas por su etiqueta.",
+      "href": "/trivy-escaner-envenenado/"
+    },
+    {
+      "h": "En 1947 encontraron una polilla dentro de una computadora.",
+      "p": "La pegaron en la bitácora como el primer «bug» encontrado de verdad. Los de hoy se esconden mucho mejor."
+    },
+    {
+      "h": "El primer gusano de internet se escapó en 1988.",
+      "p": "El gusano Morris infectó miles de máquinas por un error de cálculo de su propio autor. Un fallo pequeño puede volverse global."
+    },
+    {
+      "h": "El parche de EternalBlue salió dos meses antes que WannaCry.",
+      "p": "Quien actualizó a tiempo se salvó. Quien no, vio sus archivos cifrados.",
+      "href": "/maquinas-pmj-pentesting/"
+    },
+    {
+      "h": "Tu contraseña puede cruzar la red escrita tal cual.",
+      "p": "Con Wireshark y una web sin cifrado, se ve en pantalla. Pruébalo en tu laboratorio, no en la red de otro.",
+      "href": "/wireshark-tu-primera-captura/"
+    },
+    {
+      "h": "Todo internet se puede escanear en menos de seis minutos.",
+      "p": "Herramientas como masscan recorren todas las direcciones IPv4 en un puerto. Si tu servidor está expuesto, asume que alguien ya lo vio.",
+      "href": "/nmap-desde-cero/"
+    },
+    {
+      "h": "El remitente de un correo es lo más fácil de falsificar.",
+      "p": "Las cabeceras no mienten tanto. Leerlas lleva dos minutos y te salva de más de un phishing.",
+      "href": "/es-phishing-lee-las-cabeceras/"
+    },
+    {
+      "h": "Un fallo en el motor de PHP pasó más de diez años sin que nadie lo viera.",
+      "p": "Lo encontraron con ayuda de IA. Afectaba a casi cualquier servidor web con PHP.",
+      "href": "/php2shell-rce-en-php/"
+    },
+    {
+      "h": "Borraron equipos en todo el mundo sin usar malware.",
+      "p": "Stryker no encontró ransomware ni malware. La pista apunta a la consola que administra los equipos.",
+      "href": "/stryker-equipos-borrados/"
+    }
+  ],
   "focus": [
     {
       "title": "Hacking ético",

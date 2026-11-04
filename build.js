@@ -215,7 +215,7 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1522" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
-<script>/* Tema antes del primer pintado para evitar parpadeo */try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>/* Tema antes del primer pintado para evitar parpadeo */document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="icon" href="/assets/img/favicon/favicon.ico">
 <link rel="apple-touch-icon" href="/assets/img/favicon/apple-touch-icon.png">
 <link rel="alternate" type="application/rss+xml" title="${esc(site.title)}" href="/feed.xml">
@@ -345,8 +345,11 @@ const latest = posts.slice(0, 6);
 write('index.html', layout({
   url: '/', nav: 'home',
   body: `<section class="hero">
-  <h1>${esc(site.headline)}</h1>
-  <p class="hero-lead">${esc(site.intro)}</p>
+  <div class="welcome">
+    <h1 class="welcome-h">${esc(site.welcome[0].h)}</h1>
+    <p class="hero-lead"><span class="welcome-p">${esc(site.welcome[0].p)}</span> <a class="welcome-link" href="${esc(site.welcome[0].href || '/blog/')}"${site.welcome[0].href ? '' : ' hidden'}>Leer el caso →</a></p>
+  </div>
+  <script type="application/json" id="welcome-data">${JSON.stringify(site.welcome).replace(/</g, '\\u003c')}</script>
   <p class="hero-actions"><a class="btn" href="/sobre-mi/">Ver mi perfil</a> <a class="btn btn-ghost" href="https://www.linkedin.com/in/${site.social.linkedin}" target="_blank" rel="noopener">Contactar por LinkedIn</a></p>
   ${proofList()}
   <ul class="focus">${site.focus.map(f => `<li><strong>${esc(f.title)}</strong>${esc(f.text)}</li>`).join('')}</ul>

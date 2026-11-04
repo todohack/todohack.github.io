@@ -284,3 +284,46 @@ if (cv && matchMedia('(hover: hover) and (pointer: fine) and (min-width: 901px)'
   side.addEventListener('mouseleave', () => { inside = false; });
   addEventListener('resize', () => { cols = 0; if (raf) resize(); });
 }
+
+// ---------- Bienvenida: un mensaje al azar en cada visita, con efecto glitch ----------
+const welcome = document.querySelector('.welcome');
+const welcomeData = document.getElementById('welcome-data');
+if (welcome && welcomeData) {
+  const msgs = JSON.parse(welcomeData.textContent);
+  const h = welcome.querySelector('.welcome-h');
+  const p = welcome.querySelector('.welcome-p');
+  const link = welcome.querySelector('.welcome-link');
+  let last = -1;
+  try { last = +localStorage.getItem('welcome-last'); } catch (e) {}
+  let i = Math.floor(Math.random() * msgs.length);
+  if (msgs.length > 1 && i === last) i = (i + 1) % msgs.length;
+  try { localStorage.setItem('welcome-last', i); } catch (e) {}
+  const m = msgs[i];
+  p.textContent = m.p;
+  link.hidden = !m.href;
+  if (m.href) link.href = m.href;
+  const show = () => welcome.classList.add('is-ready');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    h.textContent = m.h;
+    show();
+  } else {
+    // Se fija la altura final para que el texto revuelto no mueva la página.
+    h.textContent = m.h;
+    h.style.minHeight = h.offsetHeight + 'px';
+    h.setAttribute('aria-label', m.h);
+    const glyphs = '!<>-_\/[]{}=+*^?#$%&01';
+    const order = [...m.h].map((c, k) => k / m.h.length * 0.7 + Math.random() * 0.3);
+    const t0 = performance.now(), dur = 900;
+    welcome.classList.add('is-ready', 'is-glitching');
+    const frame = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      h.textContent = [...m.h].map((c, j) => c === ' ' || order[j] <= k ? c : glyphs[Math.random() * glyphs.length | 0]).join('');
+      if (k < 1) return requestAnimationFrame(frame);
+      h.textContent = m.h;
+      h.removeAttribute('aria-label');
+      h.style.minHeight = '';
+      welcome.classList.remove('is-glitching');
+    };
+    requestAnimationFrame(frame);
+  }
+}

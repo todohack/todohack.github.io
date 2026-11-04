@@ -474,3 +474,23 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
   .copy-link { display: inline-flex; align-items: center; gap: 8px; }
 .copy-link, .load-comments { padding: 10px 16px; }
 }
+
+/* Bienvenida rotativa: oculta hasta que site.js elige el mensaje; si el JS falla, aparece igual a los 1,5 s. */
+.js .welcome .welcome-h, .js .welcome .hero-lead { opacity: 0; animation: welcome-fallback 0s 1.5s forwards; }
+.js .welcome.is-ready .welcome-h, .js .welcome.is-ready .hero-lead { opacity: 1; animation: none; }
+.js .welcome.is-ready .hero-lead { animation: welcome-in .5s .55s both; }
+@keyframes welcome-fallback { to { opacity: 1; } }
+@keyframes welcome-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.welcome.is-glitching .welcome-h { animation: welcome-glitch .9s steps(1, end) both; }
+@keyframes welcome-glitch {
+  0%   { text-shadow: 3px 0 var(--dot), -3px 0 var(--link); clip-path: inset(0 0 55% 0); transform: translateX(-4px); }
+  12%  { text-shadow: -2px 0 var(--dot), 2px 0 var(--link); clip-path: inset(30% 0 20% 0); transform: translateX(3px); }
+  24%  { text-shadow: 2px 1px var(--dot), -2px -1px var(--link); clip-path: none; transform: none; }
+  40%  { text-shadow: -1px 0 var(--dot), 1px 0 var(--link); clip-path: inset(60% 0 0 0); transform: translateX(-2px); }
+  52%  { text-shadow: 1px 0 var(--dot), -1px 0 var(--link); clip-path: none; transform: none; }
+  100% { text-shadow: none; clip-path: none; transform: none; }
+}
+.welcome-link { font-weight: 600; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .js .welcome.is-ready .hero-lead { animation: none; }
+}
