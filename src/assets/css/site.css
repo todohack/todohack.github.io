@@ -838,3 +838,9 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 .city-dlg[hidden] { display: none; }
 .city-who { color: #f2b33d; font-weight: 700; }
 .city-dlg small { color: #64748b; font-size: 11px; }
+.city-shop { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 3px; max-height: 260px; overflow-y: auto; }
+.city-shop li { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 5px 8px; border: 1px solid #1d2840; border-radius: 6px; cursor: pointer; }
+.city-shop li.on { border-color: #f2b33d; background: #1a2336; }
+.city-shop li.off span, .city-shop li.off b { opacity: .45; }
+.city-shop li b { color: #f2b33d; }
+.city-shop li em { grid-column: 1 / -1; font-style: normal; font-size: 11px; color: #8b95a8; }

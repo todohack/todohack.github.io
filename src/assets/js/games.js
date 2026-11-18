@@ -208,17 +208,18 @@ function mount(T, { text = false, pad = '' } = {}) {
 }
 
 // Ciclo de vida común: teclado, botones táctiles, Esc y cierre de la terminal terminan el juego.
-function session(T, m, onKey, cleanup) {
+// esc (opcional): si devuelve true, Esc lo gestiona el juego (cerrar una tienda) y no se sale
+function session(T, m, onKey, cleanup, esc) {
   return new Promise(res => {
     let over = false;
     const send = e => { if (!over) onKey(e, end); };
     const kd = e => {
-      if (e.key === 'Escape') { e.preventDefault(); return end(); }
+      if (e.key === 'Escape') { e.preventDefault(); if (esc && esc()) return; return end(); }
       if (m.text && e.key.length === 1) return; // lo recoge el evento input (teclados móviles)
       send(e);
     };
     const inp = () => { const v = m.keyEl.value; m.keyEl.value = ''; for (const ch of v) send({ key: ch, preventDefault() {} }); };
-    const cancel = e => { e.preventDefault(); end(); };
+    const cancel = e => { e.preventDefault(); if (esc && esc()) return; end(); };
     function end() {
       if (over) return;
       over = true;
@@ -1004,15 +1005,29 @@ function dungeon(T) {
 }
 
 // ===================== ciudad: Ciudad Zero-Day (premio del CTF) =====================
-// Mundo abierto visto desde arriba: robas autos, disparas y cumples misiones contra la banda ransomware «Los Cifrados».
+// Mundo abierto visto desde arriba: robas o compras autos, los mejoras en el taller, compras armas y cumples misiones contra «Los Cifrados».
 const CITY_W = [
-  { n: 'puños', d: 14, cd: .35, melee: true },
-  { n: 'pistola de ping', d: 18, cd: .3, sp: 340, ammo: 60 },
-  { n: 'escopeta DDoS', d: 11, cd: .75, sp: 300, pel: 5, spread: .5, ammo: 24 },
-  { n: 'subfusil de fuerza bruta', d: 8, cd: .09, sp: 380, spread: .14, ammo: 150 },
-  { n: 'lanzador EMP', d: 70, cd: 1.1, sp: 210, boom: 46, ammo: 8 },
-  { n: 'cañón de fibra', d: 55, cd: .9, beam: true, ammo: 15 },
+  { n: 'puños', d: 12, cd: .35, melee: true, r: 12, arc: .9 },
+  { n: 'teclado mecánico', d: 16, cd: .4, melee: true, r: 13, arc: 1, price: 40, x: 'Clac, clac. Ideal para discusiones técnicas.' },
+  { n: 'llave de torque', d: 22, cd: .5, melee: true, r: 14, arc: 1, price: 90, x: 'Aprieta tornillos y argumentos.' },
+  { n: 'bate de reinicio', d: 26, cd: .6, melee: true, r: 16, arc: 1.3, stun: .6, price: 150, x: 'Apaga y vuelve a encender. Aturde un instante.' },
+  { n: 'táser de diagnóstico', d: 10, cd: .7, melee: true, r: 13, arc: .8, stun: 2.2, price: 220, x: 'Poco daño, pero deja al objetivo aturdido 2 s.' },
+  { n: 'katana de fibra óptica', d: 48, cd: .55, melee: true, r: 19, arc: 1.6, price: 650, x: 'Corta en arco amplio: varios enemigos a la vez.' },
+  { n: 'pistola de ping', d: 18, cd: .3, sp: 340, ammo: 60, price: 150, ap: 25, x: 'Fiable y con buen alcance.' },
+  { n: 'escopeta DDoS', d: 11, cd: .75, sp: 300, pel: 5, spread: .5, ammo: 24, price: 450, ap: 40, x: 'Cinco perdigones de golpe. Brutal de cerca.' },
+  { n: 'subfusil de fuerza bruta', d: 8, cd: .09, sp: 380, spread: .14, ammo: 150, price: 700, ap: 45, x: 'Ráfaga continua. Gasta munición sin piedad.' },
+  { n: 'lanzador EMP', d: 70, cd: 1.1, sp: 210, boom: 46, ammo: 8, price: 1200, ap: 80, x: 'Proyectil que explota en área. Para autos y grupos.' },
+  { n: 'cañón de fibra', d: 55, cd: .9, beam: true, ammo: 15, price: 2000, ap: 90, x: 'Rayo que atraviesa todo lo que encuentra.' },
 ];
+const GUN0 = 6; // primer arma de fuego en la lista
+// Autos: velocidad máxima, aceleración, vida, precio en el concesionario
+const CAR_T = {
+  sedan: { n: 'sedán', max: 205, acc: 240, hp: 80, price: 300 }, taxi: { n: 'taxi', max: 205, acc: 240, hp: 85, price: 400 },
+  sport: { n: 'deportivo', max: 265, acc: 340, hp: 70, price: 1200 }, van: { n: 'furgón', max: 160, acc: 190, hp: 120, price: 0 },
+  offroad: { n: 'todoterreno', max: 220, acc: 270, hp: 140, price: 900, x: 'No pierde velocidad en césped ni aceras.' },
+  armored: { n: 'blindado', max: 178, acc: 210, hp: 320, price: 2500, x: 'Aguanta balas y choques; embiste sin miedo.' },
+  soc: { n: 'furgoneta del SOC', max: 185, acc: 230, hp: 140 }, exfil: { n: 'furgoneta RW', max: 150, acc: 200, hp: 170 },
+};
 const CITY_MISSIONS = [
   { t: 'Primer contacto' }, { t: 'El pendrive' }, { t: 'Apaga el C2' }, { t: 'Furgoneta de exfiltración' }, { t: 'Antenas zombi' }, { t: 'El jefe de Los Cifrados' },
 ];
@@ -1020,41 +1035,47 @@ const AVS = ['Av. Kernel', 'Av. Firewall', 'Av. Proxy', 'Av. Sudo', 'Av. Root', 
 const CALLES = ['Calle Ping', 'Calle 404', 'Calle Token', 'Calle Cookie', 'Calle Payload', 'Calle Puerto'];
 const CITY_SIGNS = ['HACK', '404', 'ROOT', 'VPN', '0DAY', 'SUDO', 'PING', 'CAFE', 'BYTE', 'SSH', 'NEON', 'RAM', 'LOGS', 'TOR'];
 const CAR_COLS = ['#ef4444', '#3b82f6', '#22c55e', '#e5e7eb', '#a855f7', '#14b8a6', '#f472b6', '#64748b', '#0ea5e9'];
+const PAINTS = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7', '#ec4899', '#e5e7eb', '#111827'];
+const NEONS = ['#ff3fc8', '#3ee8ff', '#4ade80', '#f2b33d', '#a855f7'];
 const SKINS = ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac'];
-const HAIRS = ['#1f1300', '#4a2511', '#7c4a1e', '#d4a017', '#9ca3af', '#111827', '#7f1d1d'];
+const HAIRS = ['#1f1300', '#4a2511', '#7c4a1e', '#d4a017', '#111827', '#7f1d1d'];
 const SHIRTS = ['#64748b', '#a16207', '#0e7490', '#7c3aed', '#be185d', '#4d7c0f', '#b45309', '#1d4ed8', '#e5e7eb'];
-// Lo que dice la gente por la calle (con acento tico y algún consejo de seguridad)
+// Personalidades: cómo hablan y cómo reaccionan si las atacas
+const PERSONAS = {
+  timido: { w: 22, sp: 22, react: 'flee', lines: ['Disculpe… no, nada, perdón.', 'Prefiero no meterme en problemas.', 'Voy rapidito a casa, que ya es tarde.'] },
+  valiente: { w: 12, sp: 24, react: 'fight', lines: ['Ni se le ocurra tocarme, ¿eh?', 'Yo hice karate en el colegio, mae.', 'Aquí se respeta al vecino.'], angry: ['¡Ahora sí se metió en un lío!', '¡Venga pues, a ver!'] },
+  armado: { w: 6, sp: 22, react: 'shoot', lines: ['Tengo licencia y buena puntería.', 'Calma, que no quiero problemas.', 'Cuidado con lo que hace por aquí.'], angry: ['¡Alto ahí!', '¡Último aviso!'] },
+  curioso: { w: 12, sp: 24, react: 'flee', film: true, lines: ['¿Qué pasó por allá? Voy a ver.', 'Esto lo subo a redes ya mismo.', '¿Usted es de la resistencia? ¡Qué tuanis!'] },
+  chismoso: { w: 12, sp: 20, react: 'flee', chat: true, lines: ['¿Ya supo lo del vecino? Le cifraron hasta las fotos de la boda.', 'Dicen que Nodo era sysadmin del banco.', 'A mi prima le robaron la cuenta por usar la misma contraseña en todo.', 'El del quinto piso le abrió un adjunto a un «príncipe nigeriano».'] },
+  distraido: { w: 16, sp: 15, react: 'flee', phone: true, lines: ['Un momento, que estoy respondiendo un correo…', '¿Eh? Perdón, iba viendo el teléfono.', '¡Uy! Casi me como el poste.'] },
+  anciano: { w: 10, sp: 11, react: 'flee', old: true, lines: ['En mis tiempos los virus venían en disquete.', 'Mijo, no le dé su clave a nadie, ni a su tía.', 'Antes el ransomware se llamaba secuestro, y punto.'] },
+  turista: { w: 10, sp: 20, react: 'flee', cam: true, lines: ['Excuse me… ¿dónde queda el muelle?', '¡Qué ciudad más bonita! Lástima el malware.', '¿Esto es la Av. Kernel? Mi mapa no carga.'] },
+};
+const PERSONA_POOL = Object.entries(PERSONAS).flatMap(([k, v]) => Array(v.w).fill(k));
 const CIV_LINES = [
   'Mae, me llegó un SMS de «Correos» pidiéndome ₡1 250. Ni pedí nada.', '¿Usted también tiene la contraseña en un papelito bajo el teclado?',
   'Pura vida… hasta que te cifran el disco.', 'Activé la verificación en dos pasos. Me siento invencible.',
   'El café de la esquina tiene wifi gratis. Yo no me conecto ni loco.', 'Mi jefe me pidió tarjetas de regalo por correo. Muy raro, ¿verdad?',
   'Hice copia de seguridad ayer. La primera en diez años.', '¿Ha visto los drones del SOC? Vigilan a quien arma escándalo.',
   'El QR del parquímetro estaba pegado encima del otro. Casi caigo.', 'Si es gratis y no sabe por qué, el producto es usted.',
-  'Me hackearon el Instagram y ahora vende criptos. Yo ni sé qué es eso.', 'Las farolas parpadean desde que llegaron Los Cifrados.',
-  'Actualicé el teléfono anoche. ¡Hasta la batería dura más!', 'Mi abuela ya usa passkeys y yo sigo con 123456. Qué vergüenza.',
-  '¿Usted también oye zumbar las antenas por la noche?', 'Tuanis la noche, pero no me fío de esa furgoneta negra.',
-  'Me llamó el «banco» pidiendo el código del SMS. Les colgué.', 'Dicen que en el refugio hay gente que pelea contra el ransomware.',
-  'No conecte memorias USB que encuentre tiradas. Se lo digo por experiencia.', 'El semáforo de la Av. Root dura una eternidad.',
-  '¿Vio el rótulo de 0DAY? Dicen que es un bar de hackers.', 'Pedí comida y la app tenía un restaurante que no existe.',
-  'Mi contraseña es mi cumpleaños al revés. Nadie lo adivinará jamás.', 'La impresora de la oficina también tenía malware. ¡La impresora, mae!',
-  'Ayer el cajero me mostró una pantalla roja pidiendo bitcoins.', 'Si le meten prisa, desconfíe. Eso me lo enseñó mi hija.',
-  '¿Sabía que admin/admin sigue abriendo la mitad de los routers?', 'Aquí los autos respetan los semáforos. Usted no tanto, ¿eh?',
-  'Los Cifrados visten de rojo oscuro. Si los ve, cruce la calle.', 'Leí en TodoHack que el candado del navegador no garantiza nada.',
-  'Mi vecino abrió un adjunto «factura.pdf.exe». Ahora vive en el refugio.', 'Wepa, qué noche más linda para no abrir correos raros.',
+  'Las farolas parpadean desde que llegaron Los Cifrados.', 'Mi abuela ya usa passkeys y yo sigo con 123456. Qué vergüenza.',
+  'Me llamó el «banco» pidiendo el código del SMS. Les colgué.', 'No conecte memorias USB que encuentre tiradas. Se lo digo por experiencia.',
+  'En la armería 0xDEAD venden una katana de fibra óptica. ¡Una katana!', 'Dicen que en el taller le ponen turbo hasta a un taxi.',
+  'Leí en TodoHack que el candado del navegador no garantiza nada.', 'Wepa, qué noche más linda para no abrir correos raros.',
 ];
-const RUMORS = ['Dicen que Los Cifrados se juntan cerca de {p}.', 'Vi gente rara rondando por {p}. Yo que usted iría con cuidado.',
-  'Mi primo trabaja de noche por {p} y oye ruido de servidores.', 'Alguien comentó que lo que usted busca está por {p}.'];
+const RUMORS = ['Dicen que Los Cifrados se juntan cerca de {p}.', 'Vi gente rara rondando por {p}. Yo que usted iría con cuidado.', 'Mi primo trabaja de noche por {p} y oye ruido de servidores.'];
 const FLEE_LINES = ['¡Llamen al SOC!', '¡Corran!', '¡Mis datos no!', '¡Ay, mae!', '¡Socorro!', '¡Qué torta!'];
+const FILM_LINES = ['¡Esto va directo a redes!', '¡Grabando, grabando!', '¡Qué video más viral!'];
 const GANG_LINES = ['¡Paga el rescate en Monero!', '¡Tus archivos son nuestros!', '¡Aquí no pasa nadie sin la clave!', '¡Doble extorsión, mae!', '¡El jefe quiere tus datos!'];
 const DRONE_LINES = ['UNIDAD SOC: DETÉNGASE', 'SUJETO IDENTIFICADO', 'REGISTRANDO INCIDENTE', 'ALTO, CIUDADANO'];
 const HONKS = ['¡Piii!', '¡Muévase, mae!', '¡Está en verde!', '¡Piii piii!'];
-const RES_LINES = ['Nodo te espera en el círculo verde.', 'Aquí parcheamos lo que Los Cifrados rompen.', 'Tómate un café: la noche es larga.', 'Revisa la munición antes de salir.', 'Los drones solo te siguen si haces daño a civiles.'];
+const RES_LINES = ['Nodo te espera en el círculo verde.', 'Aquí parcheamos lo que Los Cifrados rompen.', 'Tus autos comprados quedan aparcados aquí.', 'La armería está en Av. Proxy; el taller, en Av. Kernel.', 'Los drones solo te siguen si haces daño a civiles.'];
 
 function ciudad(T) {
   const TW = 16, BK = 9, NBX = 7, NBY = 5, MW = 2 + BK * NBX + 2 + 2, MH = 2 + BK * NBY + 2 + 2;
   const hold = (k, t) => `<button type="button" data-h="${k}">${t}</button>`;
   const pad = touch ? `<div class="pad-dirs">${['', hold('up', '↑'), '', hold('left', '←'), '', hold('right', '→'), '', hold('down', '↓'), ''].map(x => x || '<span></span>').join('')}</div>`
-    + `<div class="pad-acts">${hold('fire', 'disparar')}<button type="button" data-k="e">auto / sí</button><button type="button" data-k="t">hablar</button><button type="button" data-k="q">arma</button><button type="button" data-k="Escape">salir</button></div>` : '';
+    + `<div class="pad-acts">${hold('fire', 'disparar')}${hold('nitro', 'turbo')}<button type="button" data-k="e">auto / sí</button><button type="button" data-k="t">hablar</button><button type="button" data-k="q">arma</button><button type="button" data-k="m">destino</button><button type="button" data-k="Escape">salir</button></div>` : '';
   const m = mount(T, { pad });
   const cv = document.createElement('canvas'); cv.className = 'game-cv';
   const hud = document.createElement('div'); hud.className = 'game-hud';
@@ -1077,14 +1098,17 @@ function ciudad(T) {
   let log = [], said = 0, shownLog = -1;
   const say = t => { log.push(t); said++; if (log.length > 30) log.shift(); };
 
-  // ---------- Mapa: manzanas de 9×9 con calles de dos carriles, aceras, agua alrededor ----------
+  // ---------- Mapa ----------
   const map = new Uint8Array(MW * MH); // 0 calle · 1 acera · 2 edificio · 3 parque · 4 agua · 5 árbol · 6 plaza
-  const roofOf = new Uint8Array(MW * MH);
+  const bid = new Uint16Array(MW * MH); // identificador de edificio: casillas con el mismo id forman un edificio
   const at = (tx, ty) => tx < 0 || ty < 0 || tx >= MW || ty >= MH ? 4 : map[ty * MW + tx];
-  const SPECIAL = { '1,1': 'base', '4,2': 'c2', '6,4': 'dock' };
+  const SPECIAL = { '1,1': 'base', '4,2': 'c2', '6,4': 'dock', '2,3': 'armeria', '0,2': 'taller', '5,1': 'lot', '3,4': 'hospital' };
+  const SHOPB = { armeria: 1, taller: 1, hospital: 1 };
   const btype = {};
-  for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) btype[bx + ',' + by] = SPECIAL[bx + ',' + by] || (Math.random() < .18 ? 'park' : 'build');
+  for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) btype[bx + ',' + by] = SPECIAL[bx + ',' + by] || (Math.random() < .16 ? 'park' : 'build');
   const rr = (tx, ty) => [(tx - 2) % BK, (ty - 2) % BK];
+  const BTYPES = ['office', 'apart', 'ware', 'mall', 'data', 'green', 'apart', 'office'];
+  const kindOfB = {}; // tipo de cada edificio
   for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
     let t;
     if (tx < 2 || ty < 2 || tx >= MW - 2 || ty >= MH - 2) t = 4;
@@ -1094,8 +1118,12 @@ function ciudad(T) {
       else if (rx === 2 || rx === 8 || ry === 2 || ry === 8) t = 1;
       else {
         const k = btype[bx + ',' + by];
-        t = k === 'build' ? 2 : k === 'park' ? ((rx === 5 || ry === 5) ? 6 : Math.random() < .25 ? 5 : 3) : 6;
-        roofOf[ty * MW + tx] = (bx * 7 + by * 3 + (rx < 5 ? 0 : 1) + (ry < 5 ? 0 : 2)) % 6;
+        if (k === 'build' || SHOPB[k]) {
+          t = 2;
+          const id = SHOPB[k] ? 1000 + bx * 10 + by : 1 + bx * 40 + by * 4 + (rx < 5 ? 0 : 1) + (ry < 5 ? 0 : 2);
+          bid[ty * MW + tx] = id;
+          kindOfB[id] = SHOPB[k] ? k : BTYPES[(bx * 7 + by * 3 + (rx < 5 ? 0 : 1) * 5 + (ry < 5 ? 0 : 2)) % BTYPES.length];
+        } else t = k === 'park' ? ((rx === 5 || ry === 5) ? 6 : Math.random() < .25 ? 5 : 3) : 6;
       }
     }
     map[ty * MW + tx] = t;
@@ -1106,18 +1134,29 @@ function ciudad(T) {
   const los = (a, b) => { const d = dist(a, b), n = Math.ceil(d / 8); for (let i = 1; i < n; i++) if (tAt(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n) === 2) return false; return true; };
   const inter = (bx, by) => ({ x: (2 + BK * bx) * TW + TW, y: (2 + BK * by) * TW + TW, bx, by });
   const blockMid = (bx, by) => ({ x: (2 + BK * bx + 5) * TW + 8, y: (2 + BK * by + 5) * TW + 8, bx, by });
+  const door = (bx, by) => ({ x: (2 + BK * bx + 5) * TW + 8, y: (2 + BK * by + 8) * TW + 8, bx, by }); // acera frente a la fachada sur
   const interName = p => `${AVS[p.bx]} y ${CALLES[p.by]}`;
   const isInter = (tx, ty) => { const [rx, ry] = rr(tx, ty); return at(tx, ty) === 0 && rx < 2 && ry < 2; };
+  // Puntos de interés: tiendas y servicios
+  const POI = [
+    { k: 'armeria', n: 'Armería 0xDEAD', ...door(2, 3), col: '#ef4444', ico: 'gun' },
+    { k: 'taller', n: 'Taller Pit Stop Overclock', ...door(0, 2), col: '#f97316', ico: 'wrench' },
+    { k: 'lot', n: 'Concesionario AutoHash', ...door(5, 1), col: '#22d3ee', ico: 'car' },
+    { k: 'hospital', n: 'Hospital San Parche', ...door(3, 4), col: '#f1f5f9', ico: 'cross' },
+  ];
   const streetAt = (x, y) => {
     const tx = Math.floor(x / TW), ty = Math.floor(y / TW), t = at(tx, ty), [rx, ry] = rr(tx, ty), bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK);
     if (t === 4) return 'Bahía de los Logs';
-    if (t === 6 || t === 1 || t === 3) { const k = btype[bx + ',' + by]; if (k === 'base') return 'Refugio de la resistencia'; if (k === 'c2') return 'Plaza roja (C2)'; if (k === 'dock') return 'Muelle de carga'; if (k === 'park') return 'Parque del Cifrado César'; }
+    if (t === 6 || t === 1 || t === 3) {
+      const k = btype[bx + ',' + by];
+      const named = { base: 'Refugio de la resistencia', c2: 'Plaza roja (C2)', dock: 'Muelle de carga', park: 'Parque del Cifrado César', lot: 'Concesionario AutoHash', armeria: 'Armería 0xDEAD', taller: 'Taller Pit Stop Overclock', hospital: 'Hospital San Parche' };
+      if (named[k] && (t !== 1 || SHOPB[k] || k === 'lot')) return named[k];
+    }
     if (t !== 0) return '';
     if (rx < 2 && ry < 2) return `${AVS[clamp(bx, 0, 7)]} / ${CALLES[clamp(by, 0, 5)]}`;
     return rx < 2 ? AVS[clamp(bx, 0, 7)] : CALLES[clamp(by, 0, 5)];
   };
 
-  // Semáforos: ciclo de 12 s por cruce, desfasados entre sí. Vertical: verde 0-5, ámbar 5-6; horizontal: verde 6-11, ámbar 11-12.
   let gameT = 0;
   const light = (ix, iy, axis) => {
     const t = (gameT + (ix * 3 + iy * 5) % 12) % 12;
@@ -1125,16 +1164,15 @@ function ciudad(T) {
     return t < 6 ? 'r' : t < 11 ? 'g' : 'y';
   };
 
-  // Mobiliario: farolas en las esquinas, bancos, papeleras, hidrantes y alcantarillas
   const lamps = [], manholes = [], props = [], signs = [];
   for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) {
     const ox = 2 + BK * bx, oy = 2 + BK * by;
     for (const [rx, ry, dx, dy] of [[2, 2, -5, -5], [8, 2, 5, -5], [2, 8, -5, 5], [8, 8, 5, 5]]) lamps.push({ x: (ox + rx) * TW + 8 + dx, y: (oy + ry) * TW + 8 + dy });
-    if (btype[bx + ',' + by] === 'build' && (bx + by) % 2 === 0) signs.push({ x: (ox + 3) * TW + 3, y: (oy + 3) * TW + 3, txt: CITY_SIGNS[(bx * 5 + by * 3) % CITY_SIGNS.length], col: ['#ff3fc8', '#3ee8ff', '#f2b33d', '#4ade80'][(bx * 3 + by) % 4], ph: Math.random() * 10 });
+    if (btype[bx + ',' + by] === 'build' && (bx + by) % 2 === 0) signs.push({ x: (ox + 3) * TW + 3, y: (oy + 3) * TW + 3, txt: CITY_SIGNS[(bx * 5 + by * 3) % CITY_SIGNS.length], col: NEONS[(bx * 3 + by) % 4], ph: Math.random() * 10 });
   }
   for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
     const t = at(tx, ty), [rx, ry] = rr(tx, ty), r = Math.random();
-    if (t === 1 && !((rx === 2 || rx === 8) && (ry === 2 || ry === 8)) && r < .07) props.push({ x: tx * TW + 8, y: ty * TW + 8, k: pickOne(['bench', 'bin', 'hydrant', 'bin']) });
+    if (t === 1 && !((rx === 2 || rx === 8) && (ry === 2 || ry === 8)) && ry !== 8 && r < .07) props.push({ x: tx * TW + 8, y: ty * TW + 8, k: pickOne(['bench', 'bin', 'hydrant', 'bin', 'plant']) });
     if (t === 0 && !isInter(tx, ty) && r < .025) manholes.push({ x: tx * TW + 8, y: ty * TW + 8, t: Math.random() * 3 });
   }
 
@@ -1143,7 +1181,8 @@ function ciudad(T) {
   const mini = document.createElement('canvas'); mini.width = MW; mini.height = MH;
   {
     const g = mapCv.getContext('2d'), mg = mini.getContext('2d');
-    const ROOFS = ['#2a2f45', '#3a2f4a', '#2b3e45', '#40364a', '#2f3a2f', '#453a2f'];
+    const ROOF = { office: '#1d3557', apart: '#7a3b2e', ware: '#4b5563', mall: '#3f3a52', data: '#141a24', green: '#24402c', armeria: '#3b0d0d', taller: '#3a3a3a', hospital: '#d9dde4' };
+    const WALL = { office: '#122238', apart: '#4a2620', ware: '#2d333d', mall: '#2a2638', data: '#0b0f16', green: '#1c2b22', armeria: '#250707', taller: '#232323', hospital: '#a8afba' };
     for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
       const t = at(tx, ty), x = tx * TW, y = ty * TW, [rx, ry] = rr(tx, ty), h = (tx * 73 + ty * 151) % 97;
       if (t === 0) {
@@ -1155,33 +1194,46 @@ function ciudad(T) {
         g.fillStyle = '#d6dae3';
         if (rx < 2 && (ry === 2 || ry === 8)) for (let i = 1; i < TW; i += 4) g.fillRect(x + i, y + 3, 2, 10);
         if (ry < 2 && (rx === 2 || rx === 8)) for (let i = 1; i < TW; i += 4) g.fillRect(x + 3, y + i, 10, 2);
-        g.fillStyle = '#e5e7eb'; // línea de detención antes del paso de cebra
+        g.fillStyle = '#e5e7eb';
         if (rx === 0 && ry === 7) g.fillRect(x, y + TW - 1, TW, 1);
         if (rx === 1 && ry === 3) g.fillRect(x, y, TW, 1);
         if (ry === 1 && rx === 7) g.fillRect(x + TW - 1, y, 1, TW);
         if (ry === 0 && rx === 3) g.fillRect(x, y, 1, TW);
       } else if (t === 1) {
         g.fillStyle = '#3b4253'; g.fillRect(x, y, TW, TW); g.fillStyle = '#343a4a'; g.fillRect(x, y, TW, 1); g.fillRect(x, y, 1, TW); g.fillRect(x + 8, y, 1, TW);
-        g.fillStyle = '#4a5265'; // bordillo junto a la calzada
+        g.fillStyle = '#4a5265';
         if (at(tx - 1, ty) === 0) g.fillRect(x, y, 2, TW); if (at(tx + 1, ty) === 0) g.fillRect(x + TW - 2, y, 2, TW);
         if (at(tx, ty - 1) === 0) g.fillRect(x, y, TW, 2); if (at(tx, ty + 1) === 0) g.fillRect(x, y + TW - 2, TW, 2);
       } else if (t === 2) {
-        const ro = roofOf[ty * MW + tx], base = ROOFS[ro];
+        const id = bid[ty * MW + tx], kind = kindOfB[id], base = ROOF[kind];
+        const same = (dx, dy) => at(tx + dx, ty + dy) === 2 && bid[(ty + dy) * MW + tx + dx] === id;
+        const front = !same(0, 1); // fila de la fachada sur: se ve el muro con ventanas (efecto 2,5D)
         g.fillStyle = base; g.fillRect(x, y, TW, TW);
-        g.fillStyle = shade(base, -.12); if ((tx + ty) % 2) g.fillRect(x, y, TW, TW);
-        const same = (dx, dy) => at(tx + dx, ty + dy) === 2 && roofOf[(ty + dy) * MW + tx + dx] === ro;
-        // detalles de azotea según el edificio
-        const kind = (ro + Math.floor((tx - 2) / BK) * 2 + Math.floor((ty - 2) / BK)) % 5;
-        if (kind === 0 && h < 30) { g.fillStyle = '#1e3a8a'; g.fillRect(x + 2, y + 3, 12, 4); g.fillRect(x + 2, y + 9, 12, 4); g.fillStyle = '#3b82f6'; for (let i = 2; i < 14; i += 3) { g.fillRect(x + i, y + 3, 1, 4); g.fillRect(x + i, y + 9, 1, 4); } }
-        else if (kind === 1 && h < 22) { g.fillStyle = '#4b5563'; g.beginPath(); g.arc(x + 8, y + 8, 5, 0, 6.283); g.fill(); g.fillStyle = '#6b7280'; g.beginPath(); g.arc(x + 7, y + 7, 3, 0, 6.283); g.fill(); }
-        else if (kind === 2 && h < 26) { g.fillStyle = '#596276'; g.fillRect(x + 3, y + 4, 8, 6); g.fillStyle = '#7c869b'; g.fillRect(x + 4, y + 5, 6, 1); g.fillStyle = '#2b3140'; g.fillRect(x + 5, y + 7, 4, 2); }
-        else if (kind === 3 && h < 35) { g.fillStyle = '#1b4329'; g.fillRect(x + 2, y + 2, 12, 12); g.fillStyle = '#22863f'; g.fillRect(x + 4, y + 4, 3, 3); g.fillRect(x + 9, y + 8, 3, 3); }
-        else if (h < 8) { g.fillStyle = '#9aa4b5'; g.fillRect(x + 7, y + 2, 1, 10); g.fillRect(x + 5, y + 4, 5, 1); g.fillStyle = '#ef4444'; g.fillRect(x + 7, y + 1, 1, 1); }
-        // pretil: borde claro arriba/izquierda, oscuro abajo/derecha
-        g.fillStyle = shade(base, .25);
+        // cubierta según el tipo de edificio
+        if (kind === 'office') { g.save(); g.beginPath(); g.rect(x, y, TW, TW); g.clip(); g.fillStyle = shade(base, .15); for (let i = -16; i < 16; i += 6) { g.beginPath(); g.moveTo(x + i, y + 16); g.lineTo(x + i + 4, y + 16); g.lineTo(x + i + 20, y); g.lineTo(x + i + 16, y); g.fill(); } g.restore(); g.fillStyle = shade(base, -.25); g.fillRect(x, y + 7, TW, 1); g.fillRect(x + 7, y, 1, TW); }
+        else if (kind === 'apart') { g.fillStyle = shade(base, -.2); for (let i = 0; i < TW; i += 3) g.fillRect(x, y + i, TW, 1); if (h < 20) { g.fillStyle = '#2b2b2b'; g.fillRect(x + 10, y + 3, 3, 3); g.fillStyle = '#6b7280'; g.fillRect(x + 10, y + 2, 3, 1); } if (h > 80) { g.fillStyle = '#596276'; g.fillRect(x + 3, y + 4, 5, 4); } }
+        else if (kind === 'ware') { g.fillStyle = shade(base, .12); for (let i = 0; i < TW; i += 2) g.fillRect(x + i, y, 1, TW); }
+        else if (kind === 'mall') { g.fillStyle = 'rgba(56,189,248,.35)'; g.fillRect(x + 3, y + 3, 4, 4); g.fillRect(x + 9, y + 3, 4, 4); g.fillRect(x + 3, y + 9, 4, 4); g.fillRect(x + 9, y + 9, 4, 4); }
+        else if (kind === 'data') { g.fillStyle = '#374151'; for (const [cx, cy] of [[4, 4], [12, 4], [4, 12], [12, 12]]) { g.beginPath(); g.arc(x + cx, y + cy, 3, 0, 6.283); g.fill(); } g.fillStyle = '#4ade80'; g.fillRect(x + 8, y + 8, 1, 1); }
+        else if (kind === 'green') { g.fillStyle = '#2f6b3f'; g.fillRect(x + 2, y + 2, 5, 5); g.fillRect(x + 9, y + 9, 5, 5); g.fillStyle = '#7c4a1e'; g.fillRect(x + 2, y + 9, 5, 5); }
+        else if (kind === 'taller') { g.fillStyle = shade(base, .1); if ((tx + ty) % 2) g.fillRect(x, y, TW, TW); }
+        // pretil
+        g.fillStyle = shade(base, .28);
         if (!same(-1, 0)) g.fillRect(x, y, 2, TW); if (!same(0, -1)) g.fillRect(x, y, TW, 2);
         g.fillStyle = '#0b0e16';
-        if (!same(1, 0)) g.fillRect(x + TW - 2, y, 2, TW); if (!same(0, 1)) g.fillRect(x, y + TW - 2, TW, 2);
+        if (!same(1, 0)) g.fillRect(x + TW - 2, y, 2, TW);
+        if (front) {
+          const wall = WALL[kind];
+          g.fillStyle = wall; g.fillRect(x, y + 7, TW, 9);
+          g.fillStyle = shade(wall, .3); g.fillRect(x, y + 7, TW, 1);
+          for (let wx = 2; wx < TW - 2; wx += 4) {
+            const lit = (tx * 31 + wx * 7 + ty * 13) % 5;
+            g.fillStyle = kind === 'office' ? (lit < 3 ? '#7dd3fc' : '#1e3a5f') : kind === 'data' ? (lit < 2 ? '#4ade80' : '#14532d') : lit < 2 ? '#fde68a' : lit < 3 ? '#93c5fd' : '#151a24';
+            g.fillRect(x + wx, y + 9, 2, 3);
+          }
+          g.fillStyle = '#05080f'; g.fillRect(x, y + 14, TW, 2);
+          if (!same(1, 0)) { g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x + TW - 2, y + 7, 2, 9); }
+        }
       } else if (t === 3 || t === 5) {
         g.fillStyle = '#1b4329'; g.fillRect(x, y, TW, TW); g.fillStyle = '#21502f'; g.fillRect(x + (h % 12), y + (h % 9), 2, 2); g.fillRect(x + (h % 7) + 5, y + (h % 5) + 8, 1, 2);
         g.fillStyle = '#e879f9'; if (h % 11 === 0) g.fillRect(x + 4, y + 11, 1, 1); g.fillStyle = '#fde047'; if (h % 13 === 0) g.fillRect(x + 11, y + 4, 1, 1);
@@ -1189,33 +1241,41 @@ function ciudad(T) {
         g.fillStyle = '#0a2540'; g.fillRect(x, y, TW, TW); g.fillStyle = '#0d2c4b'; if ((tx + ty) % 2) g.fillRect(x, y, TW, TW);
       } else {
         const bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK), k = btype[bx + ',' + by];
-        g.fillStyle = k === 'base' ? '#173225' : k === 'c2' ? '#3a1720' : k === 'park' ? '#6b5b45' : '#4a3825'; g.fillRect(x, y, TW, TW);
-        g.fillStyle = k === 'base' ? '#1c3d2d' : k === 'c2' ? '#451b26' : k === 'park' ? '#7a6a52' : '#5b4630';
-        if (k === 'dock') for (let i = 0; i < TW; i += 4) g.fillRect(x, y + i, TW, 1); else if ((tx + ty) % 2) g.fillRect(x, y, TW, TW);
+        g.fillStyle = k === 'base' ? '#173225' : k === 'c2' ? '#3a1720' : k === 'park' ? '#6b5b45' : k === 'lot' ? '#262b36' : '#4a3825'; g.fillRect(x, y, TW, TW);
+        g.fillStyle = k === 'base' ? '#1c3d2d' : k === 'c2' ? '#451b26' : k === 'park' ? '#7a6a52' : k === 'lot' ? '#e5e7eb' : '#5b4630';
+        if (k === 'dock') for (let i = 0; i < TW; i += 4) g.fillRect(x, y + i, TW, 1);
+        else if (k === 'lot') { if (rx % 2) g.fillRect(x, y, 1, 10); }
+        else if ((tx + ty) % 2) g.fillRect(x, y, TW, TW);
       }
-      // sombra que proyectan los edificios sobre el suelo (luz desde arriba a la izquierda)
-      if (t !== 2) { g.fillStyle = 'rgba(0,0,0,.35)'; if (at(tx - 1, ty) === 2) g.fillRect(x, y, 4, TW); if (at(tx, ty - 1) === 2) g.fillRect(x, y, TW, 4); }
+      if (t !== 2) { g.fillStyle = 'rgba(0,0,0,.35)'; if (at(tx - 1, ty) === 2) g.fillRect(x, y, 4, TW); if (at(tx, ty - 1) === 2) g.fillRect(x, y, TW, 3); }
       if (t === 5) { g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(x + 10, y + 11, 7, 0, 6.283); g.fill(); g.fillStyle = '#14532d'; g.beginPath(); g.arc(x + 8, y + 8, 7, 0, 6.283); g.fill(); g.fillStyle = '#1e7a3d'; g.beginPath(); g.arc(x + 7, y + 7, 4, 0, 6.283); g.fill(); g.fillStyle = '#2fa352'; g.fillRect(x + 5, y + 5, 2, 2); }
       mg.fillStyle = t === 0 ? '#2a3040' : t === 1 ? '#4b5366' : t === 2 ? '#141824' : t === 4 ? '#0a2540' : t === 6 ? '#5b4630' : '#1b4329';
       mg.fillRect(tx, ty, 1, 1);
     }
-    // helipuertos en algunas manzanas
+    g.textAlign = 'center';
     for (const [k, v] of Object.entries(btype)) {
-      const [bx, by] = k.split(',').map(Number);
-      if (v === 'build' && (bx * 5 + by) % 7 === 3) { const c = blockMid(bx, by); g.fillStyle = '#1f2937'; g.beginPath(); g.arc(c.x, c.y, 13, 0, 6.283); g.fill(); g.strokeStyle = '#f2b33d'; g.lineWidth = 1.5; g.beginPath(); g.arc(c.x, c.y, 11, 0, 6.283); g.stroke(); g.fillStyle = '#f2b33d'; g.fillRect(c.x - 5, c.y - 6, 2, 12); g.fillRect(c.x + 3, c.y - 6, 2, 12); g.fillRect(c.x - 3, c.y - 1, 6, 2); }
-      if (v === 'base') { const c = blockMid(bx, by); g.font = 'bold 8px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.fillStyle = '#4ade80'; g.shadowColor = '#4ade80'; g.shadowBlur = 8; g.fillText('REFUGIO', c.x, c.y - 26); g.shadowBlur = 0; g.textAlign = 'start'; }
-      if (v === 'c2') { const c = blockMid(bx, by); g.strokeStyle = '#7f1d1d'; g.lineWidth = 1; for (let i = -30; i <= 30; i += 10) { g.beginPath(); g.moveTo(c.x + i, c.y - 34); g.lineTo(c.x + i, c.y + 34); g.stroke(); } }
+      const [bx, by] = k.split(',').map(Number), c = blockMid(bx, by);
+      if (v === 'build' && (bx * 5 + by) % 7 === 3) { g.fillStyle = '#1f2937'; g.beginPath(); g.arc(c.x, c.y - 8, 11, 0, 6.283); g.fill(); g.strokeStyle = '#f2b33d'; g.lineWidth = 1.5; g.beginPath(); g.arc(c.x, c.y - 8, 9, 0, 6.283); g.stroke(); g.fillStyle = '#f2b33d'; g.fillRect(c.x - 4, c.y - 13, 2, 10); g.fillRect(c.x + 2, c.y - 13, 2, 10); g.fillRect(c.x - 2, c.y - 9, 4, 2); }
+      const label = (txt, col, yy) => { g.font = 'bold 8px "JetBrains Mono", monospace'; g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 8; g.fillText(txt, c.x, yy); g.shadowBlur = 0; };
+      if (v === 'base') label('REFUGIO', '#4ade80', c.y - 26);
+      if (v === 'c2') { g.strokeStyle = '#7f1d1d'; g.lineWidth = 1; for (let i = -30; i <= 30; i += 10) { g.beginPath(); g.moveTo(c.x + i, c.y - 34); g.lineTo(c.x + i, c.y + 34); g.stroke(); } }
+      if (v === 'armeria') { g.strokeStyle = '#ef4444'; g.lineWidth = 2; g.beginPath(); g.arc(c.x, c.y - 10, 12, 0, 6.283); g.stroke(); g.beginPath(); g.moveTo(c.x - 17, c.y - 10); g.lineTo(c.x + 17, c.y - 10); g.moveTo(c.x, c.y - 27); g.lineTo(c.x, c.y + 7); g.stroke(); label('ARMERÍA 0xDEAD', '#f87171', c.y + 33); }
+      if (v === 'taller') { g.fillStyle = '#facc15'; for (let i = -36; i < 36; i += 8) g.fillRect(c.x + i, c.y - 36, 4, 3); label('PIT STOP', '#fb923c', c.y - 12); label('OVERCLOCK', '#fb923c', c.y - 2); g.fillStyle = '#6b7280'; for (let i = -24; i <= 16; i += 20) g.fillRect(c.x + i, c.y + 30, 14, 6); }
+      if (v === 'hospital') { g.fillStyle = '#ef4444'; g.fillRect(c.x - 4, c.y - 22, 8, 22); g.fillRect(c.x - 11, c.y - 15, 22, 8); label('HOSPITAL', '#f1f5f9', c.y + 33); }
+      if (v === 'lot') { g.fillStyle = '#1e293b'; g.fillRect(c.x - 30, c.y - 38, 60, 18); g.fillStyle = 'rgba(56,189,248,.4)'; g.fillRect(c.x - 28, c.y - 36, 56, 14); label('AUTOHASH', '#22d3ee', c.y - 26); }
     }
+    g.textAlign = 'start';
     for (const p of props) {
       if (p.k === 'bench') { g.fillStyle = '#7c4a1e'; g.fillRect(p.x - 5, p.y - 2, 10, 4); g.fillStyle = '#a16207'; g.fillRect(p.x - 5, p.y - 2, 10, 1); }
       if (p.k === 'bin') { g.fillStyle = '#14532d'; g.fillRect(p.x - 2, p.y - 2, 4, 4); g.fillStyle = '#22863f'; g.fillRect(p.x - 2, p.y - 2, 4, 1); }
       if (p.k === 'hydrant') { g.fillStyle = '#b91c1c'; g.fillRect(p.x - 2, p.y - 2, 4, 4); g.fillStyle = '#fca5a5'; g.fillRect(p.x - 1, p.y - 1, 1, 1); }
+      if (p.k === 'plant') { g.fillStyle = '#57534e'; g.fillRect(p.x - 3, p.y - 3, 6, 6); g.fillStyle = '#16a34a'; g.beginPath(); g.arc(p.x, p.y, 3, 0, 6.283); g.fill(); }
     }
     for (const mh of manholes) { g.fillStyle = '#11141c'; g.beginPath(); g.arc(mh.x, mh.y, 4, 0, 6.283); g.fill(); g.fillStyle = '#2a2f3d'; g.fillRect(mh.x - 3, mh.y - 1, 6, 1); g.fillRect(mh.x - 1, mh.y - 3, 1, 6); }
     for (const l of lamps) { g.fillStyle = '#0b0e16'; g.fillRect(l.x - 1, l.y - 1, 3, 3); g.fillStyle = '#6b7280'; g.fillRect(l.x, l.y, 1, 1); }
   }
 
-  // ---------- Sprites: personas 8×8 con cuatro orientaciones y paso alterno; autos de 20×11 por tipo ----------
+  // ---------- Sprites ----------
   const sprCache = {};
   const personSpr = (pal, frame, white) => {
     const key = pal.s + pal.h + pal.k + frame + (white ? 'w' : '');
@@ -1227,36 +1287,39 @@ function ciudad(T) {
   const carSpr = (type, col) => {
     const key = type + col;
     if (sprCache[key]) return sprCache[key];
-    const c = document.createElement('canvas'); c.width = 20; c.height = 11; const g = c.getContext('2d');
+    const big = type === 'offroad' || type === 'armored';
+    const c = document.createElement('canvas'); c.width = 20; c.height = big ? 13 : 11; const g = c.getContext('2d'); const o = big ? 1 : 0;
     const dark = shade(col, -.4), lite = shade(col, .3);
-    g.fillStyle = '#05080f'; for (const x of [3, 14]) { g.fillRect(x, 0, 3, 1); g.fillRect(x, 10, 3, 1); }
-    g.fillStyle = col; g.fillRect(1, 1, 18, 9);
-    g.fillStyle = dark; g.fillRect(1, 1, 18, 1); g.fillRect(1, 9, 18, 1); g.fillRect(1, 1, 1, 9);
-    if (type === 'van' || type === 'soc' || type === 'exfil') { g.fillStyle = lite; g.fillRect(3, 2, 10, 7); g.fillStyle = dark; g.fillRect(3, 5, 10, 1); }
-    else { g.fillStyle = lite; g.fillRect(15, 3, 3, 5); g.fillRect(7, 2, 5, 7); g.fillStyle = '#0b1324'; g.fillRect(4, 2, 2, 7); }
-    g.fillStyle = '#0b1324'; g.fillRect(13, 2, 2, 7); g.fillStyle = '#7dd3fc'; g.fillRect(14, 3, 1, 2);
-    g.fillStyle = '#fde68a'; g.fillRect(19, 2, 1, 2); g.fillRect(19, 7, 1, 2);
-    g.fillStyle = '#991b1b'; g.fillRect(0, 2, 1, 2); g.fillRect(0, 7, 1, 2);
-    g.fillStyle = dark; g.fillRect(13, 0, 1, 1); g.fillRect(13, 10, 1, 1);
+    g.fillStyle = '#05080f'; for (const x of [3, 14]) { if (big) { g.fillRect(x - 1, 0, 5, 2); g.fillRect(x - 1, 11, 5, 2); } else { g.fillRect(x, 0, 3, 1); g.fillRect(x, 10, 3, 1); } }
+    g.fillStyle = col; g.fillRect(1, 1 + o, 18, 9);
+    g.fillStyle = dark; g.fillRect(1, 1 + o, 18, 1); g.fillRect(1, 9 + o, 18, 1); g.fillRect(1, 1 + o, 1, 9);
+    if (type === 'armored') { g.fillStyle = shade(col, .15); g.fillRect(3, 3 + o, 12, 5); g.fillStyle = dark; for (let i = 4; i < 15; i += 3) g.fillRect(i, 3 + o, 1, 5); g.fillStyle = '#0b1324'; g.fillRect(15, 3 + o, 2, 5); }
+    else if (type === 'van' || type === 'soc' || type === 'exfil') { g.fillStyle = lite; g.fillRect(3, 2 + o, 10, 7); g.fillStyle = dark; g.fillRect(3, 5 + o, 10, 1); g.fillStyle = '#0b1324'; g.fillRect(13, 2 + o, 2, 7); }
+    else { g.fillStyle = lite; g.fillRect(15, 3 + o, 3, 5); g.fillRect(7, 2 + o, 5, 7); g.fillStyle = '#0b1324'; g.fillRect(4, 2 + o, 2, 7); g.fillRect(13, 2 + o, 2, 7); g.fillStyle = '#7dd3fc'; g.fillRect(14, 3 + o, 1, 2); }
+    if (type === 'offroad') { g.fillStyle = '#1f2937'; g.fillRect(6, 2 + o, 7, 1); g.fillRect(6, 8 + o, 7, 1); g.fillStyle = '#fde68a'; g.fillRect(10, 3 + o, 1, 5); }
+    g.fillStyle = '#fde68a'; g.fillRect(19, 2 + o, 1, 2); g.fillRect(19, 7 + o, 1, 2);
+    g.fillStyle = '#991b1b'; g.fillRect(0, 2 + o, 1, 2); g.fillRect(0, 7 + o, 1, 2);
     if (type === 'taxi') { g.fillStyle = '#f8fafc'; g.fillRect(8, 4, 3, 3); g.fillStyle = '#0b111d'; g.fillRect(9, 5, 1, 1); g.fillStyle = '#111827'; for (let i = 2; i < 18; i += 2) g.fillRect(i, 9, 1, 1); }
     if (type === 'sport') { g.fillStyle = '#f8fafc'; g.fillRect(2, 5, 17, 1); g.fillStyle = dark; g.fillRect(1, 2, 1, 7); }
-    if (type === 'van') { g.fillStyle = '#f8fafc'; g.fillRect(6, 3, 4, 3); g.fillStyle = col; g.fillRect(7, 4, 2, 1); }
+    if (type === 'van') { g.fillStyle = '#f8fafc'; g.fillRect(6, 3, 4, 3); }
     if (type === 'exfil') { g.fillStyle = '#f87171'; g.font = 'bold 6px monospace'; g.fillText('RW', 4, 8); }
     return (sprCache[key] = c);
   };
   const PAL = {
     me: { s: '#34508a', h: '#5f80c2', k: '#0b111d' }, gang: { s: '#7f1d1d', h: '#111827', k: '#1f2937' }, boss: { s: '#701a75', h: '#f0abfc', k: '#f0abfc' },
     lia: { s: '#0e7490', h: '#4a2511', k: '#c68642' }, nodo: { s: '#166534', h: '#9ca3af', k: '#8d5524' }, res: { s: '#15803d', h: '#1f1300', k: '#e0ac69' }, jog: { s: '#f472b6', h: '#d4a017', k: '#ffdbac' },
+    clerk: { s: '#f1f5f9', h: '#111827', k: '#e0ac69' },
   };
 
   // ---------- Estado ----------
-  let prog = (() => { try { return JSON.parse(store.get('city')) || {}; } catch (e) { return {}; } })(); // progreso guardado entre visitas
-  let P, cars, peds, drones, bullets, pickups, objs, birds, steam, bubbles, mission, MI = prog.mi || 0, state = 'play', raf = 0, lastT = now(), hudT = 0, banner = null;
-  let needLeave = false, talk = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0;
+  let prog = (() => { try { return JSON.parse(store.get('city')) || {}; } catch (e) { return {}; } })();
+  // Migración: el progreso antiguo tenía 6 armas; ahora hay 11 (5 de cuerpo a cuerpo nuevas)
+  if (prog.own && prog.own.length === 6) { const o = prog.own, a = prog.ammo || []; prog.own = [o[0], false, false, false, false, false, o[1], o[2], o[3], o[4], o[5]]; prog.ammo = [0, 0, 0, 0, 0, 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 0]; }
+  let P, cars, peds, drones, bullets, pickups, objs, birds, steam, bubbles, swings, mission, MI = prog.mi || 0, state = 'play', raf = 0, lastT = now(), hudT = 0, banner = null;
+  let needLeave = false, talk = null, shop = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0, waypoint = -1, poiLeave = null;
   const keys = {};
   const base = blockMid(1, 1);
   const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-  // Carriles: vertical a la izquierda baja y a la derecha sube; horizontal arriba va a la izquierda y abajo a la derecha
   const laneOpts = (tx, ty) => {
     const [rx, ry] = rr(tx, ty), o = [];
     if (rx < 2) o.push(rx === 0 ? 1 : 3);
@@ -1273,23 +1336,28 @@ function ciudad(T) {
   const offscreen = (x, y, pad = 40) => Math.abs(x - P.x) > VW / 2 + pad || Math.abs(y - P.y) > VH / 2 + pad;
   // una sola amenaza de la banda a la vez: si gritan todos, no se lee nada
   const bubble = (e, txt, kind = '') => { if (!e || bubbles.some(b => b.e === e || (kind === 'bad' && b.kind === 'bad'))) return; bubbles.push({ e, txt, kind, t: now(), dur: 2600 + txt.length * 40 }); if (bubbles.length > 5) bubbles.shift(); };
+  const makeCar = (type, x, y, ang, extra = {}) => {
+    const T2 = CAR_T[type], c = { x, y, ang, speed: 0, type, kind: type === 'soc' ? 'soc' : type === 'exfil' ? 'van' : 'civ', col: type === 'taxi' ? '#facc15' : type === 'soc' ? '#1e293b' : type === 'exfil' ? '#111111' : type === 'armored' ? '#3f4652' : pickOne(CAR_COLS),
+      eng: 0, arm: 0, turbo: false, neon: null, nitro: 1, ai: null, drv: false, wait: 0, sig: null, ...extra };
+    c.max = c.hp = Math.round(T2.hp * (1 + .4 * c.arm)); cars.push(c); return c;
+  };
   const spawnCar = (kind = 'civ', far = true) => {
     for (let k = 0; k < 40; k++) {
       const [tx, ty] = pickOne(roadTiles), x = tx * TW + 8, y = ty * TW + 8;
       if (far && !offscreen(x, y)) continue;
       if (cars.some(c => Math.hypot(c.x - x, c.y - y) < 26)) continue;
       const dir = laneOpts(tx, ty)[0], r = Math.random();
-      const type = kind === 'soc' ? 'soc' : kind === 'van' ? 'exfil' : r < .58 ? 'sedan' : r < .74 ? 'taxi' : r < .86 ? 'sport' : 'van';
-      const c = { x, y, tx, ty, dir, ang: dir * Math.PI / 2, speed: 0, hp: kind === 'soc' ? 140 : kind === 'van' ? 170 : 80, kind, type,
-        col: kind === 'soc' ? '#1e293b' : kind === 'van' ? '#111111' : type === 'taxi' ? '#facc15' : pickOne(CAR_COLS), ai: kind === 'soc' ? 'chase' : 'lane', drv: true, wait: 0, sig: null };
-      c.max = c.hp; cars.push(c); return c;
+      const type = kind === 'soc' ? 'soc' : kind === 'van' ? 'exfil' : r < .5 ? 'sedan' : r < .64 ? 'taxi' : r < .74 ? 'sport' : r < .86 ? 'van' : r < .96 ? 'offroad' : 'armored';
+      return makeCar(type, x, y, dir * Math.PI / 2, { tx, ty, dir, ai: kind === 'soc' ? 'chase' : 'lane', drv: true });
     }
     return null;
   };
   const spawnPed = (kind = 'civ', x, y) => {
     if (x === undefined) for (let k = 0; k < 30; k++) { const [tx, ty] = pickOne(kind === 'jog' ? plazaTiles : walkTiles); x = tx * TW + 8; y = ty * TW + 8; if (offscreen(x, y)) break; }
-    const pal = PAL[kind] || { s: pickOne(SHIRTS), h: pickOne(HAIRS), k: pickOne(SKINS) };
-    const p = { x, y, ang: Math.random() * 6.28, kind, pal, hp: kind === 'boss' ? 650 : kind === 'gang' ? 40 : 20, cd: Math.random(), flee: 0, tgt: null, stopT: 0 };
+    const persona = kind === 'civ' ? pickOne(PERSONA_POOL) : null, pp = persona && PERSONAS[persona];
+    const pal = PAL[kind] || { s: pp && pp.old ? '#78716c' : pickOne(SHIRTS), h: pp && pp.old ? '#e5e7eb' : pp && pp.cam ? '#fbbf24' : pickOne(HAIRS), k: pickOne(SKINS) };
+    if (persona === 'valiente') pal.s = '#1f2937';
+    const p = { x, y, ang: Math.random() * 6.28, kind, persona, pal, hp: kind === 'boss' ? 650 : kind === 'gang' ? 40 : persona === 'valiente' ? 45 : 20, cd: Math.random(), flee: 0, tgt: null, stopT: 0, stun: 0 };
     p.max = p.hp; peds.push(p); return p;
   };
   const spawnBirds = (far = true) => {
@@ -1300,26 +1368,34 @@ function ciudad(T) {
       return;
     }
   };
+  // Autos comprados: aparcados en el refugio con sus mejoras
+  const parkOwned = () => {
+    (prog.cars || []).forEach((oc, i) => makeCar(oc.type, base.x - 40 + (i % 4) * 26, base.y + 46 + Math.floor(i / 4) * 16, 0, { col: oc.col, eng: oc.eng || 0, arm: oc.arm || 0, turbo: !!oc.turbo, neon: oc.neon || null, owned: i }));
+  };
+  const saveCar = c => { if (c.owned === undefined || !prog.cars || !prog.cars[c.owned]) return; prog.cars[c.owned] = { type: c.type, col: c.col, eng: c.eng, arm: c.arm, turbo: c.turbo, neon: c.neon }; persist(); };
 
   const reset = (keepProgress = true) => {
-    P = { x: base.x, y: base.y + 40, ang: -Math.PI / 2, hp: 100, car: null, w: 0, cd: 0, cash: prog.cash || 0, heat: 0, lastCrime: -99, kills: 0, fl: 0,
-      own: [...(prog.own || [true, false, false, false, false, false])], ammo: [...(prog.ammo || [0, 0, 0, 0, 0, 0])] };
-    if (!keepProgress) { MI = 0; P.cash = 0; P.own = [true, false, false, false, false, false]; P.ammo = [0, 0, 0, 0, 0, 0]; }
-    cars = []; peds = []; drones = []; bullets = []; pickups = []; objs = []; birds = []; steam = []; bubbles = []; mission = null; state = 'play'; banner = null; talk = null; dlg.hidden = true;
+    if (!keepProgress) { prog = {}; MI = 0; }
+    P = { x: base.x, y: base.y + 40, ang: -Math.PI / 2, hp: 100, armor: prog.armor || 0, car: null, w: 0, cd: 0, cash: prog.cash || 0, heat: 0, lastCrime: -99, kills: 0, fl: 0,
+      own: [...(prog.own || [true, false, false, false, false, false, false, false, false, false, false])], ammo: [...(prog.ammo || Array(11).fill(0))] };
+    cars = []; peds = []; drones = []; bullets = []; pickups = []; objs = []; birds = []; steam = []; bubbles = []; swings = []; mission = null; state = 'play'; banner = null; talk = null; shop = null; dlg.hidden = true;
     cv.hidden = hud.hidden = false;
     size();
     for (let i = 0; i < 24; i++) spawnCar('civ', false);
-    for (let i = 0; i < 36; i++) spawnPed('civ');
+    for (let i = 0; i < 38; i++) spawnPed('civ');
     for (let i = 0; i < 5; i++) spawnPed('jog');
     for (let i = 0; i < 6; i++) spawnBirds(false);
     const nodo = spawnPed('nodo', base.x, base.y - 12); nodo.name = 'Nodo'; nodo.fixed = true;
-    for (let i = 0; i < 3; i++) { const r = spawnPed('res', base.x + rnd(-30, 30), base.y + rnd(-20, 30)); r.fixed = true; }
+    for (let i = 0; i < 3; i++) { const r = spawnPed('res', base.x + rnd(-30, 30), base.y + rnd(-20, 20)); r.fixed = true; }
+    for (const poi of POI) { const c = spawnPed('clerk', poi.x + 12, poi.y - 2); c.fixed = true; c.clerk = poi.k; }
     for (let i = 0; i < 3; i++) { const p = inter(rnd(3, 7), rnd(2, 5)); for (let j = 0; j < 3; j++) spawnPed('gang', p.x + rnd(-20, 20), p.y + rnd(-20, 20)); } // patrullas lejos del refugio
-    for (let i = 0; i < 8; i++) { const [tx, ty] = pickOne(walkTiles); pickups.push({ x: tx * TW + 8, y: ty * TW + 8, k: pickOne(['hp', 'cash', 'ammo', 'cash']) }); }
-    P.w = P.own.lastIndexOf(true) > 0 && P.ammo[P.own.lastIndexOf(true)] > 0 ? P.own.lastIndexOf(true) : 0;
-    say(MI < CITY_MISSIONS.length ? 'Ciudad Zero-Day. Sigue la ruta verde hasta Nodo, en el refugio. WASD/flechas mover · espacio disparar · E auto · T hablar · Q arma.' : 'Ciudad liberada. Pasea, que te lo ganaste.');
+    for (let i = 0; i < 10; i++) { const [tx, ty] = pickOne(walkTiles); pickups.push({ x: tx * TW + 8, y: ty * TW + 8, k: pickOne(['hp', 'cash', 'ammo', 'cash', 'cash']) }); }
+    parkOwned();
+    const guns = P.own.map((o, i) => o && i >= GUN0 && P.ammo[i] > 0 ? i : -1).filter(i => i >= 0);
+    P.w = guns.length ? guns[guns.length - 1] : P.own.lastIndexOf(true);
+    say(MI < CITY_MISSIONS.length ? 'Ciudad Zero-Day. Sigue la ruta verde hasta Nodo. WASD/flechas · espacio ataca · E auto · T hablar · Q arma · M destino (tiendas).' : 'Ciudad liberada. Pasea, compra y mejora autos: te lo ganaste.');
   };
-  const persist = () => { prog = { mi: MI, cash: P.cash, own: [...P.own], ammo: [...P.ammo] }; store.set('city', JSON.stringify(prog)); };
+  const persist = () => { prog = { ...prog, mi: MI, cash: P.cash, own: [...P.own], ammo: [...P.ammo], armor: Math.round(P.armor) }; store.set('city', JSON.stringify(prog)); };
 
   // ---------- Diálogos ----------
   const showDialog = (lines, onEnd) => { talk = { lines, i: 0, onEnd }; state = 'talk'; for (const k in keys) keys[k] = false; renderDialog(); };
@@ -1333,26 +1409,88 @@ function ciudad(T) {
     dlg.hidden = true; const f = talk.onEnd; talk = null; state = 'play'; if (f) f();
   };
 
+  // ---------- Tiendas ----------
+  const shopItems = k => {
+    const pay = (price, fn) => () => { if (P.cash < price) { say(`Te faltan ${price - P.cash} ₿.`); return; } P.cash -= price; fn(); persist(); burst(fx, P.x, P.y, '#f2b33d', 10); };
+    if (k === 'armeria') {
+      const list = [];
+      CITY_W.forEach((w, i) => {
+        if (!w.price) return;
+        if (!P.own[i]) list.push({ label: w.n, price: w.price, desc: w.x, buy: pay(w.price, () => { P.own[i] = true; if (!w.melee) P.ammo[i] += w.ammo; P.w = i; say(`Compras ${w.n}. Ya la tienes en la mano.`); }) });
+        else if (!w.melee) list.push({ label: `munición: ${w.n}`, price: w.ap, desc: `+${Math.ceil(w.ammo / 2)} disparos (tienes ${P.ammo[i]})`, buy: pay(w.ap, () => { P.ammo[i] += Math.ceil(w.ammo / 2); say(`Munición para ${w.n}.`); }) });
+      });
+      list.push({ label: 'chaleco antibalas', price: 250, desc: `Absorbe el 70% del daño hasta gastarse (tienes ${Math.round(P.armor)}%).`, buy: pay(250, () => { P.armor = 100; say('Te pones el chaleco. Pesa, pero salva.'); }) });
+      list.push({ label: 'botiquín', price: 60, desc: '+50 de vida al momento.', buy: pay(60, () => { P.hp = Math.min(100, P.hp + 50); say('Te vendas como puedes: +50 de vida.'); }) });
+      return list;
+    }
+    if (k === 'lot') return ['sport', 'offroad', 'armored', 'sedan', 'taxi'].map(t => ({ label: CAR_T[t].n, price: CAR_T[t].price, desc: CAR_T[t].x || `${CAR_T[t].hp} de vida · ${Math.round(CAR_T[t].max * .6)} km/h`,
+      buy: pay(CAR_T[t].price, () => {
+        prog.cars = prog.cars || []; const col = t === 'taxi' ? '#facc15' : t === 'armored' ? '#3f4652' : pickOne(PAINTS);
+        prog.cars.push({ type: t, col, eng: 0, arm: 0, turbo: false, neon: null });
+        const c = makeCar(t, door(5, 1).x, door(5, 1).y + 26, 0, { col, owned: prog.cars.length - 1 });
+        say(`Compras un ${CAR_T[t].n}. Te espera frente al concesionario y quedará aparcado en el refugio.`); fx.rings.push({ x: c.x, y: c.y, r: 30, col: '#22d3ee', t: now() });
+      }) }));
+    if (k === 'taller') {
+      const c = P.car;
+      if (!c) return [{ label: 'sin auto', price: 0, desc: 'Entra al taller conduciendo un auto para mejorarlo.', buy: () => say('Vuelve con un auto.') }];
+      const L = [{ label: 'reparar', price: 40, desc: `Vida del auto: ${Math.round(c.hp)}/${c.max}`, buy: pay(40, () => { c.hp = c.max; c.dead = false; say('Como nuevo. Bueno, casi.'); }) }];
+      if (c.eng < 3) L.push({ label: `motor nivel ${c.eng + 1}`, price: 300 * (c.eng + 1), desc: '+12% de velocidad y aceleración.', buy: pay(300 * (c.eng + 1), () => { c.eng++; say(`Motor nivel ${c.eng}: ruge más que un servidor sin ventilación.`); saveCar(c); }) });
+      if (c.arm < 3) L.push({ label: `blindaje nivel ${c.arm + 1}`, price: 350 * (c.arm + 1), desc: '+40% de vida del auto.', buy: pay(350 * (c.arm + 1), () => { c.arm++; const k2 = c.hp / c.max; c.max = Math.round(CAR_T[c.type].hp * (1 + .4 * c.arm)); c.hp = Math.round(c.max * k2); say(`Blindaje nivel ${c.arm}.`); saveCar(c); }) });
+      if (!c.turbo) L.push({ label: 'turbo nitro', price: 800, desc: 'Mantén Mayús (o «turbo») para acelerar a fondo. Se recarga solo.', buy: pay(800, () => { c.turbo = true; say('Turbo instalado. Mayús para usarlo.'); saveCar(c); }) });
+      L.push({ label: 'neón bajo el chasis', price: 150, desc: `Color: ${c.neon ? 'cambia al siguiente' : 'instala el primero'}.`, buy: pay(150, () => { c.neon = NEONS[(NEONS.indexOf(c.neon) + 1) % NEONS.length]; say('Neón instalado. Discreción: cero.'); saveCar(c); }) });
+      L.push({ label: 'pintura nueva', price: 100, desc: 'Cambia de color (y despista un poco al SOC).', buy: pay(100, () => { c.col = PAINTS[(PAINTS.indexOf(c.col) + 1) % PAINTS.length]; P.heat = Math.max(0, P.heat - 1); say('Pintura nueva. El SOC te pierde un poco la pista.'); saveCar(c); }) });
+      if (c.owned === undefined) L.push({ label: 'aviso', price: 0, desc: 'Este auto no es tuyo: las mejoras se pierden si lo dejas. Cómpralo en AutoHash para conservarlo.', buy: () => {} });
+      return L;
+    }
+    if (k === 'hospital') return [
+      { label: 'curación completa', price: 50, desc: `Vida ${Math.round(P.hp)}/100.`, buy: pay(50, () => { P.hp = 100; say('La enfermera te deja como nuevo y te recuerda actualizar el antivirus.'); }) },
+      { label: 'vacuna antiphishing', price: 0, desc: 'Gratis: «Si te meten prisa, desconfía». No cura, pero ayuda.', buy: () => say('Enfermera: «Y no abra adjuntos raros, ¿eh?»') },
+    ];
+    return [];
+  };
+  const openShop = poi => { shop = { poi, i: 0 }; state = 'shop'; for (const k in keys) keys[k] = false; if (P.car) P.car.speed = 0; renderShop(); };
+  const closeShop = () => { shop = null; state = 'play'; dlg.hidden = true; poiLeave = POI.findIndex(p => dist(p, P) < 20); };
+  const renderShop = () => {
+    const items = [...shopItems(shop.poi.k), { label: 'salir', price: 0, desc: '', buy: closeShop }];
+    shop.i = clamp(shop.i, 0, items.length - 1); shop.items = items;
+    dlg.hidden = false;
+    dlg.innerHTML = `<b class="city-who">${esc(shop.poi.n)}</b><small>Tienes <b>${P.cash} ₿</b></small><ul class="city-shop">${items.map((it, i) => `<li data-i="${i}" class="${i === shop.i ? 'on' : ''}${it.price > P.cash ? ' off' : ''}"><span>${esc(it.label)}</span><b>${it.price ? it.price + ' ₿' : ''}</b>${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</li>`).join('')}</ul><small>${touch ? 'Toca un artículo para comprarlo' : '↑↓ elegir · E o Enter comprar · Q o Esc salir'}</small>`;
+    dlg.querySelectorAll('li').forEach(li => li.addEventListener('click', e => { e.stopPropagation(); shop.i = +li.dataset.i; buy(); }));
+  };
+  const buy = () => { const it = shop.items[shop.i]; it.buy(); if (shop) renderShop(); };
+
   // ---------- Combate ----------
   const crime = v => { P.heat = Math.min(5.99, P.heat + v); P.lastCrime = gameT; };
+  const scare = (b, x, y) => { const a = Math.atan2(b.y - y, b.x - x) + (Math.random() - .5); b.fly = 1; b.vx = Math.cos(a) * rnd(60, 90); b.vy = Math.sin(a) * rnd(60, 90) - 20; };
   const alarm = (x, y, r = 150) => {
-    peds.forEach(p => { if (p.kind === 'civ' && !p.fixed && Math.hypot(p.x - x, p.y - y) < r) { if (p.flee <= 0 && Math.random() < .3) bubble(p, pickOne(FLEE_LINES)); p.flee = 3; p.from = { x, y }; } });
+    peds.forEach(p => {
+      if (p.kind !== 'civ' || p.fixed || p.aggro > gameT) return;
+      const d = Math.hypot(p.x - x, p.y - y), pp = PERSONAS[p.persona];
+      if (d > r || (pp.phone && d > 60)) return;
+      if (pp.film && d > 50 && !(p.film > gameT)) { p.film = gameT + 6; p.filmAt = { x, y }; bubble(p, pickOne(FILM_LINES)); return; }
+      if (p.flee <= 0 && Math.random() < .3) bubble(p, pickOne(FLEE_LINES));
+      p.flee = 3; p.from = { x, y };
+    });
     birds.forEach(b => { if (!b.fly && Math.hypot(b.x - x, b.y - y) < r) scare(b, x, y); });
   };
-  const scare = (b, x, y) => { const a = Math.atan2(b.y - y, b.x - x) + (Math.random() - .5); b.fly = 1; b.vx = Math.cos(a) * rnd(60, 90); b.vy = Math.sin(a) * rnd(60, 90) - 20; };
   const killPed = (p, byPlayer) => {
     peds.splice(peds.indexOf(p), 1);
     burst(fx, p.x, p.y, p.kind === 'civ' ? '#e2b48c' : p.kind === 'boss' ? '#f0abfc' : '#f87171', p.kind === 'boss' ? 50 : 12);
     if (!byPlayer) return;
-    if (p.kind === 'civ' || p.kind === 'jog' || p.kind === 'res' || p.kind === 'lia') { crime(1); say('Un civil cae. El SOC te tiene en la mira.'); }
-    else { P.kills++; if (Math.random() < .5) pickups.push({ x: p.x, y: p.y, k: pickOne(['cash', 'ammo', 'cash', 'hp']) }); }
+    if (p.kind === 'gang' || p.kind === 'boss') { P.kills++; if (Math.random() < .6) pickups.push({ x: p.x, y: p.y, k: pickOne(['cash', 'cash', 'ammo', 'hp']) }); }
+    else { crime(1); say('Un civil cae. El SOC te tiene en la mira.'); }
     if (p.kind === 'boss') bossDown();
   };
-  const hurtPed = (p, d, byPlayer = true) => {
-    if (p.kind === 'nodo') return;
-    p.hp -= d; p.fl = now(); fx.floats.push({ x: p.x, y: p.y - 6, txt: `−${Math.round(d)}`, col: '#fde68a', t: now() });
-    if (p.kind === 'civ' || p.kind === 'jog') { p.flee = 4; p.from = { x: P.x, y: P.y }; if (byPlayer) crime(.15); }
-    else if (p.kind === 'gang' || p.kind === 'boss') { if (!p.alert) bubble(p, p.kind === 'boss' ? '¿Vienes a pagar el rescate? El precio acaba de subir.' : pickOne(GANG_LINES), 'bad'); p.alert = true; }
+  const hurtPed = (p, d, byPlayer = true, stun = 0) => {
+    if (p.kind === 'nodo' || p.fixed) return;
+    p.hp -= d; p.fl = now(); if (stun) p.stun = gameT + stun;
+    fx.floats.push({ x: p.x, y: p.y - 6, txt: `−${Math.round(d)}`, col: '#fde68a', t: now() });
+    if (p.kind === 'civ' || p.kind === 'jog') {
+      if (byPlayer) crime(.15);
+      const react = p.persona ? PERSONAS[p.persona].react : 'flee';
+      if (byPlayer && (react === 'fight' || react === 'shoot') && p.hp > p.max * .35) { if (!(p.aggro > gameT)) bubble(p, pickOne(PERSONAS[p.persona].angry), 'bad'); p.aggro = gameT + 9; }
+      else { p.aggro = 0; p.flee = 4; p.from = { x: P.x, y: P.y }; if (Math.random() < .4) bubble(p, pickOne(FLEE_LINES)); }
+    } else if (p.kind === 'gang' || p.kind === 'boss') { if (!p.alert) bubble(p, p.kind === 'boss' ? '¿Vienes a pagar el rescate? El precio acaba de subir.' : pickOne(GANG_LINES), 'bad'); p.alert = true; }
     if (p.hp <= 0) killPed(p, byPlayer);
   };
   const explode = (x, y, r, d, byPlayer) => {
@@ -1366,11 +1504,12 @@ function ciudad(T) {
   };
   const hurtCar = (c, d, byPlayer) => {
     if (c.dead) return;
-    c.hp -= d; c.fl = now();
+    c.hp -= d * (c.type === 'armored' ? .55 : 1); c.fl = now();
     if (byPlayer && c.kind === 'civ' && c !== P.car && c.ai === 'lane') { c.ai = null; alarm(c.x, c.y, 80); }
     if (c.hp > 0) return;
     c.dead = true; c.speed = 0; c.deadT = gameT;
-    if (byPlayer) { if (c.kind === 'civ') crime(.7); if (c.kind === 'soc') crime(.6); }
+    if (byPlayer) { if (c.kind === 'civ' && c.owned === undefined) crime(.7); if (c.kind === 'soc') crime(.6); }
+    if (c.owned !== undefined && prog.cars) { prog.cars.splice(c.owned, 1); cars.forEach(o => { if (o.owned > c.owned) o.owned--; }); say(`Tu ${CAR_T[c.type].n} queda destruido. Lo pierdes.`); persist(); }
     if (c.kind === 'van' && mission && mission.kind === 'van') missionDone();
     if (c === P.car) { P.car = null; P.x += 12; hurtPlayer(30); say('¡El auto explota contigo dentro!'); }
     explode(c.x, c.y, 40, 45, byPlayer);
@@ -1389,30 +1528,42 @@ function ciudad(T) {
   const hurtPlayer = d => {
     if (state !== 'play') return;
     if (P.car) { hurtCar(P.car, d * .6, false); return; }
+    if (P.armor > 0) { const ab = Math.min(P.armor, d * .7); P.armor -= ab; d -= ab; }
     P.hp -= d; P.fl = now(); fx.shake = now(); fx.floats.push({ x: P.x, y: P.y - 6, txt: `−${Math.round(d)}`, col: '#f87171', t: now() });
     if (P.hp <= 0) die();
   };
-  const aim = () => { // asistencia de puntería: el enemigo más cercano dentro de un cono frente a ti
+  const hostile = p => p.kind === 'gang' || p.kind === 'boss' || p.aggro > gameT;
+  const aim = () => {
     let best = null, bd = 190;
-    const targets = [...peds.filter(p => p.kind === 'gang' || p.kind === 'boss'), ...drones, ...objs.filter(o => o.hp > 0), ...cars.filter(c => !c.dead && (c.kind === 'soc' || c.kind === 'van'))];
+    const targets = [...peds.filter(hostile), ...drones, ...objs.filter(o => o.hp > 0), ...cars.filter(c => !c.dead && (c.kind === 'soc' || c.kind === 'van'))];
     for (const e of targets) { const d = dist(P, e), a = Math.atan2(e.y - P.y, e.x - P.x); if (d < bd && Math.abs(angDiff(P.ang, a)) < .55 && los(P, e)) { bd = d; best = a; } }
     return best ?? P.ang;
   };
   const fire = () => {
     const w = CITY_W[P.w];
     if (P.cd > 0) return;
-    if (!w.melee && P.ammo[P.w] <= 0) { say(`Sin munición para ${w.n}. Cambias a puños.`); P.w = 0; return; }
+    if (!w.melee && P.ammo[P.w] <= 0) { say(`Sin munición para ${w.n}. Compra más en la armería.`); P.w = P.own.slice(0, GUN0).lastIndexOf(true); return; }
+    if (w.melee && P.car) return;
     P.cd = w.cd; if (!w.melee) P.ammo[P.w]--;
     const a = P.car ? P.car.ang : aim();
     if (!P.car) P.ang = a;
-    alarm(P.x, P.y, w.melee ? 30 : 150);
-    const ox = P.x + Math.cos(a) * 9, oy = P.y + Math.sin(a) * 9;
-    if (w.melee) {
-      const hit = [...peds, ...drones].find(e => !e.fixed && Math.hypot(e.x - ox, e.y - oy) < 12);
-      if (hit) { if (drones.includes(hit)) hurtDrone(hit, w.d, true); else hurtPed(hit, w.d, true); }
-      burst(fx, ox, oy, '#e5e7eb', 4);
+    alarm(P.x, P.y, w.melee ? 40 : 150);
+    if (w.melee) { // golpe en arco: alcanza a todo lo que esté delante
+      swings.push({ x: P.x, y: P.y, a, r: w.r, arc: w.arc, t: now(), col: P.w === 5 ? '#3ee8ff' : P.w === 4 ? '#facc15' : '#e5e7eb' });
+      let hitAny = false;
+      for (const e of [...peds, ...drones]) {
+        if (e.fixed) continue;
+        const d = dist(P, e), ea = Math.atan2(e.y - P.y, e.x - P.x);
+        if (d > w.r + 4 || Math.abs(angDiff(a, ea)) > w.arc / 2) continue;
+        hitAny = true;
+        if (drones.includes(e)) hurtDrone(e, w.d, true);
+        else { hurtPed(e, w.d, true, w.stun || 0); const k = 6; if (free(e.x + Math.cos(ea) * k, e.y + Math.sin(ea) * k, 3)) { e.x += Math.cos(ea) * k; e.y += Math.sin(ea) * k; } }
+      }
+      for (const o of objs) if (o.hp > 0 && dist(P, o) < w.r + 6) { hurtObj(o, w.d); hitAny = true; }
+      if (hitAny) { fx.shake = now() - 140; burst(fx, P.x + Math.cos(a) * 10, P.y + Math.sin(a) * 10, '#e5e7eb', 5); }
       return;
     }
+    const ox = P.x + Math.cos(a) * 9, oy = P.y + Math.sin(a) * 9;
     burst(fx, ox, oy, '#fde68a', 5);
     if (w.beam) {
       let end = { x: ox, y: oy };
@@ -1448,19 +1599,25 @@ function ciudad(T) {
     if (!c) return say('No hay ningún auto cerca. Acércate a uno y pulsa E.');
     if (c.kind === 'soc') return say('La furgoneta del SOC está blindada. Mejor huye.');
     if (c.kind === 'van') return say('La furgoneta va cerrada: destrúyela.');
-    if (c.drv) {
-      const p = spawnPed('civ', c.x + Math.cos(c.ang + Math.PI / 2) * 12, c.y + Math.sin(c.ang + Math.PI / 2) * 12); p.flee = 5; p.from = { x: c.x, y: c.y };
-      bubble(p, pickOne(['¡Oiga, que es de leasing!', '¡Tengo el 2FA en ese teléfono!', '¡Mi auto no, mae!', '¡Lo voy a reportar al SOC!']));
+    if (c.drv && c.owned === undefined) {
+      const p = spawnPed('civ', c.x + Math.cos(c.ang + Math.PI / 2) * 12, c.y + Math.sin(c.ang + Math.PI / 2) * 12);
+      if (PERSONAS[p.persona].react === 'fight' && Math.random() < .6) { p.aggro = gameT + 8; bubble(p, '¡Bájese de mi auto, sinvergüenza!', 'bad'); }
+      else { p.flee = 5; p.from = { x: c.x, y: c.y }; bubble(p, pickOne(['¡Oiga, que es de leasing!', '¡Tengo el 2FA en ese teléfono!', '¡Mi auto no, mae!', '¡Lo voy a reportar al SOC!'])); }
       crime(.25);
     }
     c.drv = true; c.ai = 'player'; c.speed = 0; c.sig = null; P.car = c;
-    say(`Conduces un ${c.type === 'taxi' ? 'taxi' : c.type === 'sport' ? 'deportivo' : c.type === 'van' ? 'furgón de reparto' : 'sedán'}. Flechas para conducir, E para bajarte.`);
+    say(`${c.owned !== undefined ? 'Tu' : 'Conduces un'} ${CAR_T[c.type].n}${c.eng ? ` (motor ${c.eng})` : ''}${c.turbo ? ' con turbo (Mayús)' : ''}. E para bajarte.`);
   };
-  const drive = (c, thr, steer, dt) => {
-    const max = c.kind === 'soc' ? 185 : c.type === 'sport' ? 235 : c.type === 'van' ? 160 : 205;
-    if (thr) c.speed += thr * (Math.sign(thr) === Math.sign(c.speed) || !c.speed ? (thr > 0 ? 240 : 140) : 420) * dt;
+  const drive = (c, thr, steer, dt, boost = false) => {
+    const T2 = CAR_T[c.type], tile = tAt(c.x, c.y);
+    let max = T2.max * (1 + .12 * c.eng), acc = T2.acc * (1 + .12 * c.eng);
+    if (c.type !== 'offroad') { if (tile === 3 || tile === 6) max *= .6; else if (tile === 1) max *= .85; } // el todoterreno no se frena fuera del asfalto
+    if (boost && c.turbo && c.nitro > 0) { max *= 1.45; acc *= 2; c.nitro = Math.max(0, c.nitro - dt / 3); if (Math.random() < .7) burst(fx, c.x - Math.cos(c.ang) * 11, c.y - Math.sin(c.ang) * 11, Math.random() < .5 ? '#38bdf8' : '#f97316', 1); }
+    else if (c.turbo) c.nitro = Math.min(1, c.nitro + dt / 8);
+    if (thr) c.speed += thr * (Math.sign(thr) === Math.sign(c.speed) || !c.speed ? (thr > 0 ? acc : 140) : 420) * dt;
     else c.speed *= Math.pow(.4, dt);
-    c.speed = clamp(c.speed, -80, max);
+    if (c.speed > max) c.speed = Math.max(max, c.speed - 300 * dt);
+    c.speed = clamp(c.speed, -80, T2.max * 1.6);
     c.ang += steer * 2.9 * dt * Math.min(1, Math.abs(c.speed) / 70) * Math.sign(c.speed || 1);
     const nx = c.x + Math.cos(c.ang) * c.speed * dt, ny = c.y + Math.sin(c.ang) * c.speed * dt;
     if (free(nx, ny, 5)) { c.x = nx; c.y = ny; }
@@ -1470,7 +1627,6 @@ function ciudad(T) {
       c.speed *= .7;
     }
   };
-  // Conducción civil con normas: carril, distancia de seguridad, semáforo (para antes del paso de cebra), ceder a peatones, intermitente y bocina
   const laneCar = (c, dt) => {
     const sp = c.kind === 'van' ? 105 : c.type === 'sport' ? 68 : 55;
     const fx0 = DIRS[c.dir][0], fy0 = DIRS[c.dir][1];
@@ -1482,7 +1638,6 @@ function ciudad(T) {
       return;
     }
     const nx = (c.tx + fx0) * TW + 8, ny = (c.ty + fy0) * TW + 8, d = Math.hypot(nx - c.x, ny - c.y);
-    // en el centro de la casilla: ¿la siguiente es el paso de cebra antes de un cruce con el semáforo en rojo?
     if (d > TW - 1 && c.kind !== 'van') {
       const ax = c.tx + fx0, ay = c.ty + fy0, bx = ax + fx0, by = ay + fy0;
       if (!isInter(c.tx, c.ty) && !isInter(ax, ay) && isInter(bx, by)) {
@@ -1505,37 +1660,37 @@ function ciudad(T) {
   // ---------- Misiones ----------
   const M_PT = { 0: inter(4, 1), 1: inter(5, 3) };
   const missionIntro = i => ({
-    0: [['Nodo', 'Por fin llegas. Soy Nodo, de la resistencia. Los Cifrados han secuestrado la red de toda la ciudad.'], ['Nodo', `Nuestra informante, Lía, te espera en ${interName(M_PT[0])}. Sigue la ruta amarilla y no llames la atención.`]],
+    0: [['Nodo', 'Por fin llegas. Soy Nodo, de la resistencia. Los Cifrados han secuestrado la red de toda la ciudad.'], ['Nodo', `Nuestra informante, Lía, te espera en ${interName(M_PT[0])}. Sigue la ruta amarilla y no llames la atención.`], ['Nodo', 'Con el dinero de las misiones podrás comprar armas en la armería y autos en AutoHash. Pulsa M para ver las tiendas.']],
     1: [['Nodo', `Lía confirmó que Los Cifrados guardan un pendrive con claves de descifrado en ${interName(M_PT[1])}.`], ['Nodo', 'Hay cuatro guardias. Toma el pendrive y vuelve aquí. En cuanto lo toques, sonarán todas sus alarmas.']],
-    2: [['Nodo', 'El pendrive tenía la dirección de su servidor de mando y control: la plaza roja, entre Av. Sudo y Av. Root.'], ['Nodo', 'Destruye los tres racks antes de 100 segundos o migrarán a otro servidor. Dispara desde lejos si puedes.']],
-    3: [['Lía', '¡Una furgoneta negra con matrícula RW sale ahora mismo con datos robados del hospital!'], ['Lía', 'Necesitas un auto: acércate a uno y pulsa E. Persíguela y destrúyela antes de 80 segundos.']],
-    4: [['Nodo', 'Han montado cuatro antenas en las esquinas de la ciudad. Reparten el malware a cada teléfono.'], ['Nodo', 'Derríbalas todas, en el orden que quieras. La ruta te llevará a la más cercana.']],
-    5: [['Nodo', 'Es la hora. El jefe de Los Cifrados está en el muelle, al sureste, con toda su banda.'], ['Nodo', 'Si cae, sus claves maestras quedan libres para todos. Suerte, visitante. La ciudad cuenta contigo.']],
+    2: [['Nodo', 'El pendrive tenía la dirección de su servidor de mando y control: la plaza roja, entre Av. Sudo y Av. Root.'], ['Nodo', 'Destruye los tres racks antes de 100 segundos o migrarán a otro servidor. Un bate o una katana también sirven.']],
+    3: [['Lía', '¡Una furgoneta negra con matrícula RW sale ahora mismo con datos robados del hospital!'], ['Lía', 'Necesitas un auto rápido: roba uno o usa el tuyo. Persíguela y destrúyela antes de 80 segundos.']],
+    4: [['Nodo', 'Han montado cuatro antenas en las esquinas de la ciudad. Reparten el malware a cada teléfono.'], ['Nodo', 'Derríbalas todas, en el orden que quieras. Un todoterreno corta camino por los parques.']],
+    5: [['Nodo', 'Es la hora. El jefe de Los Cifrados está en el muelle, al sureste, con toda su banda.'], ['Nodo', 'Pásate por la armería si te hace falta un chaleco. Si cae, sus claves maestras quedan libres para todos.']],
   }[i]);
   const missionOutro = i => ({
-    1: [['Nodo', 'Las claves funcionan: media ciudad recupera sus archivos. Lo celebraríamos, pero aún no han terminado.']],
+    1: [['Nodo', 'Las claves funcionan: media ciudad recupera sus archivos. Toma algo de dinero: gástalo bien.']],
     2: [['Nodo', 'Sin su C2, sus bots se quedan sordos. Llévate la escopeta DDoS: te hará falta.']],
     3: [['Lía', '¡La tienes! Los datos del hospital no saldrán de la ciudad. Toma el subfusil que le quitamos a un guardia.']],
     4: [['Nodo', 'Las antenas han caído y los teléfonos vuelven a ser de sus dueños. El lanzador EMP es tuyo.']],
   }[i]);
   const startMission = () => {
-    const i = MI; mission = { i, kind: '', t0: gameT, time: 0 };
+    const i = MI; mission = { i, kind: '', t0: gameT, time: 0 }; waypoint = -1;
     banner = { txt: `MISIÓN ${i + 1}: ${CITY_MISSIONS[i].t.toUpperCase()}`, t: now() };
     const guards = (p, n) => { for (let j = 0; j < n; j++) { const g = spawnPed('gang', p.x + rnd(-26, 26), p.y + rnd(-26, 26)); g.m = true; } };
-    if (i === 0) { mission.kind = 'goto'; mission.pt = M_PT[0]; const l = spawnPed('lia', mission.pt.x + 14, mission.pt.y - 14); l.fixed = true; l.name = 'Lía'; l.m = true; mission.lia = l; }
+    if (i === 0) { mission.kind = 'goto'; mission.pt = M_PT[0]; const l = spawnPed('lia', mission.pt.x + 14, mission.pt.y - 14); l.fixed = true; l.name = 'Lía'; l.m = true; }
     if (i === 1) { mission.kind = 'fetch'; const p = M_PT[1]; pickups.push({ x: p.x, y: p.y, k: 'drive', m: true }); mission.pt = p; guards(p, 4); }
     if (i === 2) { mission.kind = 'destroy'; mission.time = 100; const c = blockMid(4, 2); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
     if (i === 3) { mission.kind = 'van'; mission.time = 80; const v = spawnCar('van', false); mission.van = v; if (v) v.m = true; }
     if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(7, 0), inter(0, 5), inter(7, 5)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
     if (i === 5) { mission.kind = 'boss'; const d = blockMid(6, 4); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 6); }
   };
-  const REWARD = [[150, 1, 'pistola de ping'], [300, 0, ''], [400, 2, 'escopeta DDoS'], [500, 3, 'subfusil de fuerza bruta'], [600, 4, 'lanzador EMP'], [1500, 5, 'cañón de fibra']];
+  const REWARD = [[150, 6, 'pistola de ping'], [400, 0, ''], [500, 7, 'escopeta DDoS'], [600, 8, 'subfusil de fuerza bruta'], [800, 9, 'lanzador EMP'], [2000, 10, 'cañón de fibra']];
   const missionDone = () => {
     if (!mission) return;
     const i = mission.i, [cash, w, wn] = REWARD[i];
     P.cash += cash;
     if (w) { P.own[w] = true; P.ammo[w] += CITY_W[w].ammo; P.w = w; }
-    P.ammo[1] += 20;
+    P.ammo[6] += 20;
     banner = { txt: 'MISIÓN COMPLETADA', sub: `+${cash} ₿${wn ? ' · ' + wn : ''}`, t: now(), ok: true };
     say(`Misión completada: +${cash} ₿${wn ? `. Desbloqueas: ${wn}.` : '.'}`);
     burst(fx, P.x, P.y, '#4ade80', 30); fx.rings.push({ x: P.x, y: P.y, r: 60, col: '#4ade80', t: now() });
@@ -1549,8 +1704,8 @@ function ciudad(T) {
     peds = peds.filter(p => !p.m); cars = cars.filter(c => !c.m); pickups = pickups.filter(p => !p.m); objs = []; mission = null;
   };
   const bossDown = () => { say('El jefe de Los Cifrados cae. Sus claves quedan libres para todos.'); missionDone(); };
-  // Objetivo actual: punto, texto de instrucciones y color
   const objective = () => {
+    if (!mission && waypoint >= 0) { const p = POI[waypoint]; return { pt: p, txt: `Destino: ${p.n}`, col: p.col }; }
     if (!mission) return MI < CITY_MISSIONS.length ? { pt: base, txt: 'Ve al refugio y habla con Nodo', col: '#4ade80' } : null;
     const k = mission.kind, col = '#f2b33d';
     if (k === 'goto') return { pt: mission.pt, txt: `Reúnete con Lía en ${interName(mission.pt)}`, col };
@@ -1565,6 +1720,11 @@ function ciudad(T) {
     if (k === 'boss') return mission.boss ? { pt: mission.boss, txt: 'Acaba con el jefe de Los Cifrados en el muelle', col: '#f87171' } : null;
   };
   const missionUpdate = () => {
+    // tiendas: entrar en la puerta abre el menú (una vez por visita)
+    const pi = POI.findIndex(p => dist(p, P) < 12);
+    if (pi !== poiLeave) { poiLeave = null; if (pi >= 0 && (POI[pi].k === 'taller' ? !!P.car : !P.car || POI[pi].k === 'hospital')) { if (waypoint === pi) waypoint = -1; return openShop(POI[pi]); } }
+    if (pi >= 0 && POI[pi].k === 'taller' && !P.car && poiLeave === null) { poiLeave = pi; say('El taller trabaja con autos: vuelve conduciendo uno.'); }
+    if (pi >= 0 && POI[pi].k !== 'taller' && POI[pi].k !== 'hospital' && P.car && poiLeave === null) { poiLeave = pi; say(`Bájate del auto para entrar en ${POI[pi].n}.`); }
     if (!mission) {
       if (dist(P, base) > 30) needLeave = false; // tras entregar una misión hay que salir del círculo y volver a entrar
       if (MI < CITY_MISSIONS.length && dist(P, base) < 16 && !P.car && !needLeave) { const i = MI; showDialog(missionIntro(i), startMission); }
@@ -1579,7 +1739,6 @@ function ciudad(T) {
     else if (mission.kind === 'destroy' && objs.length && objs.every(o => o.hp <= 0)) missionDone();
   };
 
-  // ---------- Ruta GPS: búsqueda en anchura por la rejilla (autos por calzada y aceras, a pie por todo lo transitable) ----------
   const computeRoute = goal => {
     const sx = Math.floor(P.x / TW), sy = Math.floor(P.y / TW), gx = Math.floor(goal.x / TW), gy = Math.floor(goal.y / TW);
     const ok = (x, y) => { const t = at(x, y); return P.car ? t === 0 || t === 1 || t === 3 || t === 6 : !solid(t); };
@@ -1600,7 +1759,7 @@ function ciudad(T) {
     gameT += dt; P.cd = Math.max(0, P.cd - dt);
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), iy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
     if (P.car) {
-      drive(P.car, -iy, ix, dt);
+      drive(P.car, -iy, ix, dt, keys.nitro);
       P.x = P.car.x; P.y = P.car.y; P.ang = P.car.ang;
     } else if (ix || iy) {
       const l = Math.hypot(ix, iy), sp = 78 * dt;
@@ -1630,7 +1789,11 @@ function ciudad(T) {
           const rel = Math.abs(a.speed - b.speed), nx = (a.x - b.x) / d, ny = (a.y - b.y) / d, push = (13 - d) / 2;
           if (a.ai !== 'lane' && free(a.x + nx * push, a.y + ny * push, 5)) { a.x += nx * push; a.y += ny * push; }
           if (b.ai !== 'lane' && free(b.x - nx * push, b.y - ny * push, 5)) { b.x -= nx * push; b.y -= ny * push; }
-          if (rel > 70) { const byP = a === P.car || b === P.car; hurtCar(a, rel * .08, byP); hurtCar(b, rel * .08, byP); burst(fx, (a.x + b.x) / 2, (a.y + b.y) / 2, '#fde68a', 6); if (byP) { fx.shake = now(); const v = a === P.car ? b : a; if (v.kind === 'civ') bubble(v, pickOne(['¡Mi auto nuevo!', '¡Aprenda a manejar!', '¿¡Qué le pasa, mae!?'])); } }
+          if (rel > 70) {
+            const byP = a === P.car || b === P.car, ka = b.type === 'armored' ? 2 : 1, kb = a.type === 'armored' ? 2 : 1; // el blindado reparte el doble
+            hurtCar(a, rel * .08 * ka, byP); hurtCar(b, rel * .08 * kb, byP); burst(fx, (a.x + b.x) / 2, (a.y + b.y) / 2, '#fde68a', 6);
+            if (byP) { fx.shake = now(); const v = a === P.car ? b : a; if (v.kind === 'civ' && v.owned === undefined) bubble(v, pickOne(['¡Mi auto nuevo!', '¡Aprenda a manejar!', '¿¡Qué le pasa, mae!?'])); }
+          }
           for (const c of [a, b]) if (c.ai === 'lane' && c.kind === 'civ' && (a === P.car || b === P.car) && rel > 40) c.ai = null;
           if (a.ai !== 'lane') a.speed *= .5; if (b.ai !== 'lane') b.speed *= .5;
         }
@@ -1645,11 +1808,26 @@ function ciudad(T) {
     for (const p of [...peds]) {
       if (!peds.includes(p)) continue;
       const d = dist(p, P);
+      if (p.stun > gameT) { p.moving = false; continue; }
       if (p.stopT > 0) { p.stopT -= dt; p.moving = false; p.ang = Math.atan2(P.y - p.y, P.x - p.x); continue; }
       if (p.fixed) { p.moving = false; if (d < 60) p.ang = Math.atan2(P.y - p.y, P.x - p.x); continue; }
+      if (p.aggro > gameT) { // el vecino se defiende: a puñetazos o con su pistola
+        const a = Math.atan2(P.y - p.y, P.x - p.x), shoot = PERSONAS[p.persona].react === 'shoot', keep = shoot ? 70 : 9;
+        p.ang = a; p.moving = d > keep;
+        if (d > keep) { const nx = p.x + Math.cos(a) * 48 * dt, ny = p.y + Math.sin(a) * 48 * dt; if (free(nx, p.y, 3)) p.x = nx; if (free(p.x, ny, 3)) p.y = ny; }
+        p.cd -= dt;
+        if (p.cd <= 0) {
+          if (shoot && d < 200 && los(p, P)) { enemyShot(p, a + (Math.random() - .5) * .2, 6); p.cd = 1.1; }
+          else if (!shoot && d < 13) { hurtPlayer(5); swings.push({ x: p.x, y: p.y, a, r: 10, arc: .9, t: now(), col: '#fca5a5' }); p.cd = .8; }
+        }
+        if (p.hp < p.max * .35) { p.aggro = 0; p.flee = 5; p.from = { x: P.x, y: P.y }; bubble(p, '¡Está bien, está bien, me voy!'); }
+        continue;
+      }
       if (p.kind === 'civ' || p.kind === 'jog') {
-        let sp = p.kind === 'jog' ? 42 : 22, a;
-        if (p.flee > 0) { p.flee -= dt; sp = 58; a = Math.atan2(p.y - p.from.y, p.x - p.from.x) + Math.sin(gameT * 3 + p.x) * .4; }
+        const pp = PERSONAS[p.persona] || {};
+        let sp = p.kind === 'jog' ? 42 : pp.sp || 22, a;
+        if (p.flee > 0) { p.flee -= dt; sp = pp.old ? 30 : 58; a = Math.atan2(p.y - p.from.y, p.x - p.from.x) + Math.sin(gameT * 3 + p.x) * .4; }
+        else if (p.film > gameT) { const fd = dist(p, p.filmAt); a = Math.atan2(p.filmAt.y - p.y, p.filmAt.x - p.x); if (fd < 55) { p.ang = a; p.moving = false; continue; } sp = 34; }
         else {
           const want = p.kind === 'jog' ? [3, 6] : [1];
           if (!p.tgt || Math.hypot(p.tgt.x - p.x, p.tgt.y - p.y) < 4) { const tx = Math.floor(p.x / TW) + rnd(-3, 3), ty = Math.floor(p.y / TW) + rnd(-3, 3); if (want.includes(at(tx, ty))) p.tgt = { x: tx * TW + 8, y: ty * TW + 8 }; }
@@ -1676,7 +1854,6 @@ function ciudad(T) {
       }
     }
 
-    // vida ambiental: palomas, vapor y frases de la gente
     for (const b of birds) {
       if (b.fly) { b.x += b.vx * dt; b.y += b.vy * dt; b.fly += dt; continue; }
       if (!P.car && Math.hypot(b.x - P.x, b.y - P.y) < 26 && (P.moving || keys.fire)) scare(b, P.x, P.y);
@@ -1687,15 +1864,19 @@ function ciudad(T) {
     steam = steam.filter(s => gameT - s.t < 1.6);
     ambT -= dt;
     if (ambT <= 0) {
-      ambT = 2.2 + Math.random() * 2;
-      const near = peds.filter(p => !offscreen(p.x, p.y, -20) && p.flee <= 0 && (p.kind === 'civ' || p.kind === 'jog' || p.kind === 'res'));
+      ambT = 2 + Math.random() * 2;
+      const near = peds.filter(p => !offscreen(p.x, p.y, -20) && p.flee <= 0 && !(p.aggro > gameT) && (p.kind === 'civ' || p.kind === 'jog' || p.kind === 'res'));
       const p = pickOne(near);
-      if (p) bubble(p, p.kind === 'res' ? pickOne(RES_LINES) : p.kind === 'jog' ? pickOne(['Uf… diez kilómetros más.', '¡Buenas! No paro, que pierdo el ritmo.', 'Correr despeja más que reiniciar el router.']) : pickOne(CIV_LINES));
+      if (p) {
+        const pp = PERSONAS[p.persona];
+        bubble(p, p.kind === 'res' ? pickOne(RES_LINES) : p.kind === 'jog' ? pickOne(['Uf… diez kilómetros más.', '¡Buenas! No paro, que pierdo el ritmo.', 'Correr despeja más que reiniciar el router.']) : pp && Math.random() < (pp.chat ? .9 : .6) ? pickOne(pp.lines) : pickOne(CIV_LINES));
+        if (p.persona === 'turista' && Math.random() < .5) { burst(fx, p.x, p.y, '#ffffff', 4); }
+      }
       const dr = drones.find(d => !offscreen(d.x, d.y)); if (dr && Math.random() < .5) bubble(dr, pickOne(DRONE_LINES), 'drone');
     }
     bubbles = bubbles.filter(b => now() - b.t < b.dur && (b.e === P || peds.includes(b.e) || cars.includes(b.e) || drones.includes(b.e)));
+    swings = swings.filter(s => now() - s.t < 180);
 
-    // rastreo: drones y furgonetas del SOC según las estrellas
     const stars = Math.floor(P.heat);
     if (gameT - P.lastCrime > 9) P.heat = Math.max(0, P.heat - .2 * dt);
     if (drones.length < stars && Math.random() < dt) { const a = Math.random() * 6.28; drones.push({ x: P.x + Math.cos(a) * 230, y: P.y + Math.sin(a) * 230, hp: 26, max: 26, cd: 1.5, ph: Math.random() * 6 }); }
@@ -1732,28 +1913,35 @@ function ciudad(T) {
       pickups.splice(pickups.indexOf(pk), 1);
       burst(fx, pk.x, pk.y, '#f2b33d', 8);
       if (pk.k === 'hp') { P.hp = Math.min(100, P.hp + 35); say('Parche aplicado: +35 de vida.'); }
-      else if (pk.k === 'cash') { const c = rnd(15, 60); P.cash += c; fx.floats.push({ x: pk.x, y: pk.y - 6, txt: `+${c} ₿`, col: '#f2b33d', t: now() }); }
-      else if (pk.k === 'ammo') { const owned = P.own.map((o, i) => o && i > 0 ? i : 0).filter(Boolean); if (owned.length) { const w = pickOne(owned); P.ammo[w] += Math.ceil(CITY_W[w].ammo / 3); say(`Munición para ${CITY_W[w].n}.`); } else P.cash += 20; }
+      else if (pk.k === 'cash') { const c = rnd(20, 80); P.cash += c; fx.floats.push({ x: pk.x, y: pk.y - 6, txt: `+${c} ₿`, col: '#f2b33d', t: now() }); }
+      else if (pk.k === 'ammo') { const owned = P.own.map((o, i) => o && i >= GUN0 ? i : 0).filter(Boolean); if (owned.length) { const w = pickOne(owned); P.ammo[w] += Math.ceil(CITY_W[w].ammo / 3); say(`Munición para ${CITY_W[w].n}.`); } else P.cash += 25; }
       else if (pk.k === 'drive') { say('¡Tienes el pendrive! Sigue la ruta de vuelta al refugio antes de que te alcancen.'); if (mission) mission.kind = 'return'; crime(1.2); }
     }
     missionUpdate();
-    // ruta GPS recalculada cada 0,4 s o al cambiar de objetivo
     const obj = objective();
     if (obj) { const k = `${Math.floor(obj.pt.x / TW)},${Math.floor(obj.pt.y / TW)},${!!P.car}`; if (gameT - routeT > .4 || k !== routeKey) { route = computeRoute(obj.pt); routeT = gameT; routeKey = k; } } else route = [];
     const st = streetAt(P.x, P.y); if (st && st !== street) { street = st; streetT = now(); }
-    if (cars.filter(c => c.kind === 'civ' && !c.dead).length < 22 && Math.random() < dt) spawnCar('civ', true);
-    if (peds.filter(p => p.kind === 'civ').length < 32 && Math.random() < dt) spawnPed('civ');
+    if (cars.filter(c => c.kind === 'civ' && !c.dead && c.owned === undefined).length < 22 && Math.random() < dt) spawnCar('civ', true);
+    if (peds.filter(p => p.kind === 'civ').length < 34 && Math.random() < dt) spawnPed('civ');
   };
 
   // ---------- Dibujo ----------
   const drawPerson = (p, t) => {
     const d4 = ((Math.round(p.ang / (Math.PI / 2)) % 4) + 4) % 4, fr = p.moving ? Math.floor(t / 140) % 2 : 0, fl = p.fl && t - p.fl < 90;
-    const s = p.kind === 'boss' ? 12 : 8;
+    const s = p.kind === 'boss' ? 12 : 8, pp = p.persona && PERSONAS[p.persona];
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(Math.round(p.x) + 1, Math.round(p.y) + 2, s / 2, s / 2.6, 0, 0, 6.283); ctx.fill();
     ctx.save(); ctx.translate(Math.round(p.x), Math.round(p.y)); ctx.rotate(d4 * Math.PI / 2);
     ctx.drawImage(personSpr(p.pal, fr, fl), -s / 2, -s / 2, s, s);
     ctx.restore();
-    if (p.kind === 'gang' || p.kind === 'boss' || (p === P && P.w > 0)) { ctx.strokeStyle = '#9aa4b5'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(p.ang) * 3, p.y + Math.sin(p.ang) * 3); ctx.lineTo(p.x + Math.cos(p.ang) * 8, p.y + Math.sin(p.ang) * 8); ctx.stroke(); }
+    const fx2 = p.x + Math.cos(p.ang) * 5, fy2 = p.y + Math.sin(p.ang) * 5;
+    if (pp && pp.phone && !(p.flee > 0)) { ctx.fillStyle = '#22d3ee'; ctx.fillRect(Math.round(fx2) - 1, Math.round(fy2) - 1, 2, 2); }
+    if (p.film > gameT) { ctx.fillStyle = '#111827'; ctx.fillRect(Math.round(fx2) - 1, Math.round(fy2) - 2, 3, 3); ctx.fillStyle = Math.floor(t / 300) % 2 ? '#ef4444' : '#7f1d1d'; ctx.fillRect(Math.round(fx2), Math.round(fy2) - 1, 1, 1); }
+    if (pp && pp.old) { ctx.strokeStyle = '#7c4a1e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x + 3, p.y + 2); ctx.lineTo(p.x + 5, p.y + 5); ctx.stroke(); }
+    if (pp && pp.cam) { ctx.fillStyle = '#1f2937'; ctx.fillRect(Math.round(p.x) - 1, Math.round(p.y) + 3, 3, 2); }
+    const armed = p.kind === 'gang' || p.kind === 'boss' || (p.aggro > gameT && p.persona === 'armado') || (p === P && P.w >= GUN0);
+    if (armed) { ctx.strokeStyle = '#9aa4b5'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(p.ang) * 3, p.y + Math.sin(p.ang) * 3); ctx.lineTo(p.x + Math.cos(p.ang) * 8, p.y + Math.sin(p.ang) * 8); ctx.stroke(); }
+    else if (p === P && P.w > 0) { const col = P.w === 5 ? '#3ee8ff' : P.w === 4 ? '#facc15' : P.w === 3 ? '#a16207' : '#9ca3af'; ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(p.ang + .6) * 3, p.y + Math.sin(p.ang + .6) * 3); ctx.lineTo(p.x + Math.cos(p.ang + .3) * (P.w === 5 ? 11 : 8), p.y + Math.sin(p.ang + .3) * (P.w === 5 ? 11 : 8)); ctx.stroke(); }
+    if (p.stun > gameT) { ctx.fillStyle = '#facc15'; for (let i = 0; i < 3; i++) { const a = t / 200 + i * 2.1; ctx.fillRect(Math.round(p.x + Math.cos(a) * 5), Math.round(p.y - 7 + Math.sin(a) * 2), 1, 1); } }
     if (p.name && dist(p, P) < 90) { ctx.font = 'bold 6px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.lineWidth = 2; ctx.strokeStyle = '#05080f'; ctx.strokeText(p.name, p.x, p.y - 8); ctx.fillStyle = p.kind === 'lia' ? '#3ee8ff' : '#4ade80'; ctx.fillText(p.name, p.x, p.y - 8); }
   };
   const hpBar = (e, w = 12) => { if (e.hp >= e.max) return; ctx.fillStyle = '#05080f'; ctx.fillRect(Math.round(e.x - w / 2), Math.round(e.y - 11), w, 2); ctx.fillStyle = '#f87171'; ctx.fillRect(Math.round(e.x - w / 2), Math.round(e.y - 11), Math.max(1, Math.round(w * e.hp / e.max)), 2); };
@@ -1771,6 +1959,16 @@ function ciudad(T) {
     lines.forEach((l, i) => ctx.fillText(l, x, y + 7 + i * 7));
     ctx.globalAlpha = 1;
   };
+  const poiIcon = (p, x, y, s, t) => {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = '#05080f'; ctx.globalAlpha = .85; ctx.beginPath(); ctx.roundRect(-s, -s, s * 2, s * 2, 2); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = p.col; ctx.fillStyle = p.col; ctx.lineWidth = 1;
+    if (p.ico === 'gun') { ctx.beginPath(); ctx.arc(0, 0, s * .55, 0, 6.283); ctx.stroke(); ctx.fillRect(-s * .8, -.5, s * 1.6, 1); ctx.fillRect(-.5, -s * .8, 1, s * 1.6); }
+    if (p.ico === 'wrench') { ctx.fillRect(-s * .6, s * .3, s * 1.1, s * .3); ctx.beginPath(); ctx.arc(s * .45, -s * .2, s * .35, 0, 6.283); ctx.stroke(); ctx.save(); ctx.rotate(-.8); ctx.fillRect(-s * .7, -.6, s * 1.3, 1.4); ctx.restore(); }
+    if (p.ico === 'car') { ctx.fillRect(-s * .7, -s * .2, s * 1.4, s * .5); ctx.fillRect(-s * .4, -s * .5, s * .8, s * .3); ctx.fillStyle = '#05080f'; ctx.fillRect(-s * .5, s * .2, s * .25, s * .25); ctx.fillRect(s * .25, s * .2, s * .25, s * .25); }
+    if (p.ico === 'cross') { ctx.fillStyle = '#ef4444'; ctx.fillRect(-s * .2, -s * .6, s * .4, s * 1.2); ctx.fillRect(-s * .6, -s * .2, s * 1.2, s * .4); }
+    ctx.restore();
+  };
   const draw = t => {
     const cx = clamp(P.x, VW / 2, MW * TW - VW / 2), cy = clamp(P.y, VH / 2, MH * TW - VH / 2);
     const [shx, shy] = shakeOffset(fx, t);
@@ -1780,14 +1978,14 @@ function ciudad(T) {
     ctx.fillStyle = '#05080f'; ctx.fillRect(0, 0, VW, VH);
     ctx.translate(-ox, -oy);
     ctx.drawImage(mapCv, Math.max(0, ox), Math.max(0, oy), Math.ceil(VW) + 2, Math.ceil(VH) + 2, Math.max(0, ox), Math.max(0, oy), Math.ceil(VW) + 2, Math.ceil(VH) + 2);
-    // agua con reflejos que se mueven
     ctx.fillStyle = 'rgba(96,165,250,.25)';
     for (let ty = Math.max(0, Math.floor(oy / TW)); ty <= Math.min(MH - 1, Math.floor((oy + VH) / TW)); ty++) for (let tx = Math.max(0, Math.floor(ox / TW)); tx <= Math.min(MW - 1, Math.floor((ox + VW) / TW)); tx++) {
       if (at(tx, ty) !== 4) continue;
       const k = (tx * 7 + ty * 13) % 16, s = (t / 90 + k * 3) % 20;
       if (s < 12) ctx.fillRect(tx * TW + k % 10, ty * TW + (k * 5) % 14, 4 + (s > 6 ? 12 - s : s) * .5, 1);
     }
-    // ruta GPS punteada que fluye hacia el objetivo
+    // autos expuestos en el concesionario
+    { const c = blockMid(5, 1); if (vis(c.x, c.y, 80)) ['sport', 'offroad', 'armored', 'sedan', 'taxi'].forEach((ty2, i) => { const x = c.x - 34 + (i % 3) * 32, y = c.y - 4 + Math.floor(i / 3) * 26; ctx.drawImage(carSpr(ty2, ty2 === 'taxi' ? '#facc15' : ty2 === 'armored' ? '#3f4652' : PAINTS[i * 2]), x - 10, y - 5); ctx.font = '5px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#4ade80'; ctx.fillText(`${CAR_T[ty2].price} ₿`, x, y + 12); }); }
     const obj = objective();
     if (route.length) {
       ctx.fillStyle = obj ? obj.col : '#4ade80';
@@ -1796,7 +1994,7 @@ function ciudad(T) {
       ctx.globalAlpha = 1;
     }
     if (obj) { const pul = 8 + 3 * Math.sin(t / 160); ctx.strokeStyle = obj.col; ctx.lineWidth = 2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.arc(obj.pt.x, obj.pt.y, pul + 4, 0, 6.283); ctx.stroke(); ctx.globalAlpha = .25; ctx.fillStyle = obj.col; ctx.beginPath(); ctx.arc(obj.pt.x, obj.pt.y, pul + 4, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
-    // semáforos en las esquinas de cada cruce
+    for (const p of POI) if (vis(p.x, p.y, 30)) { const b = Math.sin(t / 250) * 1.5; ctx.shadowColor = p.col; ctx.shadowBlur = 8; poiIcon(p, p.x, p.y - 2 + b, 5, t); ctx.shadowBlur = 0; }
     for (let iy = 0; iy <= NBY; iy++) for (let ix = 0; ix <= NBX; ix++) {
       const tx = 2 + BK * ix, ty = 2 + BK * iy, x0 = tx * TW, y0 = ty * TW;
       if (!vis(x0 + 16, y0 + 16, 40)) continue;
@@ -1834,26 +2032,33 @@ function ciudad(T) {
       if (b.fly) { ctx.fillRect(b.x - (flap ? 3 : 1), b.y - 1, flap ? 7 : 3, flap ? 1 : 3); ctx.fillStyle = '#6b7280'; ctx.fillRect(b.x - 1, b.y - 1, 2, 2); }
       else { ctx.fillRect(b.x - 1, b.y - 1 + peck, 3, 2); ctx.fillStyle = '#4b5563'; ctx.fillRect(b.x + 1, b.y - 1 + peck, 1, 1); }
     }
-    for (const p of peds) if (vis(p.x, p.y)) { drawPerson(p, t); if (p.kind === 'gang' || p.kind === 'boss') hpBar(p, p.kind === 'boss' ? 24 : 12); }
+    for (const p of peds) if (vis(p.x, p.y)) { drawPerson(p, t); if (p.kind === 'gang' || p.kind === 'boss' || p.aggro > gameT) hpBar(p, p.kind === 'boss' ? 24 : 12); }
     for (const c of cars) {
       if (!vis(c.x, c.y, 60)) continue;
       ctx.save(); ctx.translate(Math.round(c.x), Math.round(c.y)); ctx.rotate(c.ang);
-      if (!c.dead) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-9, -4, 20, 11); }
-      if (c.drv && !c.dead) { // faros
+      if (!c.dead && c.neon) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 16); g.addColorStop(0, c.neon + 'aa'); g.addColorStop(1, c.neon + '00'); ctx.fillStyle = g; ctx.fillRect(-16, -12, 32, 24); ctx.globalCompositeOperation = 'source-over'; }
+      if (!c.dead) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-9, -4, 20, 12); }
+      if (c.drv && !c.dead) {
         const g = ctx.createLinearGradient(10, 0, 62, 0); g.addColorStop(0, 'rgba(253,230,138,.26)'); g.addColorStop(1, 'rgba(253,230,138,0)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(10, -3); ctx.lineTo(62, -16); ctx.lineTo(62, 16); ctx.lineTo(10, 3); ctx.fill();
       }
-      ctx.drawImage(carSpr(c.dead ? 'sedan' : c.type, c.dead ? '#1f2328' : c.col), -10, -5);
+      const spr = carSpr(c.dead ? 'sedan' : c.type, c.dead ? '#1f2328' : c.col);
+      ctx.drawImage(spr, -10, -Math.floor(spr.height / 2));
       if (!c.dead) {
-        if (c.drv && Math.abs(c.speed) < 8) { ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 5; ctx.fillRect(-10, -3, 1, 2); ctx.fillRect(-10, 2, 1, 2); ctx.shadowBlur = 0; } // luces de freno
-        if (c.sig && gameT < c.sig.until && Math.floor(t / 250) % 2) { ctx.fillStyle = '#fbbf24'; const sy = c.sig.right ? 4 : -5; ctx.fillRect(8, sy, 2, 1); ctx.fillRect(-10, sy, 1, 1); } // intermitente
+        if (c.drv && Math.abs(c.speed) < 8) { ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 5; ctx.fillRect(-10, -3, 1, 2); ctx.fillRect(-10, 2, 1, 2); ctx.shadowBlur = 0; }
+        if (c.sig && gameT < c.sig.until && Math.floor(t / 250) % 2) { ctx.fillStyle = '#fbbf24'; const sy = c.sig.right ? 4 : -5; ctx.fillRect(8, sy, 2, 1); ctx.fillRect(-10, sy, 1, 1); }
         if (c.kind === 'soc') { const b = Math.floor(t / 120) % 2; ctx.fillStyle = b ? '#3b82f6' : '#ef4444'; ctx.fillRect(-1, -3, 2, 3); ctx.fillStyle = b ? '#ef4444' : '#3b82f6'; ctx.fillRect(-1, 0, 2, 3); ctx.globalAlpha = .35; ctx.beginPath(); ctx.arc(0, 0, 11, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
+        if (c.owned !== undefined && c !== P.car) { ctx.rotate(-c.ang); ctx.fillStyle = '#4ade80'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center'; ctx.fillText('★', 0, -8); }
         if (c.fl && t - c.fl < 80) { ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(-10, -5, 20, 11); }
       } else { ctx.fillStyle = `rgba(251,146,60,${.5 + .3 * Math.sin(t / 60)})`; ctx.fillRect(-3, -2, 5, 4); if (Math.random() < .3) burst(fx, c.x, c.y, '#475569', 1); }
       ctx.restore();
       if (!c.dead && (c.kind === 'van' || c.kind === 'soc' || c.hp < c.max * .6)) hpBar(c, 16);
     }
-    if (!P.car && (state === 'play' || state === 'talk')) drawPerson({ ...P, kind: 'me', pal: PAL.me }, t);
+    if (!P.car && state !== 'dying') drawPerson({ ...P, kind: 'me', pal: PAL.me }, t);
+    for (const s of swings) { // estela del golpe cuerpo a cuerpo
+      const k = (now() - s.t) / 180; ctx.strokeStyle = s.col; ctx.globalAlpha = 1 - k; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * (.7 + k * .3), s.a - s.arc / 2, s.a + s.arc / 2); ctx.stroke(); ctx.globalAlpha = 1;
+    }
     for (const dr of drones) {
       const b = Math.sin(t / 150 + dr.ph) * 1.5;
       ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(dr.x + 5, dr.y + 9, 6, 3, 0, 0, 6.283); ctx.fill();
@@ -1868,7 +2073,6 @@ function ciudad(T) {
       ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * .02, b.y - b.vy * .02); ctx.stroke();
     }
     drawFx(ctx, fx, t);
-    // farolas y neones: luz aditiva
     ctx.globalCompositeOperation = 'lighter';
     for (const l of lamps) {
       if (!vis(l.x, l.y, 30)) continue;
@@ -1879,28 +2083,22 @@ function ciudad(T) {
     ctx.font = 'bold 8px "JetBrains Mono", monospace'; ctx.textAlign = 'start'; ctx.textBaseline = 'top';
     for (const s of signs) {
       if (!vis(s.x, s.y, 40)) continue;
-      const off = Math.sin(t / 1000 + s.ph) > .96 && Math.floor(t / 60) % 2; // parpadeo ocasional
-      if (off) continue;
+      if (Math.sin(t / 1000 + s.ph) > .96 && Math.floor(t / 60) % 2) continue;
       ctx.shadowColor = s.col; ctx.shadowBlur = 8 + 2 * Math.sin(t / 300 + s.ph); ctx.fillStyle = s.col; ctx.fillText(s.txt, s.x, s.y); ctx.shadowBlur = 0;
     }
     ctx.textBaseline = 'alphabetic';
     for (const b of bubbles) if (vis(b.e.x, b.e.y, 60)) drawBubble(b, t);
     ctx.restore();
-    // viñeta nocturna
     const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .7);
     vg.addColorStop(0, 'rgba(5,8,15,0)'); vg.addColorStop(1, 'rgba(5,8,15,.5)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
-    // flecha al objetivo si está fuera de pantalla
     if (obj) {
       const sx = obj.pt.x - ox, sy = obj.pt.y - oy;
       if (sx < 8 || sy < 8 || sx > VW - 8 || sy > VH - 8) {
         const a = Math.atan2(sy - VH / 2, sx - VW / 2);
-        const ax = clamp(VW / 2 + Math.cos(a) * VW, 10, VW - 10), ay = clamp(VH / 2 + Math.sin(a) * VW, 22, VH - 10);
+        const ax = clamp(VW / 2 + Math.cos(a) * VW, 10, VW - 10), ay = clamp(VH / 2 + Math.sin(a) * VW, 32, VH - 10);
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.fillStyle = obj.col; ctx.globalAlpha = .75 + .25 * Math.sin(t / 150);
         ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -6); ctx.lineTo(-2, 0); ctx.lineTo(-5, 6); ctx.fill(); ctx.restore(); ctx.globalAlpha = 1;
       }
-    }
-    // instrucción del objetivo con distancia y rumbo
-    if (obj) {
       const meters = route.length * 5, dir = compass(Math.atan2(obj.pt.y - P.y, obj.pt.x - P.x));
       const txt = obj.txt, sub = meters > 8 ? `${meters} m al ${dir}` : 'has llegado';
       ctx.font = 'bold 8px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
@@ -1913,22 +2111,21 @@ function ciudad(T) {
       ctx.fillStyle = '#f1f5f9'; ctx.fillText(line, 9, 13);
       ctx.font = '7px "JetBrains Mono", monospace'; ctx.fillStyle = obj.col; ctx.fillText(sub, 9, 22);
     }
-    // nombre de la calle al entrar en ella
+    if (P.car && P.car.turbo) { ctx.fillStyle = 'rgba(5,8,15,.7)'; ctx.fillRect(VW - 52, VH - 12, 48, 7); ctx.fillStyle = P.car.nitro > .2 ? '#38bdf8' : '#f87171'; ctx.fillRect(VW - 51, VH - 11, 46 * P.car.nitro, 5); ctx.font = '5px "JetBrains Mono", monospace'; ctx.fillStyle = '#e5e7eb'; ctx.textAlign = 'right'; ctx.fillText('NITRO', VW - 54, VH - 7); }
     if (street) {
       const k = (t - streetT) / 3200;
       if (k < 1) { ctx.globalAlpha = k < .1 ? k * 10 : k > .75 ? (1 - k) / .25 : 1; ctx.font = 'bold 9px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.lineWidth = 3; ctx.strokeStyle = '#05080f'; ctx.strokeText(street, 6, VH - 8); ctx.fillStyle = '#e5e7eb'; ctx.fillText(street, 6, VH - 8); ctx.globalAlpha = 1; }
     }
-    // minimapa con la ruta
     const ms = .6, mw = MW * ms, mh = MH * ms, mx = VW - mw - 4, my = 4;
     ctx.globalAlpha = .88; ctx.fillStyle = '#05080f'; ctx.fillRect(mx - 1, my - 1, mw + 2, mh + 2); ctx.drawImage(mini, mx, my, mw, mh); ctx.globalAlpha = 1;
     if (route.length) { ctx.strokeStyle = obj ? obj.col : '#4ade80'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mx + P.x / TW * ms, my + P.y / TW * ms); for (let i = 0; i < route.length; i += 2) ctx.lineTo(mx + route[i].x / TW * ms, my + route[i].y / TW * ms); ctx.stroke(); }
     const dot = (e, c, s = 2) => { ctx.fillStyle = c; ctx.fillRect(Math.round(mx + e.x / TW * ms - s / 2), Math.round(my + e.y / TW * ms - s / 2), s, s); };
     peds.forEach(p => { if (p.kind === 'gang' || p.kind === 'boss') dot(p, '#f87171'); });
     drones.forEach(d => dot(d, '#22d3ee'));
+    POI.forEach(p => dot(p, p.col, 2));
     if (obj && Math.floor(t / 300) % 2) dot(obj.pt, obj.col, 3);
     dot(base, '#4ade80', 2);
     dot(P, '#ffffff', 3);
-    // tiempo de misión y carteles
     if (mission && mission.time) {
       const left = Math.max(0, Math.ceil(mission.time - (gameT - mission.t0)));
       ctx.font = 'bold 12px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#05080f';
@@ -1948,7 +2145,7 @@ function ciudad(T) {
       }
     }
   };
-  const nearTalk = () => peds.filter(p => p.kind !== 'gang' && p.kind !== 'boss' && dist(p, P) < 22).sort((a, b) => dist(a, P) - dist(b, P))[0];
+  const nearTalk = () => peds.filter(p => p.kind !== 'gang' && p.kind !== 'boss' && !(p.aggro > gameT) && dist(p, P) < 22).sort((a, b) => dist(a, P) - dist(b, P))[0];
   const renderHud = () => {
     if (said !== shownLog) {
       const msgs = log.slice(-2), fresh = shownLog !== -1; shownLog = said;
@@ -1956,17 +2153,18 @@ function ciudad(T) {
     }
     const w = CITY_W[P.w], stars = Math.floor(P.heat), nt = !P.car && nearTalk(), nc = !P.car && cars.some(c => !c.dead && c.kind !== 'soc' && c.kind !== 'van' && dist(c, P) < 18);
     hud.innerHTML = `<span class="hud-hp ${P.hp <= 25 ? 'is-low' : ''}"><b>HP</b><i><s style="width:${Math.max(0, P.hp)}%"></s></i>${Math.max(0, Math.round(P.hp))}</span>`
-      + (P.car ? `<span class="hud-cpu"><b>Auto</b><i><s style="width:${Math.max(0, P.car.hp / P.car.max * 100).toFixed(0)}%"></s></i>${Math.round(Math.abs(P.car.speed) * .6)} km/h</span>` : '')
+      + (P.armor > 0 ? `<span class="hud-cpu"><b>Chaleco</b><i><s style="width:${P.armor}%"></s></i></span>` : '')
+      + (P.car ? `<span class="hud-cpu"><b>${esc(CAR_T[P.car.type].n)}</b><i><s style="width:${Math.max(0, P.car.hp / P.car.max * 100).toFixed(0)}%"></s></i>${Math.round(Math.abs(P.car.speed) * .6)} km/h</span>` : '')
       + `<span>Arma <b>${esc(w.n)}</b>${w.melee ? '' : ` (${P.ammo[P.w]})`}</span><span>₿ <b>${P.cash}</b></span>`
       + `<span class="${stars ? 'is-low' : ''}">Rastreo <b>${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</b></span>`
       + `<span class="hud-spell">${mission ? `Misión ${mission.i + 1}: <b>${esc(CITY_MISSIONS[mission.i].t)}</b>` : MI < CITY_MISSIONS.length ? `Siguiente misión: <b>${esc(CITY_MISSIONS[MI].t)}</b>` : '<b>Ciudad liberada</b>'}</span>`
-      + (nt ? `<span class="hud-buff">[T] hablar con ${esc(nt.name || 'la persona')}</span>` : nc ? '<span class="hud-buff">[E] subir al auto</span>' : '')
+      + (nt ? `<span class="hud-buff">[T] hablar con ${esc(nt.name || (nt.clerk ? 'el dependiente' : 'la persona'))}</span>` : nc ? '<span class="hud-buff">[E] subir al auto</span>' : '')
       + `<span class="hud-turn">${MI}/${CITY_MISSIONS.length} misiones</span>`;
   };
   const frame = t => {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(.05, (t - lastT) / 1000); lastT = t;
-    if (state !== 'play' && state !== 'dying' && state !== 'talk') return;
+    if (state !== 'play' && state !== 'dying' && state !== 'talk' && state !== 'shop') return;
     if (state === 'play') update(dt);
     draw(t);
     if (t - hudT > 120) { hudT = t; renderHud(); }
@@ -1978,24 +2176,26 @@ function ciudad(T) {
     if (p.kind === 'nodo') return bubble(p, MI < CITY_MISSIONS.length ? (mission ? 'Concéntrate en la misión. La ruta amarilla te guía.' : 'Entra en el círculo verde cuando estés listo.') : 'Lo lograste. Esta ciudad te debe una.');
     if (p.kind === 'lia') return bubble(p, 'Acércate más, que no muerdo. Tengo algo para ti.');
     if (p.kind === 'res') return bubble(p, pickOne(RES_LINES));
+    if (p.clerk) return bubble(p, { armeria: '¿Algo para defenderse? Entre por la puerta, que no muerdo.', taller: 'Tráigame el auto y se lo dejo volando.', lot: 'Tenemos el blindado en oferta… bueno, casi.', hospital: 'Si está herido, pase. Si no, también: hay café.' }[p.clerk]);
     const obj = objective();
     if (obj && mission && Math.random() < .35) return bubble(p, pickOne(RUMORS).replace('{p}', streetAt(obj.pt.x, obj.pt.y) || 'el centro'));
-    bubble(p, p.kind === 'jog' ? '¡No paro, que pierdo el ritmo! Pero cuidado con Los Cifrados.' : pickOne(CIV_LINES));
+    const pp = PERSONAS[p.persona];
+    bubble(p, p.kind === 'jog' ? '¡No paro, que pierdo el ritmo! Pero cuidado con Los Cifrados.' : pp && Math.random() < .65 ? pickOne(pp.lines) : pickOne(CIV_LINES));
   };
   const die = () => {
     state = 'dying'; burst(fx, P.x, P.y, '#f2b33d', 40); fx.shake = now();
     if (mission) missionFail('te desconectaron.');
     setTimeout(() => {
       state = 'dead'; cv.hidden = hud.hidden = true; dlg.hidden = true;
-      const lost = Math.round(P.cash * .1); P.cash -= lost; persist();
+      const lost = Math.round(P.cash * .1); P.cash -= lost; P.armor = 0; persist();
       reveal(m.scr, [
         `<span class="g-dim">${stamp(gameT * 1000)} soc: objetivo neutralizado en Ciudad Zero-Day</span>`,
-        `<span class="g-dim">${stamp(gameT * 1000 + 70)} hospital: reiniciando paciente…</span>`,
+        `<span class="g-dim">${stamp(gameT * 1000 + 70)} hospital San Parche: reiniciando paciente…</span>`,
         ...boxed('*** CONEXIÓN PERDIDA ***', 'g-bad rv-glitch'),
         cols2(` ${dots('bajas')}${N(P.kills)}`, `${dots('misiones', 10)}${N(MI)}/${CITY_MISSIONS.length}`),
         cols2(` ${dots('criptos')}${N(P.cash)} ₿`, `${dots('factura', 10)}<b class="g-bad">−${lost} ₿</b>`),
         '',
-        ' [r] reaparecer en el refugio   [esc] salir <span class="rv-cur"></span>',
+        ' [r] despertar en el hospital   [esc] salir <span class="rv-cur"></span>',
       ].join('\n'), 80);
     }, 900);
   };
@@ -2017,7 +2217,7 @@ function ciudad(T) {
     ].join('\n'), 100);
   };
 
-  const KEYMAP = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down', ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ' ': 'fire', j: 'fire', J: 'fire', f: 'fire', F: 'fire' };
+  const KEYMAP = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down', ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ' ': 'fire', j: 'fire', J: 'fire', f: 'fire', F: 'fire', Shift: 'nitro' };
   const kdown = e => { const k = KEYMAP[e.key]; if (k && state === 'play') { keys[k] = true; e.preventDefault(); } };
   const kup = e => { const k = KEYMAP[e.key]; if (k) keys[k] = false; };
   const blur = () => { for (const k in keys) keys[k] = false; };
@@ -2034,21 +2234,31 @@ function ciudad(T) {
   addEventListener('resize', size);
   return session(T, m, e => {
     if (state === 'talk') { if (['e', 'E', 'Enter', ' ', 't', 'T'].includes(e.key)) { e.preventDefault(); advance(); } return; }
-    if (state === 'dead') { if (e.key === 'r' || e.key === 'R') reset(); return; }
+    if (state === 'shop') {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { e.preventDefault(); shop.i = (shop.i - 1 + shop.items.length) % shop.items.length; renderShop(); }
+      else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') { e.preventDefault(); shop.i = (shop.i + 1) % shop.items.length; renderShop(); }
+      else if (['e', 'E', 'Enter', ' '].includes(e.key)) { e.preventDefault(); buy(); }
+      else if (['q', 'Q', 'Backspace'].includes(e.key)) closeShop();
+      return;
+    }
+    if (state === 'dead') { if (e.key === 'r' || e.key === 'R') { reset(); const h = door(3, 4); P.x = h.x + 30; P.y = h.y; say('Despiertas en el Hospital San Parche. La factura llegará por correo… cifrado.'); } return; }
     if (state === 'won') {
       if (e.key === 'c' || e.key === 'C') { P.own = P.own.map(() => true); P.ammo = P.ammo.map((a, i) => a + (CITY_W[i].ammo || 0)); persist(); state = 'play'; cv.hidden = hud.hidden = false; say('Paseo libre: la ciudad es tuya.'); }
-      if (e.key === 'r' || e.key === 'R') { prog = {}; store.set('city', '{}'); reset(false); }
+      if (e.key === 'r' || e.key === 'R') { store.set('city', '{}'); reset(false); }
       return;
     }
     if (state !== 'play') return;
     if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') toggleCar();
     if (e.key === 't' || e.key === 'T') talkTo();
+    if (e.key === 'm' || e.key === 'M') { waypoint = waypoint + 1 >= POI.length ? -1 : waypoint + 1; say(waypoint >= 0 ? `Destino marcado: ${POI[waypoint].n}. Sigue la ruta.` : 'Destino borrado.'); }
     if (e.key === 'q' || e.key === 'Q' || e.key === 'Tab') {
       e.preventDefault();
-      for (let i = 1; i <= 6; i++) { const w = (P.w + i) % 6; if (P.own[w] && (w === 0 || P.ammo[w] > 0)) { P.w = w; break; } }
+      const n = CITY_W.length;
+      for (let i = 1; i <= n; i++) { const w = (P.w + i) % n; if (P.own[w] && (w < GUN0 || P.ammo[w] > 0)) { P.w = w; break; } }
       say(`Arma: ${CITY_W[P.w].n}.`);
     }
-  }, () => { cancelAnimationFrame(raf); removeEventListener('resize', size); removeEventListener('blur', blur); m.keyEl.removeEventListener('keydown', kdown); m.keyEl.removeEventListener('keyup', kup); });
+  }, () => { cancelAnimationFrame(raf); removeEventListener('resize', size); removeEventListener('blur', blur); m.keyEl.removeEventListener('keydown', kdown); m.keyEl.removeEventListener('keyup', kup); },
+  () => { if (state === 'shop') { closeShop(); return true; } return false; });
 }
 
 const GAMES = { snake, crack, phish, dungeon, ciudad };
