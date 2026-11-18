@@ -845,3 +845,4 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 .city-shop li b { color: #f2b33d; }
 .city-shop li em { grid-column: 1 / -1; font-style: normal; font-size: 11px; color: #8b95a8; }
 .hud-keys { flex-basis: 100%; color: #64748b; font-size: 11px; }
+.casino-show { margin: 4px 0; padding: 8px 10px; border: 1px solid #facc15; border-radius: 6px; background: #1c1407; color: #fde68a; font: 600 13px/1.4 var(--mono); white-space: pre; overflow-x: auto; }

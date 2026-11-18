@@ -1110,9 +1110,9 @@ function ciudad(T) {
   const map = new Uint8Array(MW * MH); // 0 calle · 1 acera · 2 edificio · 3 parque · 4 agua · 5 árbol · 6 plaza
   const bid = new Uint16Array(MW * MH); // identificador de edificio: casillas con el mismo id forman un edificio
   const at = (tx, ty) => tx < 0 || ty < 0 || tx >= MW || ty >= MH ? 4 : map[ty * MW + tx];
-  const SPECIAL = { '1,1': 'base', '8,6': 'c2', '10,7': 'dock', '2,6': 'armeria', '6,6': 'taller', '5,2': 'lot', '9,1': 'hospital' };
+  const SPECIAL = { '1,1': 'base', '8,6': 'c2', '10,7': 'dock', '2,6': 'armeria', '6,6': 'taller', '5,2': 'lot', '9,1': 'hospital', '1,6': 'casino', '0,5': 'market', '4,5': 'bar', '10,0': 'obs' };
   const RIVER = 4; // fila de manzanas que ocupa el río; las avenidas lo cruzan como puentes
-  const MERGES = [[5, 0, 'mplaza'], [8, 2, 'mpark'], [2, 2, 'mpark'], [3, 6, 'mplaza']]; // supermanzanas que cortan una avenida
+  const MERGES = [[5, 0, 'mplaza'], [8, 2, 'stadium'], [2, 2, 'mpark'], [3, 6, 'mplaza']]; // supermanzanas que cortan una avenida
   // Barrios: cada zona tiene su arquitectura, el color de sus aceras y su densidad de neón
   const BARRIOS = {
     bash: { n: 'Barrio Bash', kinds: ['house', 'house', 'apart', 'house', 'green'], park: .22, walk: '#4a4338', signs: .15 },
@@ -1122,7 +1122,7 @@ function ciudad(T) {
     puerto: { n: 'Puerto Industrial', kinds: ['ware', 'containers', 'ware', 'containers', 'data'], park: .04, walk: '#3f3f3f', signs: .1 },
   };
   const barrioOf = (bx, by) => by < RIVER ? (bx < 4 ? 'bash' : bx < 8 ? 'kernel' : 'sudo') : (bx < 5 ? 'neon' : 'puerto');
-  const SHOPB = { armeria: 1, taller: 1, hospital: 1 };
+  const SHOPB = { armeria: 1, taller: 1, hospital: 1, casino: 1, bar: 1, obs: 1 };
   const btype = {};
   for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) btype[bx + ',' + by] = by === RIVER ? 'river' : SPECIAL[bx + ',' + by] || (Math.random() < BARRIOS[barrioOf(bx, by)].park ? 'park' : 'build');
   for (const [bx, by, k] of MERGES) btype[bx + ',' + by] = btype[(bx + 1) + ',' + by] = k;
@@ -1151,16 +1151,35 @@ function ciudad(T) {
     map[ty * MW + tx] = t;
   }
   // Supermanzanas: se elimina el tramo de avenida entre dos manzanas y se convierte en parque con lago o en plaza con fuente
+  const fieldSet = new Set(), beachSet = new Set(), pierSet = new Set();
   for (const [bx, by, k] of MERGES) {
     const x0 = 2 + BK * bx + 3, x1 = 2 + BK * (bx + 1) + 7, y0 = 2 + BK * by + 3, y1 = 2 + BK * by + 7, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
       const e = ((tx - cx) / 3.2) ** 2 + ((ty - cy) / 1.6) ** 2;
-      map[ty * MW + tx] = k === 'mpark' ? (e < 1 ? 4 : e > 2 && Math.random() < .14 ? 5 : 3) : (e < .35 ? 4 : 6);
+      const wob = Math.sin(tx * 1.3) * .25 + Math.cos(ty * 1.7) * .25; // orilla irregular
+      if (k === 'stadium') {
+        const se = ((tx - cx) / ((x1 - x0) / 2 + .5)) ** 2 + ((ty - cy) / ((y1 - y0) / 2 + .5)) ** 2;
+        const gate = Math.abs(tx - cx) < 1 && ty > cy;
+        map[ty * MW + tx] = se < .42 || gate ? 6 : se <= 1 ? 2 : 6;
+        if (map[ty * MW + tx] === 2) { bid[ty * MW + tx] = 2000; kindOfB[2000] = 'stadium'; }
+        if (se < .42) fieldSet.add(ty * MW + tx);
+      } else map[ty * MW + tx] = k === 'mpark' ? (e + wob < 1 ? 4 : e > 2 && Math.random() < .14 ? 5 : 3) : (e < .35 ? 4 : 6);
     }
     for (const ty of [2 + BK * by + 2, 2 + BK * by + 8]) for (const tx of [2 + BK * (bx + 1), 2 + BK * (bx + 1) + 1]) map[ty * MW + tx] = 1; // sin tramos de calle sin salida
   }
+  // Costa suroeste: playa de arena con orilla irregular, palmeras, muelle de madera y un faro sobre las rocas
+  const BEACH_X = 2 + BK * 3 - 1, BEACH_Y = 2 + BK * 7 + 2;
+  const shoreY = tx => BEACH_Y + 4 + Math.round(Math.sin(tx * .45) * 1.5 + Math.sin(tx * 1.3 + 1) * .8);
+  for (let ty = BEACH_Y; ty < MH; ty++) for (let tx = 0; tx <= BEACH_X; tx++) {
+    const i = ty * MW + tx; beachSet.add(i); bid[i] = 0;
+    map[i] = ty >= shoreY(tx) ? 4 : (ty > BEACH_Y && Math.random() < .06 ? 5 : 7);
+  }
+  for (let ty = shoreY(14) - 2; ty < MH; ty++) for (const tx of [14, 15]) { map[ty * MW + tx] = 6; pierSet.add(ty * MW + tx); }
+  const FARO = { x: 5 * TW + 8, y: (shoreY(5) - 1) * TW + 8 };
+  map[Math.floor(FARO.y / TW) * MW + 5] = 2; bid[Math.floor(FARO.y / TW) * MW + 5] = 3000; kindOfB[3000] = 'faro';
+  for (let bx = 0; bx < 3; bx++) btype[bx + ',7'] = 'beach';
   const tAt = (x, y) => at(Math.floor(x / TW), Math.floor(y / TW));
-  const solid = t => t === 2 || t === 4 || t === 5;
+  const solid = t => t === 2 || t === 4 || t === 5; // 7 = arena (transitable)
   const free = (x, y, r) => !solid(tAt(x - r, y - r)) && !solid(tAt(x + r, y - r)) && !solid(tAt(x - r, y + r)) && !solid(tAt(x + r, y + r));
   const los = (a, b) => { const d = dist(a, b), n = Math.ceil(d / 8); for (let i = 1; i < n; i++) if (tAt(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n) === 2) return false; return true; };
   const inter = (bx, by) => ({ x: (2 + BK * bx) * TW + TW, y: (2 + BK * by) * TW + TW, bx, by });
@@ -1174,14 +1193,27 @@ function ciudad(T) {
     { k: 'taller', n: 'Taller Pit Stop Overclock', ...door(6, 6), col: '#f97316', ico: 'wrench' },
     { k: 'lot', n: 'Concesionario AutoHash', ...door(5, 2), col: '#22d3ee', ico: 'car' },
     { k: 'hospital', n: 'Hospital San Parche', ...door(9, 1), col: '#f1f5f9', ico: 'cross' },
+    { k: 'casino', n: 'Casino Bit Royale', ...door(1, 6), col: '#facc15', ico: 'dice' },
+    { k: 'market', n: 'Mercado nocturno', ...door(0, 5), col: '#fb923c', ico: 'food' },
+    { k: 'bar', n: 'Bar 0DAY', ...door(4, 5), col: '#a78bfa', ico: 'cup' },
+  ];
+  // Lugares por descubrir: la primera visita da una recompensa
+  const PLACES = [
+    { k: 'faro', n: 'Faro del Checksum', x: FARO.x + 18, y: FARO.y - 14 }, { k: 'playa', n: 'Playa Pixel', x: 9 * TW, y: (BEACH_Y + 2) * TW },
+    { k: 'muelle', n: 'Muelle de madera', x: 15 * TW, y: (MH - 2) * TW }, { k: 'estadio', n: 'Estadio Byte', x: (2 + BK * 9) * TW + 8, y: (2 + BK * 2 + 8) * TW + 8 },
+    { k: 'obs', n: 'Observatorio Sudo', ...door(10, 0) }, { k: 'parque', n: 'Gran Parque del Cifrado', x: (2 + BK * 3) * TW + 8, y: (2 + BK * 2 + 7) * TW + 8 },
+    { k: 'puente', n: 'Puente de Av. Socket', x: (2 + BK * 5) * TW + TW, y: (2 + BK * RIVER + 5) * TW }, { k: 'mercado', n: 'Mercado nocturno', ...door(0, 5) },
+    { k: 'casino', n: 'Casino Bit Royale', ...door(1, 6) }, { k: 'bar', n: 'Bar 0DAY', ...door(4, 5) },
   ];
   const streetAt = (x, y) => {
     const tx = Math.floor(x / TW), ty = Math.floor(y / TW), t = at(tx, ty), [rx, ry] = rr(tx, ty), bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK);
+    if (beachSet.has(ty * MW + tx)) return pierSet.has(ty * MW + tx) ? 'Muelle de madera' : t === 4 ? 'Bahía de los Logs' : 'Playa Pixel';
+    if (fieldSet.has(ty * MW + tx) || kindOfB[bid[ty * MW + tx]] === 'stadium') return 'Estadio Byte';
     if (t === 4) return by === RIVER && tx > 1 && tx < MW - 2 ? 'Río Base64' : (btype[bx + ',' + by] || '').startsWith('m') ? 'Lago del parque' : 'Bahía de los Logs';
     if (t === 6 || t === 1 || t === 3) {
       const k = btype[bx + ',' + by];
-      const named = { mpark: 'Gran Parque del Cifrado', mplaza: barrioOf(clamp(bx, 0, NBX - 1), clamp(by, 0, NBY - 1)) === 'neon' ? 'Plaza Neón' : 'Plaza del Kernel', base: 'Refugio de la resistencia', c2: 'Plaza roja (C2)', dock: 'Muelle de carga', park: 'Parque del Cifrado César', lot: 'Concesionario AutoHash', armeria: 'Armería 0xDEAD', taller: 'Taller Pit Stop Overclock', hospital: 'Hospital San Parche' };
-      if (named[k] && (t !== 1 || SHOPB[k] || k === 'lot')) return named[k];
+      const named = { market: 'Mercado nocturno', casino: 'Casino Bit Royale', bar: 'Bar 0DAY', obs: 'Observatorio Sudo', stadium: 'Estadio Byte', mpark: 'Gran Parque del Cifrado', mplaza: barrioOf(clamp(bx, 0, NBX - 1), clamp(by, 0, NBY - 1)) === 'neon' ? 'Plaza Neón' : 'Plaza del Kernel', base: 'Refugio de la resistencia', c2: 'Plaza roja (C2)', dock: 'Muelle de carga', park: 'Parque del Cifrado César', lot: 'Concesionario AutoHash', armeria: 'Armería 0xDEAD', taller: 'Taller Pit Stop Overclock', hospital: 'Hospital San Parche' };
+      if (named[k] && (t !== 1 || SHOPB[k] || k === 'lot' || k === 'market')) return named[k];
     }
     if (t !== 0) return '';
     if (rx < 2 && ry < 2) return `${AVS[clamp(bx, 0, NBX)]} / ${CALLES[clamp(by, 0, NBY)]}`;
@@ -1202,7 +1234,7 @@ function ciudad(T) {
   for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) {
     const ox = 2 + BK * bx, oy = 2 + BK * by;
     if (btype[bx + ',' + by] === 'river') continue;
-    for (const [rx, ry, dx, dy] of [[2, 2, -5, -5], [8, 2, 5, -5], [2, 8, -5, 5], [8, 8, 5, 5]]) lamps.push({ x: (ox + rx) * TW + 8 + dx, y: (oy + ry) * TW + 8 + dy });
+    for (const [rx, ry, dx, dy] of [[2, 2, -5, -5], [8, 2, 5, -5], [2, 8, -5, 5], [8, 8, 5, 5]]) { const l = { x: (ox + rx) * TW + 8 + dx, y: (oy + ry) * TW + 8 + dy }; if (!solid(tAt(l.x, l.y))) lamps.push(l); } // ninguna farola dentro del agua
     const bar = BARRIOS[barrioOf(bx, by)];
     if (btype[bx + ',' + by] === 'build' && Math.random() < bar.signs) signs.push({ x: (ox + 3) * TW + 3, y: (oy + 3) * TW + 3, txt: CITY_SIGNS[(bx * 5 + by * 3) % CITY_SIGNS.length], col: NEONS[(bx * 3 + by) % 4], ph: Math.random() * 10 });
     if (btype[bx + ',' + by] === 'build' && bar.signs >= 1) signs.push({ x: (ox + 5) * TW + 2, y: (oy + 6) * TW + 2, txt: pickOne(['CLUB', 'BAR', 'LIVE', '24H', 'KARAOKE', 'DJ']), col: pickOne(NEONS), ph: Math.random() * 10 });
@@ -1218,8 +1250,8 @@ function ciudad(T) {
   const mini = document.createElement('canvas'); mini.width = MW; mini.height = MH;
   {
     const g = mapCv.getContext('2d'), mg = mini.getContext('2d');
-    const ROOF = { house: '#8b3a2b', lab: '#c4ccd8', club: '#17101f', containers: '#3f3f46', office: '#1d3557', apart: '#7a3b2e', ware: '#4b5563', mall: '#3f3a52', data: '#141a24', green: '#24402c', armeria: '#3b0d0d', taller: '#3a3a3a', hospital: '#d9dde4' };
-    const WALL = { house: '#5c2a20', lab: '#8a94a3', club: '#0d0814', containers: '#27272a', office: '#122238', apart: '#4a2620', ware: '#2d333d', mall: '#2a2638', data: '#0b0f16', green: '#1c2b22', armeria: '#250707', taller: '#232323', hospital: '#a8afba' };
+    const ROOF = { casino: '#3b1d0b', bar: '#1f1a2e', obs: '#cbd5e1', stadium: '#374151', faro: '#57534e', house: '#8b3a2b', lab: '#c4ccd8', club: '#17101f', containers: '#3f3f46', office: '#1d3557', apart: '#7a3b2e', ware: '#4b5563', mall: '#3f3a52', data: '#141a24', green: '#24402c', armeria: '#3b0d0d', taller: '#3a3a3a', hospital: '#d9dde4' };
+    const WALL = { casino: '#2a1407', bar: '#130f1d', obs: '#94a3b8', stadium: '#1f2937', faro: '#3f3f46', house: '#5c2a20', lab: '#8a94a3', club: '#0d0814', containers: '#27272a', office: '#122238', apart: '#4a2620', ware: '#2d333d', mall: '#2a2638', data: '#0b0f16', green: '#1c2b22', armeria: '#250707', taller: '#232323', hospital: '#a8afba' };
     for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
       const t = at(tx, ty), x = tx * TW, y = ty * TW, [rx, ry] = rr(tx, ty), h = (tx * 73 + ty * 151) % 97;
       if (t === 0) {
@@ -1248,7 +1280,7 @@ function ciudad(T) {
       } else if (t === 2) {
         const id = bid[ty * MW + tx], kind = kindOfB[id], base = ROOF[kind];
         const same = (dx, dy) => at(tx + dx, ty + dy) === 2 && bid[(ty + dy) * MW + tx + dx] === id;
-        const front = !same(0, 1); // fila de la fachada sur: se ve el muro con ventanas (efecto 2,5D)
+        const front = !same(0, 1) && kind !== 'faro' && kind !== 'stadium'; // fila de la fachada sur: se ve el muro con ventanas (efecto 2,5D)
         g.fillStyle = base; g.fillRect(x, y, TW, TW);
         // cubierta según el tipo de edificio
         if (kind === 'office') { g.save(); g.beginPath(); g.rect(x, y, TW, TW); g.clip(); g.fillStyle = shade(base, .15); for (let i = -16; i < 16; i += 6) { g.beginPath(); g.moveTo(x + i, y + 16); g.lineTo(x + i + 4, y + 16); g.lineTo(x + i + 20, y); g.lineTo(x + i + 16, y); g.fill(); } g.restore(); g.fillStyle = shade(base, -.25); g.fillRect(x, y + 7, TW, 1); g.fillRect(x + 7, y, 1, TW); }
@@ -1258,6 +1290,10 @@ function ciudad(T) {
         else if (kind === 'data') { g.fillStyle = '#374151'; for (const [cx, cy] of [[4, 4], [12, 4], [4, 12], [12, 12]]) { g.beginPath(); g.arc(x + cx, y + cy, 3, 0, 6.283); g.fill(); } g.fillStyle = '#4ade80'; g.fillRect(x + 8, y + 8, 1, 1); }
         else if (kind === 'green') { g.fillStyle = '#2f6b3f'; g.fillRect(x + 2, y + 2, 5, 5); g.fillRect(x + 9, y + 9, 5, 5); g.fillStyle = '#7c4a1e'; g.fillRect(x + 2, y + 9, 5, 5); }
         else if (kind === 'taller') { g.fillStyle = shade(base, .1); if ((tx + ty) % 2) g.fillRect(x, y, TW, TW); }
+        else if (kind === 'stadium') { const a = Math.atan2(ty - 0, tx - 0); g.fillStyle = ['#b91c1c', '#1d4ed8', '#f2b33d'][(tx + ty) % 3]; for (let i = 2; i < TW; i += 4) g.fillRect(x, y + i, TW, 2); }
+        else if (kind === 'casino') { g.fillStyle = '#7c2d12'; g.fillRect(x + 1, y + 1, 14, 14); g.fillStyle = '#facc15'; if ((tx + ty) % 2) g.fillRect(x + 6, y + 6, 4, 4); }
+        else if (kind === 'bar') { g.fillStyle = '#2e1065'; g.fillRect(x + 2, y + 2, 12, 12); }
+        else if (kind === 'faro') { g.fillStyle = '#78716c'; g.beginPath(); g.arc(x + 8, y + 8, 8, 0, 6.283); g.fill(); }
         else if (kind === 'house') { g.fillStyle = shade(base, .14); g.fillRect(x, y, TW, 7); g.fillStyle = shade(base, -.18); g.fillRect(x, y + 8, TW, 8); g.fillStyle = shade(base, .35); g.fillRect(x, y + 7, TW, 1); if (h < 18) { g.fillStyle = '#3f3f46'; g.fillRect(x + 11, y + 2, 3, 4); } }
         else if (kind === 'lab') { g.fillStyle = 'rgba(56,189,248,.45)'; g.fillRect(x + 2, y + 5, 12, 3); g.fillStyle = '#94a3b8'; if (h < 30) g.fillRect(x + 4, y + 10, 4, 3); }
         else if (kind === 'containers') { const C = ['#b91c1c', '#1d4ed8', '#15803d', '#c2410c', '#0e7490', '#a16207']; for (const yy of [2, 9]) { const c0 = C[(h + yy) % 6]; g.fillStyle = c0; g.fillRect(x + 1, y + yy, 14, 5); g.fillStyle = shade(c0, -.3); for (let i = 3; i < 14; i += 3) g.fillRect(x + 1 + i, y + yy, 1, 5); } }
@@ -1279,6 +1315,10 @@ function ciudad(T) {
           g.fillStyle = '#05080f'; g.fillRect(x, y + 14, TW, 2);
           if (!same(1, 0)) { g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x + TW - 2, y + 7, 2, 9); }
         }
+      } else if (t === 7 || (t === 5 && beachSet.has(ty * MW + tx))) {
+        g.fillStyle = '#b8955c'; g.fillRect(x, y, TW, TW); g.fillStyle = '#a5844f'; g.fillRect(x + (h % 13), y + (h % 11), 2, 1); g.fillRect(x + (h % 7) + 4, y + (h % 5) + 6, 1, 1);
+        if (at(tx, ty + 1) === 4) { g.fillStyle = 'rgba(241,245,249,.55)'; g.fillRect(x, y + TW - 2, TW, 2); } // espuma de la orilla
+        if (t === 5) { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x + 10, y + 12, 6, 3, 0, 0, 6.283); g.fill(); g.strokeStyle = '#7c4a1e'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 8, y + 14); g.quadraticCurveTo(x + 6, y + 8, x + 8, y + 4); g.stroke(); g.fillStyle = '#15803d'; for (let a = 0; a < 6.28; a += 1.05) { g.beginPath(); g.ellipse(x + 8 + Math.cos(a) * 4, y + 4 + Math.sin(a) * 3, 4, 1.6, a, 0, 6.283); g.fill(); } }
       } else if (t === 3 || t === 5) {
         g.fillStyle = '#1b4329'; g.fillRect(x, y, TW, TW); g.fillStyle = '#21502f'; g.fillRect(x + (h % 12), y + (h % 9), 2, 2); g.fillRect(x + (h % 7) + 5, y + (h % 5) + 8, 1, 2);
         g.fillStyle = '#e879f9'; if (h % 11 === 0) g.fillRect(x + 4, y + 11, 1, 1); g.fillStyle = '#fde047'; if (h % 13 === 0) g.fillRect(x + 11, y + 4, 1, 1);
@@ -1288,13 +1328,16 @@ function ciudad(T) {
         const bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK), k = btype[bx + ',' + by];
         g.fillStyle = k === 'base' ? '#173225' : k === 'c2' ? '#3a1720' : k === 'park' ? '#6b5b45' : k === 'lot' ? '#262b36' : '#4a3825'; g.fillRect(x, y, TW, TW);
         g.fillStyle = k === 'base' ? '#1c3d2d' : k === 'c2' ? '#451b26' : k === 'park' ? '#7a6a52' : k === 'lot' ? '#e5e7eb' : '#5b4630';
-        if (k === 'dock') for (let i = 0; i < TW; i += 4) g.fillRect(x, y + i, TW, 1);
+        if (pierSet.has(ty * MW + tx)) { g.fillStyle = '#7c5a36'; g.fillRect(x, y, TW, TW); g.fillStyle = '#5c4026'; for (let i = 0; i < TW; i += 4) g.fillRect(x, y + i, TW, 1); g.fillStyle = '#3f2a17'; g.fillRect(tx === 14 ? x : x + TW - 2, y, 2, TW); }
+        else if (fieldSet.has(ty * MW + tx)) { g.fillStyle = (tx % 2) ? '#15803d' : '#166534'; g.fillRect(x, y, TW, TW); }
+        else if (k === 'market') { g.fillStyle = '#4a3a2a'; g.fillRect(x, y, TW, TW); if ((tx + ty) % 2) { g.fillStyle = '#3d2f22'; g.fillRect(x, y, TW, TW); } }
+        else if (k === 'dock') for (let i = 0; i < TW; i += 4) g.fillRect(x, y + i, TW, 1);
         else if (k === 'lot') { if (rx % 2) g.fillRect(x, y, 1, 10); }
         else if ((tx + ty) % 2) g.fillRect(x, y, TW, TW);
       }
       if (t !== 2) { g.fillStyle = 'rgba(0,0,0,.35)'; if (at(tx - 1, ty) === 2) g.fillRect(x, y, 4, TW); if (at(tx, ty - 1) === 2) g.fillRect(x, y, TW, 3); }
-      if (t === 5) { g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(x + 10, y + 11, 7, 0, 6.283); g.fill(); g.fillStyle = '#14532d'; g.beginPath(); g.arc(x + 8, y + 8, 7, 0, 6.283); g.fill(); g.fillStyle = '#1e7a3d'; g.beginPath(); g.arc(x + 7, y + 7, 4, 0, 6.283); g.fill(); g.fillStyle = '#2fa352'; g.fillRect(x + 5, y + 5, 2, 2); }
-      mg.fillStyle = t === 0 ? '#2a3040' : t === 1 ? '#4b5366' : t === 2 ? '#141824' : t === 4 ? '#0a2540' : t === 6 ? '#5b4630' : '#1b4329';
+      if (t === 5 && !beachSet.has(ty * MW + tx)) { g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(x + 10, y + 11, 7, 0, 6.283); g.fill(); g.fillStyle = '#14532d'; g.beginPath(); g.arc(x + 8, y + 8, 7, 0, 6.283); g.fill(); g.fillStyle = '#1e7a3d'; g.beginPath(); g.arc(x + 7, y + 7, 4, 0, 6.283); g.fill(); g.fillStyle = '#2fa352'; g.fillRect(x + 5, y + 5, 2, 2); }
+      mg.fillStyle = t === 7 ? '#b8955c' : t === 0 ? '#2a3040' : t === 1 ? '#4b5366' : t === 2 ? '#141824' : t === 4 ? '#0a2540' : t === 6 ? '#5b4630' : '#1b4329';
       mg.fillRect(tx, ty, 1, 1);
     }
     // fondo un poco más oscuro: así personas, autos y objetos destacan sobre él
@@ -1312,6 +1355,17 @@ function ciudad(T) {
       if (v === 'mplaza' && btype[(bx - 1) + ',' + by] !== 'mplaza') label(barrioOf(bx, by) === 'neon' ? 'PLAZA NEÓN' : 'PLAZA DEL KERNEL', '#f2b33d', c.y - 26);
       if (v === 'mpark' && btype[(bx - 1) + ',' + by] !== 'mpark') label('GRAN PARQUE', '#86efac', c.y - 26);
       if (v === 'dock') { g.strokeStyle = '#facc15'; g.lineWidth = 2; for (const dx of [-24, 18]) { g.strokeRect(c.x + dx - 4, c.y - 30, 8, 8); g.beginPath(); g.moveTo(c.x + dx, c.y - 26); g.lineTo(c.x + dx, c.y + 50); g.stroke(); g.beginPath(); g.moveTo(c.x + dx - 3, c.y - 26); g.lineTo(c.x + dx + 3, c.y + 50); g.stroke(); } label('MUELLE', '#facc15', c.y + 33); }
+      if (v === 'casino') { g.fillStyle = '#facc15'; g.shadowColor = '#facc15'; g.shadowBlur = 10; g.fillRect(c.x - 34, c.y - 36, 68, 3); g.fillRect(c.x - 34, c.y + 20, 68, 3); g.shadowBlur = 0; g.fillStyle = '#f8fafc'; g.fillRect(c.x - 9, c.y - 22, 18, 18); g.fillStyle = '#0b111d'; for (const [dx, dy] of [[-5, -18], [3, -18], [-1, -14], [-5, -10], [3, -10]]) g.fillRect(c.x + dx, c.y + dy, 2, 2); label('CASINO', '#facc15', c.y + 10); label('BIT ROYALE', '#f472b6', c.y + 33); }
+      if (v === 'bar') { label('BAR 0DAY', '#a78bfa', c.y + 33); g.fillStyle = '#a78bfa'; g.fillRect(c.x - 6, c.y - 20, 12, 14); g.fillStyle = '#fde68a'; g.fillRect(c.x - 4, c.y - 16, 8, 8); }
+      if (v === 'obs') { g.fillStyle = '#e2e8f0'; g.beginPath(); g.arc(c.x, c.y - 6, 22, 0, 6.283); g.fill(); g.fillStyle = '#94a3b8'; g.beginPath(); g.arc(c.x, c.y - 6, 22, 0, 6.283); g.stroke(); g.fillStyle = '#0b111d'; g.fillRect(c.x - 3, c.y - 28, 6, 22); label('OBSERVATORIO', '#e2e8f0', c.y + 33); }
+      if (v === 'market') { const AW = ['#ef4444', '#f2b33d', '#22c55e', '#3b82f6', '#ec4899']; for (let i = 0; i < 5; i++) { const sx = c.x - 34 + i * 15, sy = c.y - 18 + (i % 2) * 22; g.fillStyle = AW[i]; g.fillRect(sx, sy, 12, 6); g.fillStyle = '#f8fafc'; for (let j = 0; j < 12; j += 4) g.fillRect(sx + j, sy, 2, 6); g.fillStyle = '#78350f'; g.fillRect(sx + 1, sy + 6, 10, 4); } label('MERCADO', '#fde68a', c.y - 28); }
+      if (v === 'stadium' && btype[(bx - 1) + ',' + by] !== 'stadium') { const ex = c.x + BK * TW / 2; g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1; g.strokeRect(ex - 34, c.y - 14, 68, 28); g.beginPath(); g.moveTo(ex, c.y - 14); g.lineTo(ex, c.y + 14); g.stroke(); g.beginPath(); g.arc(ex, c.y, 6, 0, 6.283); g.stroke(); label('ESTADIO BYTE', '#f8fafc', c.y - 44); }
+      if (v === 'build' && barrioOf(bx, by) === 'kernel' && (bx + by) % 2) { // torre redonda de cristal
+        const gr = g.createRadialGradient(c.x - 8, c.y - 12, 4, c.x, c.y - 4, 30); gr.addColorStop(0, '#3b82f6'); gr.addColorStop(1, '#0f2547');
+        g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(c.x + 4, c.y, 30, 0, 6.283); g.fill();
+        g.fillStyle = gr; g.beginPath(); g.arc(c.x, c.y - 4, 28, 0, 6.283); g.fill(); g.strokeStyle = '#93c5fd'; g.lineWidth = 1.5; g.beginPath(); g.arc(c.x, c.y - 4, 28, 0, 6.283); g.stroke();
+        g.strokeStyle = 'rgba(147,197,253,.35)'; for (let r = 8; r < 28; r += 6) { g.beginPath(); g.arc(c.x, c.y - 4, r, 0, 6.283); g.stroke(); }
+      }
       if (v === 'lot') { g.fillStyle = '#1e293b'; g.fillRect(c.x - 30, c.y - 38, 60, 18); g.fillStyle = 'rgba(56,189,248,.4)'; g.fillRect(c.x - 28, c.y - 36, 56, 14); label('AUTOHASH', '#22d3ee', c.y - 26); }
     }
     g.textAlign = 'start';
@@ -1382,7 +1436,7 @@ function ciudad(T) {
     const t = at(tx, ty);
     if (t === 0 && laneOpts(tx, ty).length === 1) roadTiles.push([tx, ty]);
     if (t === 1) walkTiles.push([tx, ty]);
-    if (t === 6 || t === 3) plazaTiles.push([tx, ty]);
+    if (t === 6 || t === 3 || t === 7) plazaTiles.push([tx, ty]);
   }
   const offscreen = (x, y, pad = 40) => Math.abs(x - P.x) > VW / 2 + pad || Math.abs(y - P.y) > VH / 2 + pad;
   // una sola amenaza de la banda a la vez: si gritan todos, no se lee nada
@@ -1493,22 +1547,91 @@ function ciudad(T) {
       if (c.owned === undefined) L.push({ label: 'aviso', price: 0, desc: 'Este auto no es tuyo: las mejoras se pierden si lo dejas. Cómpralo en AutoHash para conservarlo.', buy: () => {} });
       return L;
     }
+    if (k === 'market') return [['gallo pinto', 10, 20, 'Arroz, frijoles y energía para toda la noche.'], ['casado', 18, 35, 'El plato completo: el que te deja como nuevo.'], ['chifrijo', 15, 28, 'Chicharrón, frijoles y pico de gallo. Pura vida.'], ['agua de pipa', 8, 15, 'Hidratación natural, directo del coco.'], ['café chorreado', 6, 10, 'Recién chorreado, como en casa de la abuela.']]
+      .map(([n2, pr, hp, d]) => ({ label: n2, price: pr, desc: `+${hp} de vida · ${d}`, buy: pay(pr, () => { P.hp = Math.min(100, P.hp + hp); say(`Te comes un ${n2}: +${hp} de vida. ¡Qué rico, mae!`); }) }));
+    if (k === 'bar') return [
+      { label: 'café negro', price: 5, desc: '+10 de vida y los ojos bien abiertos.', buy: pay(5, () => { P.hp = Math.min(100, P.hp + 10); say('Café negro. El camarero te guiña: «aquí nadie pregunta».'); }) },
+      { label: 'escuchar rumores', price: 0, desc: 'Gratis: los hackers del bar siempre saben algo.', buy: () => { const left = PLACES.filter(pl => !(prog.visited || []).includes(pl.k)); const o = objective(); say(o && mission ? `Rumor: lo que buscas está por ${streetAt(o.pt.x, o.pt.y) || 'ahí'}.` : left.length ? `Rumor: deberías conocer ${pickOne(left).n}. Dicen que vale la pena.` : 'Rumor: ya conoces la ciudad mejor que nadie.'); } },
+      { label: 'invitar una ronda', price: 25, desc: 'Nadie te delata esta noche: baja el rastreo.', buy: pay(25, () => { P.heat = Math.max(0, P.heat - 2); say('Brindis general. Si alguien vio algo, ya lo olvidó.'); }) },
+    ];
+    if (k === 'casino') return casinoItems();
     if (k === 'hospital') return [
       { label: 'curación completa', price: 50, desc: `Vida ${Math.round(P.hp)}/100.`, buy: pay(50, () => { P.hp = 100; say('La enfermera te deja como nuevo y te recuerda actualizar el antivirus.'); }) },
       { label: 'vacuna antiphishing', price: 0, desc: 'Gratis: «Si te meten prisa, desconfía». No cura, pero ayuda.', buy: () => say('Enfermera: «Y no abra adjuntos raros, ¿eh?»') },
     ];
     return [];
   };
-  const openShop = poi => { shop = { poi, i: 0 }; state = 'shop'; for (const k in keys) keys[k] = false; if (P.car) P.car.speed = 0; renderShop(); };
+  const openShop = poi => { shop = { poi, i: 0, bet: shop && shop.bet || 1 }; state = 'shop'; for (const k in keys) keys[k] = false; if (P.car) P.car.speed = 0; renderShop(); };
   const closeShop = () => { shop = null; state = 'play'; dlg.hidden = true; poiLeave = POI.findIndex(p => dist(p, P) < 20); };
   const renderShop = () => {
     const items = [...shopItems(shop.poi.k), { label: 'salir', price: 0, desc: '', buy: closeShop }];
     shop.i = clamp(shop.i, 0, items.length - 1); shop.items = items;
     dlg.hidden = false;
-    dlg.innerHTML = `<b class="city-who">${esc(shop.poi.n)}</b><small>Tienes <b>${P.cash} ₿</b></small><ul class="city-shop">${items.map((it, i) => `<li data-i="${i}" class="${i === shop.i ? 'on' : ''}${it.price > P.cash ? ' off' : ''}"><span>${esc(it.label)}</span><b>${it.price ? it.price + ' ₿' : ''}</b>${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</li>`).join('')}</ul><small>${touch ? 'Toca un artículo para comprarlo' : '↑↓ elegir · E o Enter comprar · Q o Esc salir'}</small>`;
+    dlg.innerHTML = `<b class="city-who">${esc(shop.poi.n)}</b><small>Tienes <b>${P.cash} ₿</b></small>${shop.show ? `<pre class="casino-show">${shop.show}</pre>` : ''}<ul class="city-shop">${items.map((it, i) => `<li data-i="${i}" class="${i === shop.i ? 'on' : ''}${it.price > P.cash ? ' off' : ''}"><span>${esc(it.label)}</span><b>${it.price ? it.price + ' ₿' : ''}</b>${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</li>`).join('')}</ul><small>${touch ? 'Toca un artículo para comprarlo' : '↑↓ elegir · E o Enter comprar · Q o Esc salir'}</small>`;
     dlg.querySelectorAll('li').forEach(li => li.addEventListener('click', e => { e.stopPropagation(); shop.i = +li.dataset.i; buy(); }));
   };
-  const buy = () => { const it = shop.items[shop.i]; it.buy(); if (shop) renderShop(); };
+  const buy = () => { if (shop.busy) return; const it = shop.items[shop.i]; it.buy(); if (shop) renderShop(); };
+
+  // ---------- Casino Bit Royale: tragamonedas, ruleta, carrera de bots y tragamonedas de autos (la casa siempre gana… casi) ----------
+  const BETS = [10, 50, 100, 500];
+  const casinoItems = () => {
+    const bet = BETS[shop.bet];
+    return [
+      { label: `apuesta: ${bet} ₿ (cambiar)`, price: 0, desc: 'Elige cuánto apostar en los juegos de abajo.', buy: () => { shop.bet = (shop.bet + 1) % BETS.length; } },
+      { label: 'tragamonedas Hash', price: bet, desc: 'Tres iguales ×8 · tres 7 ×25 · dos iguales ×1,5.', buy: () => casino('slots') },
+      { label: 'ruleta: rojo', price: bet, desc: 'Impares rojos. Paga ×2.', buy: () => casino('roul', 'rojo') },
+      { label: 'ruleta: negro', price: bet, desc: 'Pares negros. Paga ×2.', buy: () => casino('roul', 'negro') },
+      { label: 'ruleta: verde (0)', price: bet, desc: 'Solo el cero. Paga ×30.', buy: () => casino('roul', 'verde') },
+      ...['Bot-404 (favorito)', 'Bot-Ping', 'Bot-Sudo', 'Bot-Glitch (sorpresa)'].map((n2, i) => ({ label: `carrera: ${n2}`, price: bet, desc: `Paga ×${[2.2, 3.3, 4.4, 6.6][i]}.`, buy: () => casino('race', i) })),
+      { label: 'tragamonedas de autos', price: 200, desc: 'Tres autos iguales: ¡te lo llevas! Dos iguales te devuelven la apuesta.', buy: () => casino('cars') },
+    ];
+  };
+  const casino = (game, choice) => {
+    const bet = game === 'cars' ? 200 : BETS[shop.bet];
+    if (P.cash < bet) { say(`Necesitas ${bet} ₿ para jugar.`); return; }
+    P.cash -= bet; shop.busy = true;
+    let f = 0;
+    const done = (txt, win, car) => { if (win) { P.cash += win; burst(fx, P.x, P.y, '#facc15', 20); } shop.show = txt + (car ? '' : win ? `\n<b class="g-ok">+${win} ₿</b>` : '\n<span class="g-bad">la casa gana</span>'); shop.busy = false; persist(); say(car ? `Casino: ¡ganas un ${car}!` : win ? `Casino: ganas ${win} ₿.` : 'Casino: esta vez gana la casa. Como el ransomware.'); if (shop) renderShop(); };
+    const tick = (fn, n, ms) => { const id = setInterval(() => { if (!shop) return clearInterval(id); f++; fn(f); if (shop) renderShop(); if (f >= n) clearInterval(id); }, ms); };
+    if (game === 'slots' || game === 'cars') {
+      const SYM = game === 'slots' ? ['7', 'BTC', 'RAM', '404', 'SSH', 'CPU'] : ['DEP', '4x4', 'BLI', 'TAX', 'SED', '---'], W = game === 'slots' ? [1, 3, 4, 4, 4, 4] : [3, 3, 2, 4, 4, 4];
+      const roll = () => { let r = Math.random() * W.reduce((a, b) => a + b), i = 0; while ((r -= W[i]) > 0) i++; return SYM[i]; };
+      const res = [roll(), roll(), roll()];
+      tick(n => {
+        const shown = res.map((x, i) => n < 6 + i * 4 ? pickOne(SYM) : x);
+        shop.show = `[ ${shown.map(x => x.padEnd(3)).join(' | ')} ]`;
+        if (n < 14) return;
+        const same3 = res[0] === res[1] && res[1] === res[2], same2 = !same3 && (res[0] === res[1] || res[1] === res[2] || res[0] === res[2]);
+        if (game === 'slots') return done(shop.show, same3 ? bet * (res[0] === '7' ? 25 : 8) : same2 ? Math.round(bet * 1.5) : 0);
+        const CAR = { DEP: 'sport', '4x4': 'offroad', BLI: 'armored', TAX: 'taxi', SED: 'sedan' };
+        if (same3 && CAR[res[0]]) {
+          const t2 = CAR[res[0]]; prog.cars = prog.cars || []; const col = t2 === 'taxi' ? '#facc15' : t2 === 'armored' ? '#3f4652' : pickOne(PAINTS);
+          prog.cars.push({ type: t2, col, eng: 0, arm: 0, turbo: false, neon: null });
+          const c = makeCar(t2, P.x + 30, P.y + 22, 0, { col, owned: prog.cars.length - 1 }); fx.rings.push({ x: c.x, y: c.y, r: 40, col: '#facc15', t: now() });
+          banner = { txt: '¡PREMIO MAYOR!', sub: `Ganas un ${CAR_T[t2].n}`, t: now(), ok: true };
+          return done(`${shop.show}\n<b class="g-ok">¡Ganas un ${CAR_T[t2].n}! Te espera en la puerta.</b>`, 0, CAR_T[t2].n);
+        }
+        return done(shop.show, same2 && !res.includes('---') ? bet : 0);
+      }, 14, 80);
+    } else if (game === 'roul') {
+      const n0 = rnd(0, 36), col = n0 === 0 ? 'verde' : n0 % 2 ? 'rojo' : 'negro';
+      tick(n => {
+        const k = n < 16 ? rnd(0, 36) : n0, c2 = k === 0 ? 'verde' : k % 2 ? 'rojo' : 'negro';
+        shop.show = `ruleta → <b class="${c2 === 'rojo' ? 'g-bad' : c2 === 'verde' ? 'g-ok' : ''}">${String(k).padStart(2)} ${c2}</b>`;
+        if (n >= 16) done(shop.show + ` · apostaste a ${choice}`, choice === col ? bet * (col === 'verde' ? 30 : 2) : 0);
+      }, 16, 90);
+    } else {
+      const PR = [.4, .27, .2, .13], PAY = [2.2, 3.3, 4.4, 6.6], NAMES = ['Bot-404', 'Bot-Ping', 'Bot-Sudo', 'Bot-Glitch'];
+      let r = Math.random(), win = 0; while ((r -= PR[win]) > 0 && win < 3) win++;
+      const pos = [0, 0, 0, 0];
+      tick(n => {
+        for (let i = 0; i < 4; i++) pos[i] = Math.min(i === win ? 20 : 19, pos[i] + Math.random() * 1.6 + (i === win ? .35 : 0));
+        if (n === 18) pos[win] = 20;
+        shop.show = NAMES.map((nm, i) => `${nm.padEnd(10)} ${'█'.repeat(Math.round(pos[i])).padEnd(20, '·')}${pos[i] >= 20 ? ' ◀ META' : ''}`).join('\n');
+        if (n >= 18) done(shop.show + `\ngana ${NAMES[win]}`, choice === win ? Math.round(bet * PAY[win]) : 0);
+      }, 18, 110);
+    }
+  };
 
   // ---------- Combate ----------
   const crime = v => { P.heat = Math.min(5.99, P.heat + v); P.lastCrime = gameT; };
@@ -1662,7 +1785,7 @@ function ciudad(T) {
   const drive = (c, thr, steer, dt, boost = false) => {
     const T2 = CAR_T[c.type], tile = tAt(c.x, c.y);
     let max = T2.max * (1 + .12 * c.eng), acc = T2.acc * (1 + .12 * c.eng);
-    if (c.type !== 'offroad') { if (tile === 3 || tile === 6) max *= .6; else if (tile === 1) max *= .85; } // el todoterreno no se frena fuera del asfalto
+    if (c.type !== 'offroad') { if (tile === 3 || tile === 6 || tile === 7) max *= .6; else if (tile === 1) max *= .85; } // el todoterreno no se frena fuera del asfalto
     if (boost && c.turbo && c.nitro > 0) { max *= 1.45; acc *= 2; c.nitro = Math.max(0, c.nitro - dt / 3); if (Math.random() < .7) burst(fx, c.x - Math.cos(c.ang) * 11, c.y - Math.sin(c.ang) * 11, Math.random() < .5 ? '#38bdf8' : '#f97316', 1); }
     else if (c.turbo) c.nitro = Math.min(1, c.nitro + dt / 8);
     if (thr) c.speed += thr * (Math.sign(thr) === Math.sign(c.speed) || !c.speed ? (thr > 0 ? acc : 140) : 420) * dt;
@@ -1732,7 +1855,7 @@ function ciudad(T) {
     if (i === 1) { mission.kind = 'fetch'; const p = M_PT[1]; pickups.push({ x: p.x, y: p.y, k: 'drive', m: true }); mission.pt = p; guards(p, 4); }
     if (i === 2) { mission.kind = 'destroy'; mission.time = 100; const c = blockMid(8, 6); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
     if (i === 3) { mission.kind = 'van'; mission.time = 80; const v = spawnCar('van', false); mission.van = v; if (v) v.m = true; }
-    if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(NBX, 0), inter(0, NBY), inter(NBX, NBY)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
+    if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(NBX, 0), inter(0, NBY - 1), inter(NBX, NBY)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
     if (i === 5) { mission.kind = 'boss'; const d = blockMid(10, 7); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 6); }
   };
   const REWARD = [[150, 6, 'pistola de ping'], [400, 0, ''], [500, 7, 'escopeta DDoS'], [600, 8, 'subfusil de fuerza bruta'], [800, 9, 'lanzador EMP'], [2000, 10, 'cañón de fibra']];
@@ -1755,8 +1878,9 @@ function ciudad(T) {
     peds = peds.filter(p => !p.m); cars = cars.filter(c => !c.m); pickups = pickups.filter(p => !p.m); objs = []; mission = null;
   };
   const bossDown = () => { say('El jefe de Los Cifrados cae. Sus claves quedan libres para todos.'); missionDone(); };
+  const dests = () => [...POI, ...PLACES.filter(pl => !(prog.visited || []).includes(pl.k) && !POI.some(q => q.k === pl.k || (pl.k === 'mercado' && q.k === 'market')))];
   const objective = () => {
-    if (!mission && waypoint >= 0) { const p = POI[waypoint]; return { pt: p, txt: `Destino: ${p.n}`, col: p.col }; }
+    if (!mission && waypoint >= 0) { const p = dests()[waypoint]; if (p) return { pt: p, txt: `Destino: ${p.n}`, col: p.col || '#f472b6' }; }
     if (!mission) return MI < CITY_MISSIONS.length ? { pt: base, txt: 'Ve al refugio y habla con Nodo', col: '#4ade80' } : null;
     const k = mission.kind, col = '#f2b33d';
     if (k === 'goto') return { pt: mission.pt, txt: `Reúnete con Lía en ${interName(mission.pt)}`, col };
@@ -1969,6 +2093,12 @@ function ciudad(T) {
       else if (pk.k === 'drive') { say('¡Tienes el pendrive! Sigue la ruta de vuelta al refugio antes de que te alcancen.'); if (mission) mission.kind = 'return'; crime(1.2); }
     }
     missionUpdate();
+    for (const pl of PLACES) {
+      if ((prog.visited || []).includes(pl.k) || dist(P, pl) > 24) continue;
+      prog.visited = [...(prog.visited || []), pl.k]; P.cash += 60; persist();
+      banner = { txt: 'LUGAR DESCUBIERTO', sub: `${pl.n} · +60 ₿ (${prog.visited.length}/${PLACES.length})`, t: now(), ok: true };
+      say(`Descubres ${pl.n}. +60 ₿.${pl.k === 'obs' ? ' Desde la cúpula ves toda la ciudad: los lugares que te faltan aparecen en el minimapa.' : ''}`);
+    }
     const obj = objective();
     if (obj) { const k = `${Math.floor(obj.pt.x / TW)},${Math.floor(obj.pt.y / TW)},${!!P.car}`; if (gameT - routeT > .4 || k !== routeKey) { route = computeRoute(obj.pt); routeT = gameT; routeKey = k; } } else route = [];
     const st = streetAt(P.x, P.y), bz = barrioAt(P.x, P.y);
@@ -2022,6 +2152,9 @@ function ciudad(T) {
     if (p.ico === 'gun') { ctx.beginPath(); ctx.arc(0, 0, s * .55, 0, 6.283); ctx.stroke(); ctx.fillRect(-s * .8, -.5, s * 1.6, 1); ctx.fillRect(-.5, -s * .8, 1, s * 1.6); }
     if (p.ico === 'wrench') { ctx.fillRect(-s * .6, s * .3, s * 1.1, s * .3); ctx.beginPath(); ctx.arc(s * .45, -s * .2, s * .35, 0, 6.283); ctx.stroke(); ctx.save(); ctx.rotate(-.8); ctx.fillRect(-s * .7, -.6, s * 1.3, 1.4); ctx.restore(); }
     if (p.ico === 'car') { ctx.fillRect(-s * .7, -s * .2, s * 1.4, s * .5); ctx.fillRect(-s * .4, -s * .5, s * .8, s * .3); ctx.fillStyle = '#05080f'; ctx.fillRect(-s * .5, s * .2, s * .25, s * .25); ctx.fillRect(s * .25, s * .2, s * .25, s * .25); }
+    if (p.ico === 'dice') { ctx.fillStyle = '#f8fafc'; ctx.fillRect(-s * .6, -s * .6, s * 1.2, s * 1.2); ctx.fillStyle = '#0b111d'; for (const [a, b] of [[-.3, -.3], [.3, .3], [0, 0]]) ctx.fillRect(a * s - .7, b * s - .7, 1.5, 1.5); }
+    if (p.ico === 'food') { ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(0, s * .1, s * .65, 0, Math.PI); ctx.fill(); ctx.fillStyle = '#fb923c'; ctx.fillRect(-s * .5, -s * .2, s, s * .3); }
+    if (p.ico === 'cup') { ctx.fillRect(-s * .45, -s * .5, s * .8, s); ctx.strokeRect(s * .35, -s * .2, s * .3, s * .4); }
     if (p.ico === 'cross') { ctx.fillStyle = '#ef4444'; ctx.fillRect(-s * .2, -s * .6, s * .4, s * 1.2); ctx.fillRect(-s * .6, -s * .2, s * 1.2, s * .4); }
     ctx.restore();
   };
@@ -2051,6 +2184,12 @@ function ciudad(T) {
       ctx.globalAlpha = 1;
     }
     if (obj) { const pul = 8 + 3 * Math.sin(t / 160); ctx.strokeStyle = obj.col; ctx.lineWidth = 2; ctx.globalAlpha = .85; ctx.beginPath(); ctx.arc(obj.pt.x, obj.pt.y, pul + 4, 0, 6.283); ctx.stroke(); ctx.globalAlpha = .25; ctx.fillStyle = obj.col; ctx.beginPath(); ctx.arc(obj.pt.x, obj.pt.y, pul + 4, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
+    if (vis(FARO.x, FARO.y, 140)) {
+      const a = t / 900; ctx.globalCompositeOperation = 'lighter';
+      const g2 = ctx.createRadialGradient(FARO.x, FARO.y, 2, FARO.x, FARO.y, 130); g2.addColorStop(0, 'rgba(253,230,138,.35)'); g2.addColorStop(1, 'rgba(253,230,138,0)');
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.moveTo(FARO.x, FARO.y); ctx.arc(FARO.x, FARO.y, 130, a - .18, a + .18); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(FARO.x, FARO.y, 5, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(FARO.x, FARO.y, 3.5, 0, 6.283); ctx.stroke(); ctx.fillStyle = '#fde68a'; ctx.fillRect(FARO.x - 1, FARO.y - 1, 2, 2);
+    }
     for (const p of POI) if (vis(p.x, p.y, 30)) { const b = Math.sin(t / 250) * 1.5; ctx.shadowColor = p.col; ctx.shadowBlur = 8; poiIcon(p, p.x, p.y - 2 + b, 5, t); ctx.shadowBlur = 0; }
     for (let iy = 0; iy <= NBY; iy++) for (let ix = 0; ix <= NBX; ix++) {
       const tx = 2 + BK * ix, ty = 2 + BK * iy, x0 = tx * TW, y0 = ty * TW;
@@ -2182,6 +2321,8 @@ function ciudad(T) {
     peds.forEach(p => { if (p.kind === 'gang' || p.kind === 'boss') dot(p, '#f87171'); });
     drones.forEach(d => dot(d, '#22d3ee'));
     POI.forEach(p => dot(p, p.col, 2));
+    const seenAll = (prog.visited || []).includes('obs');
+    PLACES.forEach(pl => { const v = (prog.visited || []).includes(pl.k); if (v || seenAll) dot(pl, v ? '#64748b' : '#f472b6', 2); });
     if (obj && Math.floor(t / 300) % 2) dot(obj.pt, obj.col, 3);
     dot(base, '#4ade80', 2);
     dot(P, '#ffffff', 3);
@@ -2218,7 +2359,7 @@ function ciudad(T) {
       + `<span class="${stars ? 'is-low' : ''}">Rastreo <b>${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</b></span>`
       + `<span class="hud-spell">${mission ? `Misión ${mission.i + 1}: <b>${esc(CITY_MISSIONS[mission.i].t)}</b>` : MI < CITY_MISSIONS.length ? `Siguiente misión: <b>${esc(CITY_MISSIONS[MI].t)}</b>` : '<b>Ciudad liberada</b>'}</span>`
       + (nt ? `<span class="hud-buff">[E] hablar con ${esc(nt.name || (nt.clerk ? 'el dependiente' : 'la persona'))}</span>` : nc ? '<span class="hud-buff">[E] subir al auto</span>' : '')
-      + `<span class="hud-turn">${MI}/${CITY_MISSIONS.length} misiones</span>`
+      + `<span class="hud-turn">${MI}/${CITY_MISSIONS.length} misiones · ${(prog.visited || []).length}/${PLACES.length} lugares</span>`
       + (touch ? '' : '<span class="hud-keys">WASD mover · Espacio atacar · E acción · Q arma · M destino · Mayús turbo</span>');
   };
   const frame = t => {
@@ -2316,7 +2457,7 @@ function ciudad(T) {
       }
     }
     if (e.key === 't' || e.key === 'T') talkTo();
-    if (e.key === 'm' || e.key === 'M') { waypoint = waypoint + 1 >= POI.length ? -1 : waypoint + 1; say(waypoint >= 0 ? `Destino marcado: ${POI[waypoint].n}. Sigue la ruta.` : 'Destino borrado.'); }
+    if (e.key === 'm' || e.key === 'M') { const L = dests(); waypoint = waypoint + 1 >= L.length ? -1 : waypoint + 1; say(waypoint >= 0 ? `Destino marcado: ${L[waypoint].n}. Sigue la ruta.` : 'Destino borrado.'); }
     if (e.key === 'q' || e.key === 'Q' || e.key === 'Tab') {
       e.preventDefault();
       const n = CITY_W.length;
