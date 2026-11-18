@@ -103,3 +103,93 @@ if (toc) {
   title.classList.add('has-morph');
   toc.addEventListener('toggle', () => m.morphTo(toc.open ? CLOSE : LIST));
 }
+
+// Cambia un SVG fijo por su morph-icon y, si se indica, lo transforma al pasar el ratón o enfocar.
+const swap = (svg, d, size, hoverD, host = svg.parentElement) => {
+  const m = make(d, size, 2);
+  svg.replaceWith(m);
+  if (hoverD) {
+    const on = () => m.morphTo(hoverD), off = () => m.morphTo(d);
+    host.addEventListener('mouseenter', on); host.addEventListener('mouseleave', off);
+    host.addEventListener('focus', on); host.addEventListener('blur', off);
+  }
+  return m;
+};
+
+// Redes del pie: logo → flecha de salida
+document.querySelectorAll('.contact a[data-icon]').forEach(a => {
+  const svg = a.querySelector('svg');
+  if (svg) swap(svg, a.dataset.icon, 18, OUT, a);
+});
+
+// «Leer el caso»: flecha → flecha de salida
+const caseLink = document.querySelector('.welcome-link');
+if (caseLink) {
+  const m = make(ARROW, 16, 2);
+  m.classList.add('welcome-arrow');
+  caseLink.append(m);
+  const on = () => m.morphTo(OUT), off = () => m.morphTo(ARROW);
+  caseLink.addEventListener('mouseenter', on); caseLink.addEventListener('mouseleave', off);
+  caseLink.addEventListener('focus', on); caseLink.addEventListener('blur', off);
+}
+
+// Capturas: lupa → marco de ampliar
+const ZOOM = 'M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5M11 8v6M8 11h6';
+const EXPAND = 'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3';
+document.querySelectorAll('.shot a[data-lightbox]').forEach(a => {
+  const badge = document.createElement('span');
+  badge.className = 'shot-zoom';
+  badge.setAttribute('aria-hidden', 'true');
+  const m = make(ZOOM, 18, 2.2);
+  badge.append(m);
+  a.append(badge);
+  a.classList.add('has-morph');
+  const on = () => m.morphTo(EXPAND), off = () => m.morphTo(ZOOM);
+  a.addEventListener('mouseenter', on); a.addEventListener('mouseleave', off);
+  a.addEventListener('focus', on); a.addEventListener('blur', off);
+});
+
+// Visor de capturas: cerrar y flechas; las flechas se alargan al pasar el ratón
+const LEFT = 'M15 5l-7 7 7 7', RIGHT = 'M9 5l7 7-7 7';
+const LEFT_LONG = 'M19 12H5M11 6l-6 6 6 6', RIGHT_LONG = 'M5 12h14M13 6l6 6-6 6';
+const lb = document.querySelector('.lb');
+if (lb) {
+  const close = lb.querySelector('.lb-close svg'), prev = lb.querySelector('.lb-prev svg'), next = lb.querySelector('.lb-next svg');
+  if (close) swap(close, CLOSE, 22);
+  if (prev) swap(prev, LEFT, 22, LEFT_LONG);
+  if (next) swap(next, RIGHT, 22, RIGHT_LONG);
+}
+
+// «Lo que te llevas»: al entrar en pantalla, la casilla se marca y cada punto se tacha con su ✓, uno tras otro.
+// Es el momento propio de los posts: lo que te llevas, marcado. Con movimiento reducido se muestra ya marcado.
+const BOX = 'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5z';
+const BOX_OK = 'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zM7.5 12.5l3 3 6-6.5';
+const DOT = 'M11.5 12a.5.5 0 1 0 1 0a.5.5 0 1 0-1 0z';
+const TICK = 'M5.5 12.5l4.5 4.5 8.5-9.5';
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.querySelectorAll('.box-leccion').forEach(box => {
+  const title = box.querySelector('.box-title');
+  const items = [...box.querySelectorAll(':scope > ul > li')];
+  if (!title) return;
+  const head = make(still ? BOX_OK : BOX, 22, 2.2);
+  head.classList.add('box-check');
+  title.prepend(head);
+  const ticks = items.map(li => {
+    // morph-icon se dibuja con display: contents; el span es el que se posiciona.
+    const wrap = document.createElement('span');
+    wrap.className = 'box-tick';
+    wrap.setAttribute('aria-hidden', 'true');
+    const m = make(still ? TICK : DOT, 16, 2.4);
+    wrap.append(m);
+    li.prepend(wrap);
+    return m;
+  });
+  box.classList.add('has-ticks');
+  if (still) return box.classList.add('is-still');
+  const run = () => {
+    head.morphTo(BOX_OK);
+    ticks.forEach((m, i) => setTimeout(() => { m.morphTo(TICK); items[i].classList.add('is-ticked'); }, 260 + Math.min(i, 6) * 110));
+  };
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { run(); io.disconnect(); } }), { threshold: .45 });
+  io.observe(box);
+});
