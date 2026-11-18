@@ -631,9 +631,12 @@ atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra
 <b>crack</b>     descifra la contraseña en 6 intentos  racha ${r('crack-racha')}
 <b>phish</b>     ¿phishing o legítimo? 8 casos         récord ${r('hs-phish')}/8
 <b>dungeon</b>   roguelike: baja 10 capas de la red profunda   récord ${r('hs-dungeon')}
+${gotFlags().length >= 5 ? `<b>ciudad</b>    PREMIO: Ciudad Zero-Day, mundo abierto con autos y misiones  récord ${r('hs-city')}` : `<span class="t-d">???       [bloqueado] consigue las 5 banderas del CTF (${gotFlags().length}/5)</span>`}
 Esc sale de cualquier juego.`);
     },
     snake: () => game('snake'), crack: () => game('crack'), phish: () => game('phish'), dungeon: () => game('dungeon'),
+    // Premio del CTF: solo se abre con las 5 banderas
+    ciudad: () => gotFlags().length >= 5 ? game('ciudad') : print(`ciudad: acceso denegado. Este juego es el premio del CTF: consigue las 5 banderas (${gotFlags().length}/5). Pista: <b>secretos</b>`, 't-err'),
     fortune: () => print(pickF()),
     ping: a => {
       const host = escH(a || 'todohack.github.io');
@@ -679,7 +682,7 @@ Recuerda: escanear equipos ajenos sin permiso es delito. En tu laboratorio, todo
       got.push(name);
       try { localStorage.setItem('flags', JSON.stringify(got)); } catch (e) {}
       print(`<b>¡Bandera válida!</b> «${name}» · ${got.length}/5`, 't-ok');
-      if (got.length === 5) { print('Las tienes todas. Eres de los que leen el código fuente: así empieza todo hacker de verdad. 🏁', 't-ok'); setRoot(true); }
+      if (got.length === 5) { print('Las tienes todas. Eres de los que leen el código fuente: así empieza todo hacker de verdad. 🏁', 't-ok'); print('PREMIO DESBLOQUEADO: <b>Ciudad Zero-Day</b>, un mundo abierto con autos, armas y misiones. Escribe <b>ciudad</b>.', 't-ok'); setRoot(true); }
     },
     sl: async () => {
       input.disabled = true;
@@ -695,7 +698,7 @@ Recuerda: escanear equipos ajenos sin permiso es delito. En tu laboratorio, todo
     clear: () => { out.textContent = ''; },
     exit: () => dlg.close(),
   };
-  Object.assign(C, { dir: C.ls, ll: C.ls, man: C.help, cls: C.clear, quit: C.exit, games: C.juegos, gusano: C.snake, mazmorra: C.dungeon, roguelike: C.dungeon, descifra: C.crack, coffee: C.cafe, hello: C.hola, secret: C.secretos, banderas: C.flags });
+  Object.assign(C, { city: C.ciudad, rampage: C.ciudad, dir: C.ls, ll: C.ls, man: C.help, cls: C.clear, quit: C.exit, games: C.juegos, gusano: C.snake, mazmorra: C.dungeon, roguelike: C.dungeon, descifra: C.crack, coffee: C.cafe, hello: C.hola, secret: C.secretos, banderas: C.flags });
   const run = async line => {
     print(`<span class="term-ps">visitante@todohack:~$</span> ${escH(line)}`, 't-cmd');
     if (!line) return;
