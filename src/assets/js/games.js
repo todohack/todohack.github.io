@@ -245,87 +245,215 @@ function session(T, m, onKey, cleanup, esc) {
 
 // ===================== snake: el gusano que come paquetes =====================
 function snake(T) {
-  const W = 26, H = 13;
+  const W = 26, H = 13, LEVELS = 5;
   sprites();
-  const m = mount(T, { pad: touch ? dpad(false, [['r', 'otra vez'], ['Escape', 'salir']]) : '' });
+  const m = mount(T, { pad: touch ? dpad(false, [['Enter', 'otra vez'], ['Escape', 'salir']]) : '' });
   const cv = document.createElement('canvas'); cv.className = 'game-cv';
-  m.scr.before(cv);
+  m.scr.before(cv); m.scr.classList.add('game-log');
   const z = T.out.clientWidth >= 640 ? 1.5 : 1;
   const ctx = setupCanvas(cv, W * TS * z, H * TS * z);
   ctx.scale(z, z);
   const fx = fxLayer();
-  let s, dir, next, food, score, dead, timer, speed, raf, stepT = 0, deadT = 0;
-  const place = () => { do food = [rnd(0, W - 1), rnd(0, H - 1)]; while (s.some(p => p[0] === food[0] && p[1] === food[1])); };
+  const now = () => performance.now();
+  // Potenciadores: los que tienen t duran ese número de segundos
+  const POW = {
+    life: { n: 'vida extra', col: '#f87171', w: 1 },
+    shield: { n: 'escudo firewall', col: '#22d3ee', t: 8, w: 3 },
+    slow: { n: 'throttle', col: '#a78bfa', t: 8, w: 3 },
+    x2: { n: 'puntos ×2', col: '#facc15', t: 10, w: 3 },
+    wrap: { n: 'túnel VPN', col: '#4ade80', t: 10, w: 2 },
+    cut: { n: 'compresión', col: '#fb923c', w: 2 },
+  };
+  const POOL = Object.entries(POW).flatMap(([k, v]) => Array(v.w).fill(k));
+  const target = lv => 6 + lv * 3; // paquetes para pasar de nivel
+  let s, dir, next, food, pow, walls, score, level, eaten, lives, state, timer, raf, stepT = 0, inv = 0, act, banner = null, deadT = 0;
+  const on = k => act[k] > now();
+  const busy = (x, y) => s.some(p => p[0] === x && p[1] === y) || walls.some(w => w[0] === x && w[1] === y) || (food && food[0] === x && food[1] === y) || (pow && pow.x === x && pow.y === y);
+  const freeCell = () => { for (let k = 0; k < 400; k++) { const x = rnd(0, W - 1), y = rnd(0, H - 1); if (!busy(x, y) && Math.abs(x - s[0][0]) + Math.abs(y - s[0][1]) > 2) return [x, y]; } return [0, 0]; };
+  const placeFood = () => { food = null; food = freeCell(); };
+  const spawnWalls = () => {
+    walls = [];
+    for (let i = 0; i < (level - 1) * 4; i++) { // muros de firewall en tramos de 2, lejos del centro
+      const [x, y] = freeCell(), horiz = Math.random() < .5;
+      if (Math.abs(x - W / 2) < 4 && Math.abs(y - H / 2) < 3) continue;
+      walls.push([x, y]); const x2 = x + (horiz ? 1 : 0), y2 = y + (horiz ? 0 : 1);
+      if (x2 < W && y2 < H && !busy(x2, y2)) walls.push([x2, y2]);
+    }
+  };
+  const respawn = () => { s = [[5, 6], [4, 6], [3, 6]]; dir = next = [1, 0]; inv = now() + 2000; while (walls.some(w => w[1] === 6 && w[0] < 9)) walls = walls.filter(w => !(w[1] === 6 && w[0] < 9)); };
   const hud = () => {
-    m.scr.innerHTML = dead
-      ? `<b class="g-bad">GUSANO DETENIDO</b> · ${score} paquetes · récord ${best('hs-snake', score)}\n${touch ? 'toca «otra vez»' : 'Espacio u Enter'} para jugar otra vez · Esc salir`
-      : `paquetes ${score} · récord ${+store.get('hs-snake') || 0} · ${touch ? 'usa las flechas' : 'flechas o WASD para girar'} · Esc sale`;
+    const pw = Object.keys(act).filter(on).map(k => `<b style="color:${POW[k].col}">${POW[k].n} ${Math.ceil((act[k] - now()) / 1000)}s</b>`).join(' · ');
+    m.scr.innerHTML = state === 'play' || state === 'dying'
+      ? `Nivel <b>${level}/${LEVELS}</b> · paquetes <b>${eaten}/${target(level)}</b> · vidas <b class="g-bad">${'♥'.repeat(lives)}</b><span class="g-dim">${'♡'.repeat(Math.max(0, 3 - lives))}</span> · puntos <b>${score}</b>${pw ? '\n' + pw : ''}\n<span class="g-dim">${touch ? 'flechas para girar' : 'flechas o WASD'} · come cajas · recoge potenciadores · Esc sale</span>`
+      : m.scr.innerHTML;
+  };
+  const loop = () => {
+    if (state === 'play') step();
+    const base = Math.max(62, 140 - (level - 1) * 15);
+    timer = setTimeout(loop, on('slow') ? base * 1.7 : base);
+  };
+  const loseLife = () => {
+    lives--; deadT = now(); fx.shake = deadT;
+    burst(fx, s[0][0] * TS + 8, s[0][1] * TS + 8, '#f87171', 22);
+    if (lives <= 0) return gameOver();
+    state = 'dying'; banner = { txt: `¡CHOQUE! QUEDAN ${lives}`, col: '#f87171', t: now() };
+    setTimeout(() => { if (state === 'dying') { respawn(); state = 'play'; } }, 800);
+  };
+  const step = () => {
+    dir = next;
+    let h = [s[0][0] + dir[0], s[0][1] + dir[1]];
+    const out = h[0] < 0 || h[1] < 0 || h[0] >= W || h[1] >= H;
+    if (out && (on('wrap') || now() < inv)) h = [(h[0] + W) % W, (h[1] + H) % H];
+    const selfHit = s.some((p, i) => i < s.length - 1 && p[0] === h[0] && p[1] === h[1]);
+    const wallIdx = walls.findIndex(w => w[0] === h[0] && w[1] === h[1]);
+    if ((out && !on('wrap') && now() >= inv) || selfHit || wallIdx >= 0) {
+      if (now() < inv) { /* invulnerable: atraviesa */ }
+      else if (on('shield')) { // el escudo absorbe un choque y rompe el muro
+        act.shield = 0; inv = now() + 1000;
+        burst(fx, h[0] * TS + 8, h[1] * TS + 8, '#22d3ee', 18); banner = { txt: 'ESCUDO ROTO', col: '#22d3ee', t: now() };
+        if (wallIdx >= 0) walls.splice(wallIdx, 1);
+        if (out) h = [(h[0] + W) % W, (h[1] + H) % H];
+      } else return loseLife();
+    }
+    s.unshift(h); stepT = now();
+    if (food && h[0] === food[0] && h[1] === food[1]) {
+      score += on('x2') ? 2 : 1; eaten++;
+      burst(fx, food[0] * TS + 8, food[1] * TS + 8, '#d6a15b', 12);
+      fx.floats.push({ x: food[0] * TS + 8, y: food[1] * TS + 6, txt: on('x2') ? '+2' : '+1', col: '#fde68a', t: now() });
+      if (eaten >= target(level)) return nextLevel();
+      placeFood();
+      if (!pow && Math.random() < .38) { const [x, y] = freeCell(); pow = { x, y, k: pickOne(POOL), until: now() + 7000 }; }
+    } else s.pop();
+    if (pow && h[0] === pow.x && h[1] === pow.y) {
+      const P2 = POW[pow.k];
+      if (pow.k === 'life') lives = Math.min(5, lives + 1);
+      else if (pow.k === 'cut') s = s.slice(0, Math.max(3, Math.ceil(s.length / 2)));
+      else act[pow.k] = now() + P2.t * 1000;
+      burst(fx, pow.x * TS + 8, pow.y * TS + 8, P2.col, 16);
+      banner = { txt: P2.n.toUpperCase(), col: P2.col, t: now() };
+      pow = null;
+    }
+    if (pow && now() > pow.until) pow = null;
+  };
+  const nextLevel = () => {
+    if (level >= LEVELS) return victory();
+    level++; eaten = 0; pow = null; act = {};
+    fx.rings.push({ x: W * TS / 2, y: H * TS / 2, r: 140, col: '#4ade80', t: now() });
+    banner = { txt: `NIVEL ${level}`, sub: `${target(level)} cajas · más rápido · más firewalls`, col: '#4ade80', t: now() };
+    respawn(); spawnWalls(); placeFood();
+  };
+  const endScreen = (won) => {
+    state = won ? 'won' : 'over'; cv.hidden = true;
+    const sc = score + (won ? lives * 10 : 0), b = best('hs-snake', sc);
+    reveal(m.scr, [
+      ...boxed(won ? '*** RED LIMPIA ***' : '*** GUSANO DETENIDO ***', won ? 'g-ok rv-glitch' : 'g-bad rv-glitch'),
+      won ? ' Superaste los 5 niveles. Ni un firewall te paró.' : ` Llegaste al nivel ${level} de ${LEVELS}.`,
+      cols2(` ${dots('cajas')}${N(score)}`, `${dots('vidas', 9)}${N(lives)}`),
+      cols2(` ${dots('puntos')}<b class="g-me" data-n="${sc}">${sc}</b>`, `${dots('récord', 9)}${N(b)}`),
+      '',
+      ` [${touch ? 'otra vez' : 'Espacio'}] jugar otra vez   [Esc] salir <span class="rv-cur"></span>`,
+    ].join('\n'), 90);
+  };
+  const gameOver = () => endScreen(false);
+  const victory = () => endScreen(true);
+  const reset = () => {
+    level = 1; eaten = 0; score = 0; lives = 3; act = {}; pow = null; walls = []; state = 'play'; banner = { txt: 'NIVEL 1', sub: `${target(1)} cajas para pasar`, col: '#4ade80', t: now() };
+    cv.hidden = false; respawn(); inv = now() + 600; placeFood();
+  };
+
+  // ---------- Dibujo ----------
+  const box = (x, y, t) => { // caja de cartón con cinta y código de barras
+    const b = Math.round(Math.sin(t / 260) * 1), px = x * TS + 1, py = y * TS + 1 + b;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(px + 2, py + 3, 14, 13);
+    ctx.fillStyle = '#b07a3c'; ctx.fillRect(px, py, 14, 14);
+    ctx.fillStyle = '#c99254'; ctx.fillRect(px, py, 14, 4);
+    ctx.fillStyle = '#7c5426'; ctx.fillRect(px, py + 4, 14, 1); ctx.fillRect(px, py, 1, 14); ctx.fillRect(px + 13, py, 1, 14); ctx.fillRect(px, py + 13, 14, 1);
+    ctx.fillStyle = '#e2c48f'; ctx.fillRect(px + 6, py, 2, 14);
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(px + 2, py + 7, 4, 4);
+    ctx.fillStyle = '#0b111d'; for (let i = 0; i < 4; i += 2) ctx.fillRect(px + 2 + i, py + 8, 1, 2);
+    ctx.fillStyle = '#7c5426'; ctx.fillRect(px + 9, py + 8, 3, 1); ctx.fillRect(px + 9, py + 10, 2, 1);
+  };
+  const powIcon = (p, t) => {
+    const P2 = POW[p.k], cx = p.x * TS + 8, cy = p.y * TS + 8, left = p.until - now();
+    if (left < 2000 && Math.floor(t / 120) % 2) return; // parpadea antes de desaparecer
+    ctx.shadowColor = P2.col; ctx.shadowBlur = 8 + 3 * Math.sin(t / 150);
+    ctx.fillStyle = '#05080f'; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = P2.col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 6.283); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = P2.col; ctx.strokeStyle = P2.col;
+    if (p.k === 'life') { ctx.beginPath(); ctx.arc(cx - 2, cy - 1, 2.2, 0, 6.283); ctx.arc(cx + 2, cy - 1, 2.2, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 4.2, cy); ctx.lineTo(cx + 4.2, cy); ctx.lineTo(cx, cy + 4); ctx.fill(); }
+    if (p.k === 'shield') { ctx.beginPath(); ctx.moveTo(cx - 4, cy - 4); ctx.lineTo(cx + 4, cy - 4); ctx.lineTo(cx + 4, cy); ctx.lineTo(cx, cy + 4.5); ctx.lineTo(cx - 4, cy); ctx.fill(); }
+    if (p.k === 'slow') { ctx.beginPath(); ctx.moveTo(cx - 3, cy - 4); ctx.lineTo(cx + 3, cy - 4); ctx.lineTo(cx - 3, cy + 4); ctx.lineTo(cx + 3, cy + 4); ctx.closePath(); ctx.fill(); }
+    if (p.k === 'x2') { ctx.font = 'bold 7px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText('×2', cx, cy + 2.5); }
+    if (p.k === 'wrap') { ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, 6.283); ctx.fill(); }
+    if (p.k === 'cut') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx - 2, cy + 2.5, 1.6, 0, 6.283); ctx.arc(cx + 2, cy + 2.5, 1.6, 0, 6.283); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 1, cy + 1); ctx.lineTo(cx + 3, cy - 4); ctx.moveTo(cx + 1, cy + 1); ctx.lineTo(cx - 3, cy - 4); ctx.stroke(); }
   };
   const frame = t => {
     raf = requestAnimationFrame(frame);
+    if (state === 'over' || state === 'won') return;
     const [sx, sy] = shakeOffset(fx, t);
     ctx.save();
     ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, W * TS, H * TS);
     ctx.translate(Math.round(sx), Math.round(sy));
-    ctx.fillStyle = '#0d1424';
+    ctx.fillStyle = on('wrap') ? '#0b1f17' : '#0d1424';
     for (let y = 0; y < H; y++) for (let x = (y & 1); x < W; x += 2) ctx.fillRect(x * TS, y * TS, TS, TS);
-    // paquete: late y gira su brillo
-    const pul = 1 + .12 * Math.sin(t / 140);
-    const fs = TS * pul, fo = (TS - fs) / 2;
-    ctx.shadowColor = '#93b4f2'; ctx.shadowBlur = 8 + 4 * Math.sin(t / 140);
-    ctx.drawImage(SPR.pkt, food[0] * TS + fo, food[1] * TS + fo, fs, fs);
-    ctx.shadowBlur = 0;
-    // cuerpo: segmentos redondeados con degradado de verde a azul
-    const k = dead ? 1 : Math.min(1, (t - stepT) / speed);
-    s.forEach((p, i) => {
-      if (i === 0) return;
-      const fade = dead ? Math.max(0, 1 - (t - deadT - i * 30) / 300) : 1;
-      if (fade <= 0) return;
-      ctx.globalAlpha = fade;
-      const hue = 140 + (i / s.length) * 80;
-      ctx.fillStyle = `hsl(${hue} 70% ${55 - (i % 2) * 8}%)`;
-      const pad = 2 + Math.min(2, i / 6);
-      ctx.beginPath(); ctx.roundRect(p[0] * TS + pad, p[1] * TS + pad, TS - pad * 2, TS - pad * 2, 4); ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-    // cabeza: un poco adelantada mientras avanza, con ojos que miran hacia donde va
-    const h = s[0], hx = h[0] * TS + (dead ? 0 : (k - 1) * dir[0] * TS * .25), hy = h[1] * TS + (dead ? 0 : (k - 1) * dir[1] * TS * .25);
-    ctx.fillStyle = dead ? '#f87171' : '#f2b33d';
-    ctx.beginPath(); ctx.roundRect(hx + 1, hy + 1, TS - 2, TS - 2, 5); ctx.fill();
-    ctx.fillStyle = '#0b111d';
-    const ex = dir[0] * 3, ey = dir[1] * 3;
-    const [e1, e2] = dir[0] ? [[8 + ex, 5], [8 + ex, 11]] : [[5, 8 + ey], [11, 8 + ey]];
-    ctx.fillRect(hx + e1[0] - 1, hy + e1[1] - 1, 3, 3); ctx.fillRect(hx + e2[0] - 1, hy + e2[1] - 1, 3, 3);
+    if (on('wrap')) { ctx.strokeStyle = `rgba(74,222,128,${.4 + .3 * Math.sin(t / 150)})`; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.strokeRect(1, 1, W * TS - 2, H * TS - 2); ctx.setLineDash([]); }
+    for (const [x, y] of walls) { // bloques de firewall
+      ctx.fillStyle = '#7f1d1d'; ctx.fillRect(x * TS, y * TS, TS, TS);
+      ctx.fillStyle = '#b91c1c'; ctx.fillRect(x * TS + 1, y * TS + 1, 6, 6); ctx.fillRect(x * TS + 9, y * TS + 1, 6, 6); ctx.fillRect(x * TS + 4, y * TS + 9, 8, 6);
+      ctx.fillStyle = `rgba(251,146,60,${.25 + .15 * Math.sin(t / 200 + x)})`; ctx.fillRect(x * TS, y * TS, TS, 2);
+    }
+    if (food) box(food[0], food[1], t);
+    if (pow) powIcon(pow, t);
+    const blink = now() < inv && Math.floor(t / 100) % 2;
+    if (state === 'play' || state === 'dying') {
+      const dying = state === 'dying';
+      s.forEach((p, i) => {
+        if (i === 0) return;
+        ctx.globalAlpha = blink ? .35 : dying ? Math.max(0, 1 - (t - deadT - i * 30) / 300) : 1;
+        const hue = 140 + (i / s.length) * 80;
+        ctx.fillStyle = `hsl(${hue} 70% ${55 - (i % 2) * 8}%)`;
+        const pad = 2 + Math.min(2, i / 6);
+        ctx.beginPath(); ctx.roundRect(p[0] * TS + pad, p[1] * TS + pad, TS - pad * 2, TS - pad * 2, 4); ctx.fill();
+      });
+      ctx.globalAlpha = blink ? .35 : 1;
+      const h = s[0], k = Math.min(1, (t - stepT) / 120), hx = h[0] * TS + (dying ? 0 : (k - 1) * dir[0] * 4), hy = h[1] * TS + (dying ? 0 : (k - 1) * dir[1] * 4);
+      if (on('shield')) { ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 10; }
+      ctx.fillStyle = dying ? '#f87171' : '#f2b33d';
+      ctx.beginPath(); ctx.roundRect(hx + 1, hy + 1, TS - 2, TS - 2, 5); ctx.fill(); ctx.shadowBlur = 0;
+      if (on('shield')) { ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(hx + 8, hy + 8, 10, 0, 6.283); ctx.stroke(); }
+      ctx.fillStyle = '#0b111d';
+      const ex = dir[0] * 3, ey = dir[1] * 3;
+      const [e1, e2] = dir[0] ? [[8 + ex, 5], [8 + ex, 11]] : [[5, 8 + ey], [11, 8 + ey]];
+      ctx.fillRect(hx + e1[0] - 1, hy + e1[1] - 1, 3, 3); ctx.fillRect(hx + e2[0] - 1, hy + e2[1] - 1, 3, 3);
+      ctx.globalAlpha = 1;
+    }
     drawFx(ctx, fx, t);
     ctx.restore();
-    if (dead && t - deadT < 300) { ctx.fillStyle = `rgba(248,113,113,${.25 * (1 - (t - deadT) / 300)})`; ctx.fillRect(0, 0, W * TS, H * TS); }
-  };
-  const step = () => {
-    dir = next;
-    const h = [s[0][0] + dir[0], s[0][1] + dir[1]];
-    if (h[0] < 0 || h[1] < 0 || h[0] >= W || h[1] >= H || s.some(p => p[0] === h[0] && p[1] === h[1])) {
-      dead = true; deadT = performance.now(); fx.shake = deadT; clearInterval(timer);
-      burst(fx, s[0][0] * TS + 8, s[0][1] * TS + 8, '#f87171', 22);
-      return hud();
+    // vidas en la esquina
+    for (let i = 0; i < lives; i++) { const x = 6 + i * 9, y = 6; ctx.fillStyle = '#f87171'; ctx.beginPath(); ctx.arc(x, y, 2, 0, 6.283); ctx.arc(x + 3.5, y, 2, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - 2, y + .5); ctx.lineTo(x + 5.5, y + .5); ctx.lineTo(x + 1.75, y + 4.5); ctx.fill(); }
+    if (banner) {
+      const k = (t - banner.t) / 1800;
+      if (k > 1) banner = null;
+      else {
+        const sc = k < .1 ? .6 + k * 4 : 1;
+        ctx.save(); ctx.globalAlpha = k > .75 ? (1 - k) / .25 : 1; ctx.translate(W * TS / 2, H * TS * .42); ctx.scale(sc, sc);
+        ctx.font = 'bold 14px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#05080f';
+        ctx.strokeText(banner.txt, 0, 0); ctx.fillStyle = banner.col; ctx.shadowColor = banner.col; ctx.shadowBlur = 10; ctx.fillText(banner.txt, 0, 0); ctx.shadowBlur = 0;
+        if (banner.sub) { ctx.font = '8px "JetBrains Mono", monospace'; ctx.strokeText(banner.sub, 0, 13); ctx.fillStyle = '#e5e7eb'; ctx.fillText(banner.sub, 0, 13); }
+        ctx.restore();
+      }
     }
-    s.unshift(h); stepT = performance.now();
-    if (h[0] === food[0] && h[1] === food[1]) {
-      score++;
-      burst(fx, food[0] * TS + 8, food[1] * TS + 8, '#93b4f2', 12);
-      fx.floats.push({ x: food[0] * TS + 8, y: food[1] * TS + 8, txt: '+1', col: '#93b4f2', t: stepT });
-      place(); hud();
-      if (score % 3 === 0 && speed > 60) { speed -= 10; clearInterval(timer); timer = setInterval(step, speed); }
-    } else s.pop();
+    hud();
   };
-  const reset = () => { s = [[5, 6], [4, 6], [3, 6]]; dir = next = [1, 0]; score = 0; dead = false; speed = 130; place(); clearInterval(timer); timer = setInterval(step, speed); hud(); };
-  const DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], k: [0, -1], j: [0, 1], h: [-1, 0], l: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
+  const DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], k: [0, -1], j: [0, 1], h: [-1, 0], l: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
   reset();
+  timer = setTimeout(loop, 400);
   raf = requestAnimationFrame(frame);
   return session(T, m, e => {
+    if (state === 'over' || state === 'won') { if (['r', 'R', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); reset(); } return; }
     const d = DIRS[e.key];
     if (d) { e.preventDefault(); if (!(d[0] === -dir[0] && d[1] === -dir[1])) next = d; }
-    else if (dead && ['r', 'R', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); reset(); }
-  }, () => { clearInterval(timer); cancelAnimationFrame(raf); });
+  }, () => { clearTimeout(timer); cancelAnimationFrame(raf); });
 }
 
 // ===================== crack: descifra la contraseña =====================
