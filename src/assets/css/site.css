@@ -792,3 +792,28 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 @keyframes hud-blink { 50% { opacity: .35; } }
 .hud-turn { margin-left: auto; color: #3a4763; }
 .game-cv[hidden], .game-hud[hidden] { display: none; }
+
+/* ---------- Modo neón: noche violeta, rosa y cian, atardecer y cuadrícula retro (truco NEONCITY) ---------- */
+:root.neon-mode {
+  --bg: #12062b; --surface: #1c0b3d; --raised: #24104c; --line: #3d1d6e; --text: #e6d6ff; --ink: #ffffff; --muted: #b59ad9;
+  --accent: #8b2cff; --accent-hover: #a24dff; --accent-soft: #2b1050; --dot: #ff3fc8; --amber: #ff3fc8; --amber-bg: #2b1050;
+  --link: #3ee8ff; --code-bg: #0b0320;
+}
+:root.neon-mode body { background: radial-gradient(120% 60% at 50% 115%, rgba(255, 63, 200, .28), rgba(255, 140, 66, .1) 35%, transparent 60%) fixed, var(--bg); }
+/* cuadrícula en perspectiva al pie de la pantalla, detrás de todo */
+:root.neon-mode body::before {
+  content: ''; position: fixed; left: -50%; right: -50%; bottom: 0; height: 38vh; z-index: -1; pointer-events: none;
+  background: repeating-linear-gradient(to right, rgba(62, 232, 255, .22) 0 1px, transparent 1px 64px), repeating-linear-gradient(to bottom, rgba(255, 63, 200, .25) 0 1px, transparent 1px 32px);
+  transform: perspective(300px) rotateX(60deg); transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(transparent, #000 60%); mask-image: linear-gradient(transparent, #000 60%);
+}
+:root.neon-mode .sidebar { background: rgba(18, 6, 43, .82); }
+:root.neon-mode :is(h1, h2, .welcome-h) { color: #fff; text-shadow: 0 0 6px rgba(255, 63, 200, .85), 0 0 22px rgba(255, 63, 200, .45), 2px 0 0 rgba(62, 232, 255, .55); }
+:root.neon-mode .prose a, :root.neon-mode .welcome-link { text-shadow: 0 0 8px rgba(62, 232, 255, .6); }
+:root.neon-mode .avatar img { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px #ff3fc8, 0 0 22px 4px rgba(255, 63, 200, .55); }
+:root.neon-mode .author-name::after { content: ' ★'; color: #3ee8ff; text-shadow: 0 0 8px #3ee8ff; }
+:root.neon-mode .btn:not(.btn-ghost) { background: linear-gradient(90deg, #ff3fc8, #8b2cff); border-color: transparent; box-shadow: 0 0 18px -4px rgba(255, 63, 200, .8); }
+:root.neon-mode .card-thumb, :root.neon-mode .post-cover img, :root.neon-mode .code-win { box-shadow: 0 0 0 1px rgba(255, 63, 200, .25), 0 10px 30px -12px rgba(139, 44, 255, .55); }
+:root.neon-mode .matrix { filter: hue-rotate(170deg) saturate(2.2) brightness(1.2); }
+:root.neon-mode .progress { background: linear-gradient(90deg, #3ee8ff, #ff3fc8); box-shadow: 0 0 10px #ff3fc8; }
+:root.neon-mode ::selection { background: rgba(255, 63, 200, .45); color: #fff; }

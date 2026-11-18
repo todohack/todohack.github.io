@@ -487,7 +487,24 @@ try { if (sessionStorage.getItem('root')) root.classList.add('root-mode'); } cat
   addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     k = key === K[k] ? k + 1 : (key === K[0] ? 1 : 0);
-    if (k === K.length) { k = 0; const on = !root.classList.contains('root-mode'); setRoot(on); toast(on ? '# acceso root concedido' : '$ de vuelta a usuario normal'); }
+    if (k === K.length) { k = 0; const on = !root.classList.contains('root-mode'); if (on && root.classList.contains('neon-mode')) { root.classList.remove('neon-mode'); try { sessionStorage.removeItem('neon'); } catch (e) {} } setRoot(on); toast(on ? '# acceso root concedido' : '$ de vuelta a usuario normal'); }
+  });
+}
+
+// ---------- Modo neón (atardecer de los 80, rosa y cian): escribir NEONCITY en cualquier parte o el comando «neon» ----------
+const setNeon = on => {
+  if (on) setRoot(false); // un disfraz a la vez
+  root.classList.toggle('neon-mode', on);
+  if (on && root.dataset.theme !== 'dark') toggle.click();
+  try { on ? sessionStorage.setItem('neon', '1') : sessionStorage.removeItem('neon'); } catch (e) {}
+};
+try { if (sessionStorage.getItem('neon')) root.classList.add('neon-mode'); } catch (e) {}
+{
+  let typed = '';
+  addEventListener('keydown', e => {
+    if (e.key.length !== 1 || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+    typed = (typed + e.key.toLowerCase()).slice(-8);
+    if (typed === 'neoncity') { typed = ''; const on = !root.classList.contains('neon-mode'); setNeon(on); toast(on ? 'TRUCO ACTIVADO · modo neón' : 'Truco desactivado'); }
   });
 }
 
@@ -592,7 +609,8 @@ atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra
       print(`tema: ${want === 'dark' ? 'oscuro' : 'claro'}`);
     },
     matrix: () => { const on = root.classList.toggle('matrix-boost'); print(on ? 'matrix: al máximo. Mira el menú.' : 'matrix: de vuelta a la lluvia tenue.'); },
-    root: () => { const on = !root.classList.contains('root-mode'); setRoot(on); print(on ? '# acceso root concedido. Pista: ↑↑↓↓←→←→BA hace lo mismo.' : '$ de vuelta a usuario normal.'); },
+    neon: () => { const on = !root.classList.contains('neon-mode'); setNeon(on); print(on ? 'TRUCO ACTIVADO · modo neón. Pista: escribir NEONCITY en cualquier página hace lo mismo.' : 'Modo neón apagado.'); },
+    root: () => { const on = !root.classList.contains('root-mode'); if (on) setNeon(false); setRoot(on); print(on ? '# acceso root concedido. Pista: ↑↑↓↓←→←→BA hace lo mismo.' : '$ de vuelta a usuario normal.'); },
     sudo: a => /sandwich|sándwich/.test(a || '') ? print('Vale. 🥪') : print('[sudo] contraseña para visitante: ********\nvisitante no está en el archivo sudoers. Este incidente será reportado. (Es broma.)', 't-err'),
     rm: () => print('rm: permiso denegado. No rompas lo que lees.', 't-err'),
     hack: async () => {
