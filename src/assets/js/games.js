@@ -33,20 +33,45 @@ const stamp = t => `[${(t / 1000).toFixed(3).padStart(8)}]`;
 // ---------- Sprites pixel art (8×8, dibujados aquí mismo, sin imágenes) ----------
 const TS = 16; // casilla en pantalla: sprite de 8×8 a escala 2
 const SPR_DEF = {
-  me: [['..aaaa..', '.aaaaaa.', 'aabbbbaa', 'aabcbcaa', 'aabbbbaa', '.aaaaaa.', '.adddda.', '.aa..aa.'], { a: '#3a5488', b: '#0b111d', c: '#f2b33d', d: '#4ade80' }],
-  b: [['...c....', '...a....', '.aaaaaa.', '.adaada.', '.aaaaaa.', '.aeeeea.', '..a..a..', '.aa..aa.'], { a: '#9aa4b5', c: '#f87171', d: '#22d3ee', e: '#5b6577' }],
-  s: [['a......a', '.a.bb.a.', '..bbbb..', 'abbccbba', '..bbbb..', '.a.bb.a.', 'a..aa..a', '........'], { a: '#6b7385', b: '#8b5cf6', c: '#fca5a5' }],
-  g: [['........', '.....aa.', '....abca', '.aa.aaaa', 'abaaaa..', 'aaaa....', '.aa.....', '........'], { a: '#4ade80', b: '#166534', c: '#0b111d' }],
-  k: [['........', 'aaaaaaaa', 'abababba', 'aaaaaaaa', 'abbbbbba', 'aaaaaaaa', '.c....c.', 'c......c'], { a: '#374151', b: '#e5e7eb', c: '#f2b33d' }],
-  t: [['...aa...', '..aaaa..', '.aabaaa.', 'aaaaaaa.', '....aaa.', '...aaaa.', '..aaaaa.', '.cccccc.'], { a: '#c2410c', b: '#0b111d', c: '#7c2d12' }],
-  f: [['.....c..', '.....c..', '..aaac..', '.aaaaa.b', 'adaaaaab', '.aaaaa.b', '..aaa...', '........'], { a: '#60a5fa', b: '#2563eb', c: '#e5e7eb', d: '#0b111d' }],
-  x: [['.aaaaaa.', 'abbbbbba', 'abcbbcba', 'abbbbbba', 'abcbcbba', 'abbbbbba', '.aaaaaa.', '........'], { a: '#7f1d1d', b: '#ef4444', c: '#fff7ed' }],
-  r: [['..aaaa..', '.aaaaaa.', 'aabaabaa', 'aaaaaaaa', 'aaaaaaaa', 'aaaaaaaa', 'a.aa.aa.', '........'], { a: '#a78bfa', b: '#1e1b4b' }],
-  D: [['a..a..a.', '..a..a..', '.a..a..a', 'a..a..a.', '..a..a..', '.a..a..a', 'a..a..a.', '........'], { a: '#fb923c' }],
-  D2: [['.a..a..a', 'a..a..a.', '..a..a..', '.a..a..a', 'a..a..a.', '..a..a..', '.a..a..a', '........'], { a: '#fdba74' }],
-  z: [['..aaaa..', '.abbbba.', 'abbccbba', 'abcddcba', 'abcddcba', 'abbccbba', '.abbbba.', '..aaaa..'], { a: '#991b1b', b: '#fecaca', c: '#ef4444', d: '#0b111d' }],
-  A: [['..aaaa..', '.aaaaaa.', '.abbbba.', '.acbbca.', '.abbbba.', 'aaaaaaaa', 'a.aaaa.a', '..a..a..'], { a: '#1f2937', b: '#e5e7eb', c: '#ef4444' }],
-  R: [['.aaaaaa.', 'aaaaaaaa', 'abbaabba', 'aaaaaaaa', '.abaaba.', '.cc..cc.', 'cccddccc', 'cccccccc'], { a: '#f0abfc', b: '#4a044e', c: '#f2b33d', d: '#0b111d' }],
+  // Héroe: capucha con luz lateral, cara en sombra, ojos ámbar y portátil encendido
+  me: [['................', '.....aaaaaa.....', '....ahhhhhba....', '...ahhbbbbbba...', '..ahbccccccbba..', '..ahbcddddcbba..', '..ahbdeddedbba..', '..ahbddddddbba..', '..ahbcddddcbba..', '..abbbccccbbba..', '.abbbbbbbbbbbba.', 'abbbllllllllbbba', 'abbblsssssslbbba', 'abbblsssssslbbba', 'abbbkkkkkkkkbbba', '.aaaaaaaaaaaaaa.'],
+    { a: '#0b111d', h: '#5f80c2', b: '#34508a', c: '#1c2a45', d: '#070b14', e: '#f2b33d', l: '#9aa4b5', s: '#4ade80', k: '#5b6577' }],
+  // bot de spam: robot con un sobre en el pecho
+  b: [['.......cc.......', '.......aa.......', '...aaaaaaaaaa...', '..abbbbbbbbbba..', '..abddbbbbddba..', '..abddbbbbddba..', '..abbbbbbbbbba..', '..abbeeeeeebba..', '...aaaaaaaaaa...', '..affffffffffa..', '..affgffffgffa..', '..afffggggfffa..', '..affffffffffa..', '...aaaaaaaaaa...', '...aa......aa...', '..aaa......aaa..'],
+    { a: '#2b3445', b: '#9aa4b5', c: '#f87171', d: '#22d3ee', e: '#5b6577', f: '#f1f5f9', g: '#94a3b8' }],
+  // scraper: araña que teje su red
+  s: [['................', '.a....bbbb....a.', '..a..bbbbbb..a..', '...abbbbbbbba...', 'aaaabbcbbcbbaaaa', '....bbbbbbbb....', '...abbbddbbba...', 'aaaabbddddbbaaaa', '....bbbddbbb....', '...abbbbbbbba...', '..a..bbbbbb..a..', '.a....bbbb....a.', 'a......ee......a', '.......ee.......', '......eeee......', '................'],
+    { a: '#6b7385', b: '#8b5cf6', c: '#fca5a5', d: '#c4b5fd', e: '#e5e7eb' }],
+  // gusano: cuerpo segmentado que se replica
+  g: [['................', '................', '................', '................', '..........aaaa..', '.........abbbba.', '..aaa...abbcbbba', '.abbba.abbbbbba.', 'abdbbbabdbbbba..', 'abbbbbbbbbbba...', '.abdbbbbdbba....', '..aaaaaaaaa.....', '................', '................', '................', '................'],
+    { a: '#14532d', b: '#4ade80', c: '#0b111d', d: '#166534' }],
+  // keylogger: teclado con un ojo espía y patas
+  k: [['................', '................', '......cccc......', '.....cddddc.....', '.....cdeedc.....', '......cccc......', '.......cc.......', 'aaaaaaaaaaaaaaaa', 'abfbfbfbfbfbfbba', 'aaaaaaaaaaaaaaaa', 'abfbfbfbfbfbfbba', 'aaaaaaaaaaaaaaaa', 'abbbffffffffbbba', 'aaaaaaaaaaaaaaaa', '.g..g......g..g.', 'g..g........g..g'],
+    { a: '#1f2937', b: '#374151', f: '#e5e7eb', c: '#f2b33d', d: '#ffffff', e: '#ef4444', g: '#f2b33d' }],
+  // troyano: caballo de madera sobre ruedas
+  t: [['................', '......aa........', '.....aaaa.......', '....abbbba......', '...abbcbba......', '..abbbbbba......', '.abbbbbbbaa.....', '.aaa.abbbbbbbaa.', '.....abbbbbbbbba', '.....abbbbbbbbba', '.....abddbbbddba', '.....aabaaaabaa.', '......ab....ab..', '.....eeeeeeeeee.', '......fe....fe..', '......ff....ff..'],
+    { a: '#7c2d12', b: '#c2410c', c: '#0b111d', d: '#9a3412', e: '#78350f', f: '#1f2937' }],
+  // phisher: pez que muerde el anzuelo... o lo lanza
+  f: [['...........c....', '...........c....', '...........c....', '...........c....', '........c..c....', '.........cc.....', '...aaaaaa.......', '..abbbbbba....a.', '.abbdbbbbba..aa.', 'abbbbbbbbbbaaba.', 'aebbbbbbbbbbbba.', '.abbbbbbbbba.aa.', '..abbbbbbba...a.', '...aaaaaaa......', '................', '................'],
+    { a: '#1e3a8a', b: '#60a5fa', c: '#e5e7eb', d: '#0b111d', e: '#f87171' }],
+  // exploit kit: caja de herramientas con calavera
+  x: [['................', '.....aaaaaa.....', '.....a....a.....', '..aaaaaaaaaaaa..', '..abbbbbbbbbba..', '..abbbccccbbba..', '..abbccccccbba..', '..abbcdccdcbba..', '..abbccccccbba..', '..abbbcdcdbbba..', '..aaaaaaaaaaaa..', '..abbbbeebbbba..', '..abbbbbbbbbba..', '..aaaaaaaaaaaa..', '................', '................'],
+    { a: '#450a0a', b: '#ef4444', c: '#fff7ed', d: '#0b111d', e: '#f2b33d' }],
+  // rootkit: fantasma con la marca # de root
+  r: [['................', '.....aaaaaa.....', '...aabbbbbbaa...', '..abbbbbbbbbba..', '..abbccbbccbba..', '..abbccbbccbba..', '.abbbbbbbbbbbba.', '.abbbbdbbdbbbba.', '.abbddddddddbba.', '.abbbbdbbdbbbba.', '.abbddddddddbba.', '.abbbbdbbdbbbba.', '.abbbbbbbbbbbba.', '.abbabbbbbbabba.', '.aa.abba.abba.a.', '....aa....aa....'],
+    { a: '#4c1d95', b: '#a78bfa', c: '#1e1b4b', d: '#ede9fe' }],
+  // botnet DDoS: enjambre de nodos
+  D: [['aa.....aa....aa.', 'ab.....ab....ab.', '....aa.....aa...', '....ab.....ab...', '.aa.....aa....aa', '.ab.....ab....ab', '......aa....aa..', '......ab....ab..', 'aa.......aa.....', 'ab.......ab.....', '....aa.......aa.', '....ab.......ab.', '.......aa.......', '.......ab.......', '..aa........aa..', '..ab........ab..'],
+    { a: '#fb923c', b: '#7c2d12' }],
+  // zero-day: ojo rojo agrietado
+  z: [['................', '.....aaaaaa.....', '...aabbbbbbaa...', '..abbbbbbbbfba..', '.abbbccccccfbba.', '.abbcceeeefcbba.', 'abbcceeddeeccbba', 'abbceeddddeecbba', 'abbceeddddeecbba', 'abbcceeddeeccbba', '.abbcceeeeccbba.', '.abbbccccccbbba.', '..abbbbbbbbbba..', '...aabbbbbbaa...', '.....aaaaaa.....', '................'],
+    { a: '#450a0a', b: '#991b1b', c: '#ef4444', e: '#fecaca', d: '#0b111d', f: '#ffffff' }],
+  // grupo APT: operador con pasamontañas y visor rojo
+  A: [['................', '.....aaaaaa.....', '....abbbbbba....', '...abbbbbbbba...', '...abccccccba...', '...abcddddcba...', '...abccccccba...', '...abbbbbbbba...', '....abbbbbba....', '..aaaeeeeeeaaa..', '.aeeeeffeeeeeea.', '.aeeeeeffeeeeea.', '.aeeeeeeeeeeeea.', '.aeeeeeeeeeeeea.', '.aaaaaaaaaaaaaa.', '................'],
+    { a: '#030712', b: '#1f2937', c: '#7f1d1d', d: '#ef4444', e: '#111827', f: '#f87171' }],
+  // Señor del Ransomware: calavera con candado
+  R: [['....aaaaaaaa....', '..aabbbbbbbbaa..', '.abbbbbbbbbbbba.', 'abbbbbbbbbbbbbba', 'abbccbbbbbbccbba', 'abccccbbbbccccba', 'abbccbbbbbbccbba', 'abbbbbbccbbbbbba', '.abbbbbccbbbbba.', '..abcbcbcbcbcba.', '...aaaaaaaaaa...', '.....eeeeee.....', '....e......e....', '...ffffffffff...', '...ffffggffff...', '...ffffffffff...'],
+    { a: '#4a044e', b: '#f0abfc', c: '#0b111d', e: '#e5e7eb', f: '#f2b33d', g: '#0b111d' }],
   '!': [['........', '.aaaaaa.', '.aabbaa.', '.abbbba.', '.abbbba.', '.aabbaa.', '.aaaaaa.', '........'], { a: '#e5e7eb', b: '#22c55e' }],
   $: [['........', '..aaaa..', '.aabbaa.', '.abaaba.', '.abaaba.', '.aabbaa.', '..aaaa..', '........'], { a: '#f2b33d', b: '#fde68a' }],
   '%': [['..b..b..', '...b..b.', '.aaaaa..', '.accca.a', '.accca.a', '.aaaaaa.', '..aaaa..', '........'], { a: '#e5e7eb', b: '#9ca3af', c: '#7c2d12' }],
@@ -55,13 +80,39 @@ const SPR_DEF = {
   '[': [['.aaaaaa.', 'aabbbbaa', 'abbccbba', 'abbccbba', 'abbbbbba', '.abbbba.', '..abba..', '...aa...'], { a: '#64748b', b: '#3b82f6', c: '#e5e7eb' }],
   '*': [['........', '.aaa....', 'a...a...', 'a...aaaa', '.aaa.a.a', '.....a..', '........', '........'], { a: '#f2b33d' }],
   '>': [['..aaaa..', '.abbbba.', 'abccccba', 'abcddcba', 'abcddcba', 'abccccba', '.abbbba.', '..aaaa..'], { a: '#166534', b: '#22c55e', c: '#4ade80', d: '#0b111d' }],
+  // Iconos de armas
+  w_key: [['........', 'aaaaaaaa', 'abababba', 'aaaaaaaa', 'abbbbbba', 'aaaaaaaa', '........', '........'], { a: '#374151', b: '#e5e7eb' }],
+  w_duck: [['...aa...', '..abba..', '..abcbdd', '...abba.', '.aabbbba', 'abbbbbba', '.abbbba.', '..aaaa..'], { a: '#a16207', b: '#facc15', c: '#0b111d', d: '#f97316' }],
+  w_floppy: [['aaaaaaa.', 'abcccbba', 'abcccbba', 'abbbbbba', 'adddddda', 'addeedda', 'adddedda', 'aaaaaaaa'], { a: '#1e293b', b: '#3b82f6', c: '#cbd5e1', d: '#f1f5f9', e: '#ef4444' }],
+  w_xss: [['......a.', '.....a..', '....bb..', '...bcb..', '..bcb...', '.bcb....', 'dbb.....', 'd.......'], { a: '#e5e7eb', b: '#94a3b8', c: '#a3e635', d: '#64748b' }],
+  w_book: [['.aaaaaa.', 'abbbbbba', 'abccccba', 'abbbbbba', 'abccbbba', 'abbbbbba', 'adddddda', '.aaaaaa.'], { a: '#450a0a', b: '#b91c1c', c: '#fde68a', d: '#f1f5f9' }],
+  w_cookie: [['..aaaa..', '.abbbba.', 'abcbbbba', 'abbbbcba', 'abbcbbba', 'abbbbbca', '.abcbba.', '..aaaa..'], { a: '#78350f', b: '#d6a77a', c: '#3f1d0b' }],
+  w_bomb: [['.....cd.', '....c...', '..aaaa..', '.abbbba.', 'abbbbbba', 'abebbbba', '.abbbba.', '..aaaa..'], { a: '#0b111d', b: '#374151', c: '#9ca3af', d: '#f97316', e: '#e5e7eb' }],
+  w_kiwi: [['........', '...aaa..', '..abdba.', '.abbbbcc', 'abbbbba.', 'abbbbba.', '.a.a....', '.a.a....'], { a: '#3f2d14', b: '#8b6b3d', c: '#e5e7eb', d: '#0b111d' }],
+  w_shark: [['....a...', '...aa...', '..aba...', '.abba...', 'abbba...', 'cccccccc', '.c.c.c.c', '........'], { a: '#1e3a8a', b: '#60a5fa', c: '#22d3ee' }],
+  w_lateral: [['........', '..a.....', '.aaaaaaa', '..a.....', '.....b..', 'bbbbbbb.', '.....b..', '........'], { a: '#c084fc', b: '#22d3ee' }],
+  w_msf: [['aaaaaaaa', 'abbbbbba', 'abcbbcba', 'abccccba', 'abcbbcba', '.abbbba.', '..abba..', '...aa...'], { a: '#1e3a8a', b: '#2563eb', c: '#e5e7eb' }],
+  w_chain: [['........', '.aaa....', 'a...a...', 'a..aaaa.', '.aaa...a', '...a...a', '....aaa.', '........'], { a: '#cbd5e1' }],
+  w_zero: [['..aaaa..', '.abbbba.', 'abbccbba', 'abcbbcba', 'abcbbcba', 'abbccbba', '.abbbba.', '..aaaa..'], { a: '#7f1d1d', b: '#ef4444', c: '#fecaca' }],
+  // Iconos de armaduras
+  a_hood: [['..aaaa..', '.abbbba.', 'abbccbba', 'abccccba', 'abbbbbba', 'abbbbbba', 'abbaabba', 'aaa..aaa'], { a: '#1e293b', b: '#3a5488', c: '#0b111d' }],
+  a_av: [['aaaaaaaa', 'abbbbbba', 'abbbbcba', 'abbbcbba', 'acbcbbba', '.abcbba.', '..abba..', '...aa...'], { a: '#14532d', b: '#22c55e', c: '#f1f5f9' }],
+  a_vpn: [['..aaaa..', '.a....a.', '.a....a.', 'bbbbbbbb', 'bccccccb', 'bcccdccb', 'bcccdccb', 'bbbbbbbb'], { a: '#9ca3af', b: '#1e3a8a', c: '#3b82f6', d: '#0b111d' }],
+  a_fw: [['...c....', '..cdc...', 'aaaaaaaa', 'abbabbba', 'aaaaaaaa', 'abbbabba', 'aaaaaaaa', 'abbabbba'], { a: '#7c2d12', b: '#c2410c', c: '#f97316', d: '#facc15' }],
+  a_mfa: [['.aaaaaa.', '.abbbba.', '.acbcba.', '.abcbca.', '.abbbba.', '.abbbba.', '.aadaaa.', '.aaaaaa.'], { a: '#1f2937', b: '#0b111d', c: '#4ade80', d: '#9ca3af' }],
+  a_box: [['aaaaaaaa', 'acbbbbca', 'abcbbcba', 'abbccbba', 'abbccbba', 'abcbbcba', 'acbbbbca', 'aaaaaaaa'], { a: '#78350f', b: '#d6a77a', c: '#92400e' }],
+  a_edr: [['aaaaaaaa', 'abbbbbba', 'abbccbba', 'abcddcba', 'abbccbba', '.abbbba.', '..abba..', '...aa...'], { a: '#312e81', b: '#6366f1', c: '#f1f5f9', d: '#0b111d' }],
+  a_honey: [['.aaaaaa.', '..bbbb..', '.bccccb.', 'bccddccb', 'bccccccb', 'bccccccb', '.bccccb.', '..bbbb..'], { a: '#78350f', b: '#a16207', c: '#f59e0b', d: '#fde68a' }],
+  a_backup: [['........', 'aaaaaaaa', 'abbbbbba', 'aaaaaaaa', 'acccccca', 'aaaaaaaa', 'adddddda', 'aaaaaaaa'], { a: '#0b111d', b: '#3b82f6', c: '#22c55e', d: '#f2b33d' }],
+  a_waf: [['aaaaaaaa', 'abbbbbba', 'acbbbbca', 'acbccbca', 'abcbbcba', '.abbbba.', '..abba..', '...aa...'], { a: '#134e4a', b: '#14b8a6', c: '#f1f5f9' }],
+  a_zt: [['.aaaaaa.', 'abbbbbba', 'abcbbcba', 'abbccbba', 'abbccbba', 'abcbbcba', 'abbbbbba', '.aaaaaa.'], { a: '#4c1d95', b: '#7c3aed', c: '#f1f5f9' }],
   pkt: [['........', '.aaaaaa.', '.abbbba.', '.ab..ba.', '.abbbba.', '.aaaaaa.', '........', '........'], { a: '#93b4f2', b: '#3b5a96' }],
 };
 // Color principal de cada sprite: tiñe partículas y números flotantes
 const SPR_COL = { b: '#9aa4b5', s: '#8b5cf6', g: '#4ade80', k: '#e5e7eb', t: '#c2410c', f: '#60a5fa', x: '#ef4444', r: '#a78bfa', D: '#fb923c', z: '#ef4444', A: '#e5e7eb', R: '#f0abfc', '!': '#22c55e', $: '#f2b33d', '%': '#d6a77a', '?': '#93c5fd', ')': '#93c5fd', '[': '#3b82f6', '*': '#f2b33d' };
 let SPR, WHITE, TILE;
 const paint = (rows, pal) => {
-  const c = document.createElement('canvas'); c.width = c.height = 8;
+  const c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length;
   const x = c.getContext('2d');
   rows.forEach((r, y) => [...r].forEach((ch, i) => { if (pal[ch]) { x.fillStyle = pal[ch]; x.fillRect(i, y, 1, 1); } }));
   return c;
@@ -73,6 +124,7 @@ const tile = (base, fn) => {
 const sprites = () => {
   if (SPR) return;
   SPR = {}; WHITE = {};
+  SPR_DEF.D2 = [SPR_DEF.D[0].map((r, i, a) => { const q = a[(i + 2) % a.length]; return q.slice(-1) + q.slice(0, -1); }), { a: '#fdba74', b: '#9a3412' }];
   for (const [k, [rows, pal]] of Object.entries(SPR_DEF)) {
     SPR[k] = paint(rows, pal);
     WHITE[k] = paint(rows, Object.fromEntries(Object.keys(pal).map(c => [c, '#ffffff'])));
@@ -386,33 +438,33 @@ const MON = [
 ];
 // Armas: daño extra + una propiedad. t = capa mínima en la que puede aparecer.
 const WEAPONS = [
-  { n: 'teclado mecánico', d: 0, t: 0, p: '', x: 'Tu arma de siempre. Clac, clac.' },
-  { n: 'Rubber Ducky', d: 1, t: 1, p: 'fast', x: 'Teclea más rápido que tú: 30% de golpe doble.' },
-  { n: 'payload ofuscado', d: 2, t: 2, p: 'pierce', x: 'El antivirus no lo ve venir: ignora la defensa.' },
-  { n: 'XSS persistente', d: 2, t: 2, p: 'poison', x: 'Deja código malicioso: daño durante 3 turnos.' },
-  { n: 'diccionario rockyou', d: 3, t: 3, p: 'brute', x: 'Fuerza bruta: falla 3 de cada 10, pero a veces encuentra la clave y pega doble.' },
-  { n: 'secuestro de sesión', d: 3, t: 3, p: 'drain', x: 'Te quedas con su sesión: te curas un tercio del daño.' },
-  { n: 'desbordamiento de búfer', d: 3, t: 4, p: 'stun', x: 'Segfault: 25% de dejarlo aturdido un turno.' },
-  { n: 'Mimikatz', d: 3, t: 4, p: 'loot', x: 'Vuelca credenciales: cada baja te da criptos.' },
-  { n: 'Wireshark afilado', d: 3, t: 5, p: 'reveal', x: 'Ves todo el tráfico: nada invisible ni disfrazado se te escapa.' },
-  { n: 'movimiento lateral', d: 4, t: 5, p: 'chain', x: 'Pivota: el golpe salta a otro enemigo cercano.' },
-  { n: 'Metasploit', d: 4, t: 6, p: 'cleave', x: 'Módulo multiobjetivo: golpea a todos los que te rodean.' },
-  { n: 'cadena ROP', d: 5, t: 7, p: 'crit', x: 'Gadgets bien encadenados: 25% de golpe triple.' },
-  { n: 'zero-day propio', d: 6, t: 8, p: 'zero', x: 'Nadie tiene parche: ignora la defensa y 25% de golpe triple.' },
+  { s: 'w_key', n: 'teclado mecánico', d: 0, t: 0, p: '', x: 'Tu arma de siempre. Clac, clac.' },
+  { s: 'w_duck', n: 'Rubber Ducky', d: 1, t: 1, p: 'fast', x: 'Teclea más rápido que tú: 30% de golpe doble.' },
+  { s: 'w_floppy', n: 'payload ofuscado', d: 2, t: 2, p: 'pierce', x: 'El antivirus no lo ve venir: ignora la defensa.' },
+  { s: 'w_xss', n: 'XSS persistente', d: 2, t: 2, p: 'poison', x: 'Deja código malicioso: daño durante 3 turnos.' },
+  { s: 'w_book', n: 'diccionario rockyou', d: 3, t: 3, p: 'brute', x: 'Fuerza bruta: falla 3 de cada 10, pero a veces encuentra la clave y pega doble.' },
+  { s: 'w_cookie', n: 'secuestro de sesión', d: 3, t: 3, p: 'drain', x: 'Te quedas con su sesión: te curas un tercio del daño.' },
+  { s: 'w_bomb', n: 'desbordamiento de búfer', d: 3, t: 4, p: 'stun', x: 'Segfault: 25% de dejarlo aturdido un turno.' },
+  { s: 'w_kiwi', n: 'Mimikatz', d: 3, t: 4, p: 'loot', x: 'Vuelca credenciales: cada baja te da criptos.' },
+  { s: 'w_shark', n: 'Wireshark afilado', d: 3, t: 5, p: 'reveal', x: 'Ves todo el tráfico: nada invisible ni disfrazado se te escapa.' },
+  { s: 'w_lateral', n: 'movimiento lateral', d: 4, t: 5, p: 'chain', x: 'Pivota: el golpe salta a otro enemigo cercano.' },
+  { s: 'w_msf', n: 'Metasploit', d: 4, t: 6, p: 'cleave', x: 'Módulo multiobjetivo: golpea a todos los que te rodean.' },
+  { s: 'w_chain', n: 'cadena ROP', d: 5, t: 7, p: 'crit', x: 'Gadgets bien encadenados: 25% de golpe triple.' },
+  { s: 'w_zero', n: 'zero-day propio', d: 6, t: 8, p: 'zero', x: 'Nadie tiene parche: ignora la defensa y 25% de golpe triple.' },
 ];
 // Armaduras: defensa + una propiedad.
 const ARMORS = [
-  { n: 'sudadera con capucha', d: 0, t: 0, p: '', x: 'Mucho estilo, cero protección.' },
-  { n: 'antivirus gratuito', d: 1, t: 1, p: '', x: 'Algo es algo.' },
-  { n: 'VPN', d: 1, t: 1, p: 'dodge', x: 'No saben dónde estás: 15% de esquivar.' },
-  { n: 'firewall de host', d: 2, t: 2, p: '', x: 'Filtra lo básico.' },
-  { n: 'MFA reforzado', d: 2, t: 3, p: 'mfa', x: 'Inmune a los robos del keylogger y a los engaños del phisher.' },
-  { n: 'sandbox', d: 2, t: 3, p: 'thorns', x: 'Quien te ataca se ejecuta aislado: le devuelves 2 de daño.' },
-  { n: 'EDR', d: 3, t: 4, p: 'regen', x: 'Detecta y repara: recuperas vida el doble de rápido.' },
-  { n: 'honeypot', d: 2, t: 5, p: 'decoy', x: 'Señuelo: 25% de que el ataque vaya contra la trampa.' },
-  { n: 'backup 3-2-1', d: 2, t: 5, p: 'revive', x: 'Si caes, restauras desde la copia una vez, con media vida.' },
-  { n: 'WAF', d: 4, t: 6, p: '', x: 'Filtra casi todo lo que llega.' },
-  { n: 'arquitectura Zero Trust', d: 5, t: 8, p: 'dodge', x: 'No confía en nadie: mucha defensa y 15% de esquivar.' },
+  { s: 'a_hood', n: 'sudadera con capucha', d: 0, t: 0, p: '', x: 'Mucho estilo, cero protección.' },
+  { s: 'a_av', n: 'antivirus gratuito', d: 1, t: 1, p: '', x: 'Algo es algo.' },
+  { s: 'a_vpn', n: 'VPN', d: 1, t: 1, p: 'dodge', x: 'No saben dónde estás: 15% de esquivar.' },
+  { s: 'a_fw', n: 'firewall de host', d: 2, t: 2, p: '', x: 'Filtra lo básico.' },
+  { s: 'a_mfa', n: 'MFA reforzado', d: 2, t: 3, p: 'mfa', x: 'Inmune a los robos del keylogger y a los engaños del phisher.' },
+  { s: 'a_box', n: 'sandbox', d: 2, t: 3, p: 'thorns', x: 'Quien te ataca se ejecuta aislado: le devuelves 2 de daño.' },
+  { s: 'a_edr', n: 'EDR', d: 3, t: 4, p: 'regen', x: 'Detecta y repara: recuperas vida el doble de rápido.' },
+  { s: 'a_honey', n: 'honeypot', d: 2, t: 5, p: 'decoy', x: 'Señuelo: 25% de que el ataque vaya contra la trampa.' },
+  { s: 'a_backup', n: 'backup 3-2-1', d: 2, t: 5, p: 'revive', x: 'Si caes, restauras desde la copia una vez, con media vida.' },
+  { s: 'a_waf', n: 'WAF', d: 4, t: 6, p: '', x: 'Filtra casi todo lo que llega.' },
+  { s: 'a_zt', n: 'arquitectura Zero Trust', d: 5, t: 8, p: 'dodge', x: 'No confía en nadie: mucha defensa y 15% de esquivar.' },
 ];
 const PROP = { fast: 'golpe doble', pierce: 'perfora', poison: 'veneno', brute: 'fuerza bruta', drain: 'roba vida', stun: 'aturde', loot: 'saqueo', reveal: 'revela', chain: 'en cadena', cleave: 'barrido', crit: 'crítico', zero: 'perfora + crítico', dodge: 'esquiva', mfa: 'anti robo', thorns: 'espinas', regen: 'regenera', decoy: 'señuelo', revive: 'resucita' };
 // Hechizos: se aprenden con los scripts (?) y gastan CPU, que se regenera sola.
@@ -602,7 +654,7 @@ function dungeon(T) {
       const b = (it.k === '$' || it.k === '*') ? Math.round(Math.sin(t / 200 + it.x) * 1.5) : 0;
       const g = it.k === '*' ? '#f2b33d' : (it.w || it.a) && (it.w || it.a).p ? '#c084fc' : ''; // el equipo con propiedad brilla
       if (g) { ctx.shadowColor = g; ctx.shadowBlur = 10 + 4 * Math.sin(t / 200); }
-      ctx.drawImage(SPR[it.k], it.x * TS, it.y * TS + b, TS, TS);
+      ctx.drawImage(SPR[(it.w || it.a) ? (it.w || it.a).s : it.k], it.x * TS, it.y * TS + b, TS, TS);
       ctx.shadowBlur = 0;
     }
     for (const o of mons) {
