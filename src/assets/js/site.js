@@ -142,7 +142,7 @@ if (q) {
 }
 // Tecla "/" abre el buscador desde cualquier página (salvo mientras se escribe en un campo).
 addEventListener('keydown', e => {
-  if (e.key !== '/' || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || document.querySelector('dialog.term[open]')) return;
   e.preventDefault();
   q ? q.focus() : (location.href = '/blog/?buscar');
 });
@@ -441,6 +441,37 @@ if (welcome && welcomeData) {
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const escH = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let casesP; // índice de artículos para la terminal y la 404, se pide una sola vez
+// CTF: solo se guardan los SHA-256 de las banderas, no las banderas
+const FLAG_NAMES = {
+  '5ea622e4ff7ba38ee29ed2cdf92de855bff5ed491fc7b37072edf9e82292c638': 'la consola',
+  'd4349bf8aefdd53fd459c0926e75d39225f95168c282d3114a801ff09a3b6cfe': 'el código fuente',
+  '74613f8d47e15faa266f70f1013abee3dc8d9df0024c367e2c58dc8fa170be56': 'los robots',
+  'f694590678d0fc34d535160df051c1461c623c22fb40ad0e5d6307724306638d': 'el historial',
+  '5105eba6726eb985c2d9629e132bf677b9fbe608c537fd06de3564a80257be6e': 'la red profunda',
+};
+const gotFlags = () => { try { return JSON.parse(localStorage.getItem('flags')) || []; } catch (e) { return []; } };
+const HIDDEN = {
+  '.secreto': 'Si lees esto, ya vas bien.\nHay 5 banderas con formato FLAG{…}:\n  1. donde hablan los navegadores cuando nadie los mira (F12)\n  2. en el código fuente de cualquier página\n  3. en el archivo que leen los robots de los buscadores\n  4. en el historial de alguien descuidado\n  5. al final de la red profunda (escribe dungeon)\nCuando tengas una: submit FLAG{…}',
+  '.bash_history': 'ls -la\ncd /var/www\nnano config.php\ngit push --force   # perdón, equipo\necho RkxBR3tiYXNlNjRfbm9fZXNfY2lmcmFkb30= | base64 -d\nrm -rf node_modules\nhistory -c   # se me olvidó ejecutar esto',
+};
+const FORTUNES = [
+  'La contraseña más segura es la que no recuerdas porque la guarda tu gestor de contraseñas.',
+  'Si el correo tiene prisa, tú no.',
+  'El eslabón más débil no es el firewall: es el humano con sueño un viernes a las 5.',
+  'Las copias de seguridad que nunca restauraste son solo esperanza.',
+  'No existe la nube: es el ordenador de otra persona.',
+  '«Funciona en mi máquina» no es una política de seguridad.',
+  'Actualizar hoy es más barato que pagar un rescate mañana.',
+  'Un buen hacker lee más de lo que teclea.',
+  'Si es gratis y no sabes por qué, el producto eres tú.',
+  'El 2FA por SMS es mejor que nada. Una passkey es mejor que el SMS.',
+  'Cada servicio que dejas sin usar es una puerta que dejas sin vigilar.',
+  'Escanear sin permiso es delito. Escanear tu laboratorio es aprender.',
+  'Los logs que no lees no te salvan.',
+  'Mínimo privilegio: nadie necesita ser administrador para leer el correo.',
+  'Antes de culpar al hacker, revisa la configuración por defecto.',
+];
+const pickF = () => FORTUNES[Math.random() * FORTUNES.length | 0];
 const cases = () => casesP || (casesP = fetch('/terminal.json').then(r => r.json()).catch(() => []));
 
 // ---------- Modo root: Konami (↑↑↓↓←→←→BA) o el comando «root». Fósforo verde y líneas de barrido ----------
@@ -478,6 +509,17 @@ function buildTerm() {
   const out = dlg.querySelector('.term-out'), input = dlg.querySelector('input');
   const print = (html, cls = '') => { const p = document.createElement('div'); p.className = 'tl ' + cls; p.innerHTML = html; out.append(p); out.scrollTop = out.scrollHeight; return p; };
   const hist = []; let hi = 0;
+  const game = async name => {
+    const form = dlg.querySelector('.term-in');
+    form.hidden = true; dlg.classList.add('term-game');
+    try {
+      const v = document.querySelector('meta[name="games-v"]');
+      const g = await import(`/assets/js/games.js?v=${v ? v.content : ''}`);
+      await g.run(name, { out, dlg });
+    } catch (e) { print('No se pudo cargar el juego.', 't-err'); }
+    form.hidden = false; dlg.classList.remove('term-game');
+    if (dlg.open) input.focus();
+  };
   const go = href => { dlg.close(); location.href = href; };
   const pick = async a => { const L = await cases(); const n = parseInt(a, 10); return L[n - 1] || L.find(c => c.s === a); };
   const row = (c, i) => `<span class="t-n">[${String(i + 1).padStart(2, '0')}]</span> <span class="t-d">${c.f}</span> <a href="/${c.s}/">${escH(c.t)}</a>`;
@@ -490,9 +532,13 @@ function buildTerm() {
   <b>grep</b> &lt;texto&gt;      busca en títulos, resúmenes y etiquetas
   <b>whoami</b>  <b>date</b>  <b>uptime</b>  <b>neofetch</b>  <b>history</b>
   <b>theme</b> [claro|oscuro]  <b>matrix</b>  <b>root</b>  <b>hack</b>
+  <b>juegos</b>           minijuegos y un roguelike
+  <b>flags</b>            tus banderas del CTF · <b>submit</b> FLAG{…}
   <b>clear</b>  <b>exit</b>
-atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra`),
+atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra
+(hay comandos que no salen en esta lista)`),
     ls: async a => {
+      if (/^-\w*a/.test(a || '')) return print('.  ..  <b>.bash_history</b>  <b>.secreto</b>  casos/  juegos/');
       const L = await cases(), w = (a || '').toLowerCase();
       const R = L.map((c, i) => [c, i]).filter(([c]) => !w || (c.t + ' ' + c.g.join(' ')).toLowerCase().includes(w));
       print(R.length ? R.map(([c, i]) => row(c, i)).join('\n') : `ls: nada coincide con «${escH(a)}»`);
@@ -504,6 +550,9 @@ atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra`),
       print(R.length ? R.map(([c, i]) => row(c, i)).join('\n') + `\n<span class="t-d">${R.length} coincidencia${R.length > 1 ? 's' : ''}</span>` : `grep: «${escH(a)}» no aparece en ningún caso`);
     },
     cat: async a => {
+      if (HIDDEN[a]) return print(HIDDEN[a]);
+      if (a === '/etc/passwd') return print('root:x:0:0:root:/root:/bin/bash\nvisitante:x:1000:1000:sin contraseña, sin problemas:/home/visitante:/bin/todosh\n(Las contraseñas de verdad no viven aquí desde los 90: están en /etc/shadow, y ese no te lo enseño.)');
+      if (a === '/etc/shadow') return print('cat: /etc/shadow: Permiso denegado. Bien intentado.', 't-err');
       const c = await pick(a);
       if (!c) return print(`cat: ${escH(a || '')}: no existe. Prueba «ls».`, 't-err');
       print(`<b>${escH(c.t)}</b>\n<span class="t-d">${c.f} · ${c.g.map(escH).join(', ')}</span>\n${escH(c.d)}\n→ <a href="/${c.s}/">open ${escH(a)}</a>`);
@@ -544,7 +593,7 @@ atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra`),
     },
     matrix: () => { const on = root.classList.toggle('matrix-boost'); print(on ? 'matrix: al máximo. Mira el menú.' : 'matrix: de vuelta a la lluvia tenue.'); },
     root: () => { const on = !root.classList.contains('root-mode'); setRoot(on); print(on ? '# acceso root concedido. Pista: ↑↑↓↓←→←→BA hace lo mismo.' : '$ de vuelta a usuario normal.'); },
-    sudo: () => print('[sudo] contraseña para visitante: ********\nvisitante no está en el archivo sudoers. Este incidente será reportado. (Es broma.)', 't-err'),
+    sudo: a => /sandwich|sándwich/.test(a || '') ? print('Vale. 🥪') : print('[sudo] contraseña para visitante: ********\nvisitante no está en el archivo sudoers. Este incidente será reportado. (Es broma.)', 't-err'),
     rm: () => print('rm: permiso denegado. No rompas lo que lees.', 't-err'),
     hack: async () => {
       input.disabled = true;
@@ -553,10 +602,77 @@ atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra`),
       print('Conclusión: lo que de verdad funciona es leer y practicar en laboratorios legales.\n→ <a href="/blog/">cd blog</a>', 't-ok');
       input.disabled = false; input.focus();
     },
+    juegos: () => {
+      const r = k => { try { return localStorage.getItem(k) || '—'; } catch (e) { return '—'; } };
+      print(`<b>snake</b>     el gusano que come paquetes          récord ${r('hs-snake')}
+<b>crack</b>     descifra la contraseña en 6 intentos  racha ${r('crack-racha')}
+<b>phish</b>     ¿phishing o legítimo? 8 casos         récord ${r('hs-phish')}/8
+<b>dungeon</b>   roguelike: baja 10 capas de la red profunda   récord ${r('hs-dungeon')}
+Esc sale de cualquier juego.`);
+    },
+    snake: () => game('snake'), crack: () => game('crack'), phish: () => game('phish'), dungeon: () => game('dungeon'),
+    fortune: () => print(pickF()),
+    ping: a => {
+      const host = escH(a || 'todohack.github.io');
+      print(`PING ${host}: 56 bytes de datos\n${[0, 1, 2, 3].map(i => `64 bytes de ${host}: icmp_seq=${i + 1} ttl=57 tiempo=${(14 + Math.random() * 20).toFixed(1)} ms`).join('\n')}\n--- 4 paquetes enviados, 4 recibidos, 0% perdidos (simulado) ---`);
+    },
+    nmap: a => print(`Iniciando nmap contra ${escH(a || 'localhost')} (simulación, aquí no se escanea nada)
+PUERTO    ESTADO   SERVICIO
+22/tcp    cerrado  ssh
+80/tcp    abierto  http   → redirige a 443
+443/tcp   abierto  https  (sitio estático)
+1337/tcp  filtrado ¿?
+Recuerda: escanear equipos ajenos sin permiso es delito. En tu laboratorio, todo lo que quieras.`),
+    ssh: () => print('visitante@todohack: Permission denied (publickey).\nSin llave no hay puerta. Así se protege un servidor de verdad.', 't-err'),
+    vim: () => print('Has entrado en vim. Para salir escribe :q\n…es broma, esto no es vim. Pero ya sabes cómo salir la próxima vez.'),
+    ':q': () => print('Has salido de vim. Mucha gente no lo logra nunca.', 't-ok'),
+    nano: () => print('nano: demasiado amable para este blog. Prueba vim (y que la fuerza te acompañe).'),
+    cafe: () => print('HTTP 418: soy una tetera. No preparo café (RFC 2324, de verdad existe).'),
+    xyzzy: () => print('Nada ocurre.'),
+    '42': () => print('Es la respuesta. Ahora falta averiguar cuál era la pregunta.'),
+    hola: () => print('Hola, visitante. Si buscas algo que hacer: <b>juegos</b>. Si buscas algo que leer: <b>ls</b>.'),
+    make: a => print(/sandwich|sándwich/.test(a || '') ? '¿Qué? Háztelo tú.' : 'make: *** No hay objetivo. Alto.', 't-err'),
+    secretos: () => print('Hay 5 banderas escondidas con el formato FLAG{…}. Ninguna requiere romper nada: solo mirar donde casi nadie mira.\nEmpieza con <b>ls -a</b>. Cuando tengas una: <b>submit FLAG{…}</b>. Tu progreso: <b>flags</b>.'),
+    base64: a => {
+      const [flag, ...rest] = (a || '').split(' ');
+      try {
+        if (flag === '-d') return print(escH(decodeURIComponent(escape(atob(rest.join(''))))));
+        return print(btoa(unescape(encodeURIComponent(a || ''))));
+      } catch (e) { return print('base64: entrada no válida', 't-err'); }
+    },
+    flags: () => {
+      const got = gotFlags();
+      print(`banderas: ${got.length}/5\n${Object.values(FLAG_NAMES).map(n => `${got.includes(n) ? '<span class="t-ok">[✓]</span>' : '[ ]'} ${n}`).join('\n')}${got.length < 5 ? '\npista: escribe <b>secretos</b>' : ''}`);
+    },
+    submit: async a => {
+      const f = (a || '').trim();
+      if (!f) return print('uso: submit FLAG{…}', 't-err');
+      let hex = '';
+      try { hex = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(f)))].map(b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { return print('submit: tu navegador no puede verificar banderas aquí.', 't-err'); }
+      const name = FLAG_NAMES[hex];
+      if (!name) return print('Bandera incorrecta. Revisa mayúsculas y llaves.', 't-err');
+      const got = gotFlags();
+      if (got.includes(name)) return print(`Ya tenías «${name}».`);
+      got.push(name);
+      try { localStorage.setItem('flags', JSON.stringify(got)); } catch (e) {}
+      print(`<b>¡Bandera válida!</b> «${name}» · ${got.length}/5`, 't-ok');
+      if (got.length === 5) { print('Las tienes todas. Eres de los que leen el código fuente: así empieza todo hacker de verdad. 🏁', 't-ok'); setRoot(true); }
+    },
+    sl: async () => {
+      input.disabled = true;
+      const train = ['   ___ ____', '  |_T_|____|__[]__', '  (o)(o)--(o)(o)  '];
+      const p = print('', 't-ok');
+      for (let i = 34; i >= -18; i -= 2) {
+        p.textContent = train.map(l => (i > 0 ? ' '.repeat(i) + l : l.slice(-i))).join('\n');
+        await new Promise(r => setTimeout(r, calm ? 0 : 55));
+      }
+      p.textContent = '(querías escribir «ls». Todo el mundo lo hace.)';
+      input.disabled = false; input.focus();
+    },
     clear: () => { out.textContent = ''; },
     exit: () => dlg.close(),
   };
-  Object.assign(C, { dir: C.ls, ll: C.ls, man: C.help, cls: C.clear, quit: C.exit });
+  Object.assign(C, { dir: C.ls, ll: C.ls, man: C.help, cls: C.clear, quit: C.exit, games: C.juegos, gusano: C.snake, mazmorra: C.dungeon, roguelike: C.dungeon, descifra: C.crack, coffee: C.cafe, hello: C.hola, secret: C.secretos, banderas: C.flags });
   const run = async line => {
     print(`<span class="term-ps">visitante@todohack:~$</span> ${escH(line)}`, 't-cmd');
     if (!line) return;
@@ -679,3 +795,4 @@ if (!calm && matchMedia('(hover: hover)').matches) {
 // ---------- Para quien abre las herramientas de desarrollo ----------
 console.log('%c\n  T O D O H A C K\n', 'font: 700 20px monospace; color: #f2b33d; background: #0b111d; padding: 6px 12px;');
 console.log('%c¿Curioseando el código? Bien hecho: así se aprende.\nPulsa ` (o Ctrl+K) en la página para abrir la terminal. Y hay un código secreto clásico… ↑↑↓↓', 'font: 13px monospace; color: #93b4f2;');
+console.log('%cTu primera bandera: FLAG{mira_la_consola} · escríbela en la terminal con «submit»', 'font: 12px monospace; color: #4ade80;');

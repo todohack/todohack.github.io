@@ -243,8 +243,10 @@ ${post ? `<meta property="article:published_time" content="${post.date.toISOStri
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/site.css?v=${v('css/site.css')}">
+<meta name="games-v" content="${v('js/games.js')}">
 </head>
 <body>
+<!-- FLAG{lee_el_codigo_fuente} · Sí: también se esconden cosas en los comentarios. Escríbela en la terminal con «submit». -->
 <a class="skip" href="#main">Saltar al contenido</a>
 <aside class="sidebar">
   <canvas class="matrix" aria-hidden="true"></canvas>
@@ -483,7 +485,8 @@ const day = d => d.toISOString().slice(0, 10);
 const urls = [['/', posts[0].date], ['/blog/', posts[0].date], ['/sobre-mi/', posts[0].date], ...posts.map(p => [`/${p.slug}/`, p.date])];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, d]) => `<url><loc>${site.url}${u}</loc><lastmod>${day(d)}</lastmod></url>`).join('\n')}\n</urlset>\n`);
 write('terminal.json', JSON.stringify(posts.map(p => ({ s: p.slug, t: p.title, d: p.description || '', f: day(p.date), g: p.tags || [] }))));
-write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
+write('robots.txt', `# Hola, robot. Y hola, humano curioso: FLAG{los_robots_tambien_leen}
+User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
 write('feed.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>${esc(site.title)}</title><link>${site.url}/</link><description>${esc(site.description)}</description><language>es</language>\n${posts.map(p => `<item><title>${esc(p.title)}</title><link>${site.url}/${p.slug}/</link><guid>${site.url}/${p.slug}/</guid><pubDate>${p.date.toUTCString()}</pubDate><description>${esc(p.description || '')}</description></item>`).join('\n')}\n</channel></rss>\n`);
 
 console.log(`OK: ${posts.length} posts generados`);
