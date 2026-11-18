@@ -1,7 +1,7 @@
 ---
 title: "Kali Linux para Hackers"
 date: 2024-08-22 17:47:00 -0600
-description: Prepara tu sistema para hacer hacking.
+description: Guía paso a paso para instalar Kali Linux en una máquina virtual, actualizarlo y dejarlo listo para practicar hacking ético en tu propio laboratorio.
 tags: [kali, laboratorio]
 ---
 

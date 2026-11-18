@@ -173,10 +173,14 @@ const ICONS = {
 };
 const icon = (name, label) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${ICONS[name]}</svg><span class="sr-only">${label}</span>`;
 
-function layout({ title, description, url, image, type = 'website', body, nav = '' }) {
-  const full = title ? `${title} · ${site.title}` : `${site.title} · ${site.tagline}`;
+function layout({ title, description, url, image, type = 'website', body, nav = '', post, noindex }) {
+  // Google corta el título hacia los 60 caracteres: si el sufijo no cabe, se omite.
+  const full = !title ? `${site.title} · ${site.tagline}` : `${title} · ${site.title}`.length <= 60 ? `${title} · ${site.title}` : title;
   const abs = site.url + url;
   const img = site.url + '/assets/img/' + (image || site.ogImage);
+  const author = { '@type': 'Person', name: site.author, url: site.url + '/sobre-mi/' };
+  const ld = post ? { '@context': 'https://schema.org', '@type': 'BlogPosting', headline: title, description, image: img, datePublished: post.date.toISOString().slice(0, 10), inLanguage: 'es', author, publisher: author, mainEntityOfPage: abs, keywords: post.temas.map(t => TEMAS[t]).join(', ') }
+    : url === '/' ? { '@context': 'https://schema.org', '@type': 'WebSite', name: site.title, url: site.url + '/', description: site.description, inLanguage: 'es', author } : null;
   const s = site.social;
   const NAV_ICONS = {
     home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
@@ -206,14 +210,15 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(full)}</title>
 <meta name="description" content="${esc(description || site.description)}">
-<link rel="canonical" href="${abs}">
+${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${abs}">
 <meta property="og:site_name" content="${esc(site.title)}">
 <meta property="og:type" content="${type}">
 <meta property="og:title" content="${esc(title || site.title)}">
 <meta property="og:description" content="${esc(description || site.description)}">
 <meta property="og:url" content="${abs}">
 <meta property="og:image" content="${img}">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:locale" content="es_CR">
+${post ? `<meta property="article:published_time" content="${post.date.toISOString().slice(0, 10)}">\n${post.temas.map(t => `<meta property="article:tag" content="${esc(TEMAS[t])}">`).join('\n')}\n` : ''}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n` : ''}<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1522" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -305,8 +310,10 @@ for (const [i, p] of posts.entries()) {
   const toc = p.headings.length >= 2
     ? `<aside class="toc-rail"><details class="toc" open><summary class="toc-title">En este artículo</summary><ol>${p.headings.map(h => `<li><a href="#${h.id}">${h.text}</a></li>`).join('')}</ol><a class="toc-top" href="#main">Volver arriba</a></details></aside>` : '';
   const shareUrl = encodeURIComponent(`${site.url}/${p.slug}/`), shareTitle = encodeURIComponent(p.title);
+  // Enlazado interno: hasta 3 posts que comparten tema, sin repetir los de anterior/siguiente.
+  const related = posts.filter(q => q !== p && q !== newer && q !== older && q.temas.some(t => p.temas.includes(t))).slice(0, 3);
   write(`${p.slug}/index.html`, layout({
-    title: p.title, description: p.description, url: `/${p.slug}/`, image: p.img, type: 'article',
+    title: p.title, description: p.description, url: `/${p.slug}/`, image: p.img, type: 'article', post: p,
     body: `<div class="progress" aria-hidden="true"></div>
 <div class="post-grid">
 <article class="post">
@@ -327,6 +334,7 @@ ${p.html}
       <a href="https://x.com/intent/tweet?text=${shareTitle}&amp;url=${shareUrl}" target="_blank" rel="noopener">X</a>
       <button type="button" class="copy-link" data-url="${site.url}/${p.slug}/"><span>Copiar enlace</span></button>
     </div>
+    ${related.length ? `<section class="related" aria-label="Sigue leyendo"><h2>Sigue leyendo</h2><ul>${related.map(q => `<li><a href="/${q.slug}/">${esc(q.title)}</a></li>`).join('')}</ul></section>` : ''}
     <nav class="post-nav" aria-label="Más artículos">
       ${older ? `<a rel="prev" href="/${older.slug}/"><span>Anterior</span>${esc(older.title)}</a>` : '<span></span>'}
       ${newer ? `<a rel="next" href="/${newer.slug}/"><span>Siguiente</span>${esc(newer.title)}</a>` : ''}
@@ -416,11 +424,13 @@ for (const file of fs.readdirSync(path.join(ROOT, 'src/pages'))) {
   write(`${slug}/index.html`, layout({ title: m.title, description: m.description, url: `/${slug}/`, body: `<article class="post page"><header class="post-header"><h1>${esc(m.title)}</h1></header><div class="prose">${markdown(body)}</div></article>` }));
 }
 
-write('404.html', layout({ title: 'Página no encontrada', url: '/404.html', body: `<header class="page-header"><h1>Esta página no existe</h1><p class="section-lead">Puede que el enlace haya cambiado. Busca el tema en la lista de artículos.</p><p><a class="btn" href="/blog/">Ir a los artículos</a></p></header>` }));
+write('404.html', layout({ title: 'Página no encontrada', url: '/404.html', noindex: true, body: `<header class="page-header"><h1>Esta página no existe</h1><p class="section-lead">Puede que el enlace haya cambiado. Busca el tema en la lista de artículos.</p><p><a class="btn" href="/blog/">Ir a los artículos</a></p></header>` }));
 
 // ---------- sitemap y RSS ----------
-const urls = ['/', '/blog/', '/sobre-mi/', ...posts.map(p => `/${p.slug}/`)];
-write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `<url><loc>${site.url}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+const day = d => d.toISOString().slice(0, 10);
+const urls = [['/', posts[0].date], ['/blog/', posts[0].date], ['/sobre-mi/', posts[0].date], ...posts.map(p => [`/${p.slug}/`, p.date])];
+write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, d]) => `<url><loc>${site.url}${u}</loc><lastmod>${day(d)}</lastmod></url>`).join('\n')}\n</urlset>\n`);
+write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
 write('feed.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>${esc(site.title)}</title><link>${site.url}/</link><description>${esc(site.description)}</description><language>es</language>\n${posts.map(p => `<item><title>${esc(p.title)}</title><link>${site.url}/${p.slug}/</link><guid>${site.url}/${p.slug}/</guid><pubDate>${p.date.toUTCString()}</pubDate><description>${esc(p.description || '')}</description></item>`).join('\n')}\n</channel></rss>\n`);
 
 console.log(`OK: ${posts.length} posts generados`);

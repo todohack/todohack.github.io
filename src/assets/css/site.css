@@ -488,3 +488,10 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
 @media (prefers-reduced-motion: reduce) {
   .js .welcome.is-ready .hero-lead { animation: none; }
 }
+
+/* Sigue leyendo: enlaces a posts del mismo tema al final de cada artículo */
+.related { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+.related h2 { font-size: 20px; margin-bottom: 12px; }
+.related ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.related a { font-weight: 600; text-decoration: none; }
+.related a:hover { text-decoration: underline; }

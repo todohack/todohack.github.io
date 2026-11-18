@@ -1,7 +1,7 @@
 ---
-title: "¿Que hago aquí?"
+title: "¿Qué hago aquí?"
 date: 2024-08-18 17:47:00 -0600
-description: Breve presentación de porque estoy aquí.
+description: Por qué nació Todohack: un laboratorio propio para aprender ciberseguridad y hacking ético, y compartir lo que aprendo con casos reales.
 tags: [presentacion]
 ---
 Todo blog empieza con una pregunta incómoda: ¿por qué alguien querría leerme? La mía es sencilla. Llevo un tiempo metido en la *ciberseguridad* y quiero compartir lo que voy aprendiendo.

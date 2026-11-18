@@ -1,6 +1,6 @@
 ---
 title: "Restaurantes que no existen: el fraude escondido en las apps de comida"
-description: Cómo funcionan los restaurantes falsos en Uber Eats y otras apps de reparto, qué pasó en Canadá, Estados Unidos y China, y cómo reconocerlos y denunciarlos en Costa Rica.
+description: Cómo funcionan los restaurantes falsos en Uber Eats y otras apps, qué pasó en Canadá, EE. UU. y China, y cómo reconocerlos y denunciarlos en Costa Rica.
 gancho: "Pediste una hamburguesa a un restaurante que nunca existió."
 gancho_texto: "En Canadá, alguien registró restaurantes falsos en Uber Eats en minutos. En China encontraron 67.000."
 tags: [fraude, consumidor]

@@ -1,6 +1,6 @@
 ---
 title: "La caída de Microsoft 365: un cambio de julio que nadie podía deshacer"
-description: Qué tumbó Outlook, Teams y Copilot en todo el mundo del 12 al 14 de noviembre de 2026, por qué tardó tanto en volver y qué deberías tener listo para cuando tu correo deje de funcionar.
+description: Qué tumbó Outlook, Teams y Copilot del 12 al 14 de noviembre de 2026, por qué tardó tanto en volver y qué tener listo si tu correo deja de funcionar.
 gancho: "Un cambio de julio tumbó el correo de medio mundo en noviembre."
 gancho_texto: "Microsoft 365 estuvo caído casi dos días. No fue un ataque: fue un defecto escondido durante meses."
 tags: [resiliencia, caidas, nube]

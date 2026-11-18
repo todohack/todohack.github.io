@@ -1,6 +1,6 @@
 ---
 title: "Un router nuevo detuvo todos los despegues de Estados Unidos"
-description: Qué pasó el 13 de noviembre de 2026, cuando la FAA paró los despegues en todo el país: un equipo recién instalado inundó una red antigua, y por qué se parece tanto a un ciberataque sin serlo.
+description: Por qué la FAA paró los despegues en todo EE. UU. el 13 de noviembre de 2026: un router nuevo saturó una red antigua. Parecía un ciberataque y no lo fue.
 gancho: "Un router nuevo dejó en tierra a todos los aviones de Estados Unidos."
 gancho_texto: "No fue un ataque, pero se comportó exactamente como uno: mil intentos de conexión cada pocos segundos contra una red antigua."
 tags: [resiliencia, caidas]

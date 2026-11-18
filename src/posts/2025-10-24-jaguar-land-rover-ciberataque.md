@@ -1,6 +1,6 @@
 ---
 title: "Jaguar Land Rover: el ciberataque más caro de la historia británica"
-description: Semanas sin fabricar autos, miles de proveedores afectados y un rescate del gobierno. Así se ve cuando la ciberseguridad se vuelve un problema de toda la economía.
+description: Semanas sin fabricar autos, miles de proveedores afectados y un rescate del gobierno: cuando un ciberataque se vuelve un problema de toda la economía.
 tags: [ransomware, infraestructura-critica, continuidad]
 ---
 
