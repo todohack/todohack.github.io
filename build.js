@@ -370,7 +370,7 @@ for (const [i, p] of posts.entries()) {
 ${p.html}
   </div>
   <footer class="post-footer">
-    ${shareBar(p, false)}
+    ${shareBar(p, true)}
     ${related.length ? `<section class="related" aria-label="Sigue leyendo"><h2>Sigue leyendo</h2><ul>${related.map(q => `<li><a href="/${q.slug}/">${esc(q.title)}</a></li>`).join('')}</ul></section>` : ''}
     <nav class="post-nav" aria-label="Más artículos">
       ${older ? `<a rel="prev" href="/${older.slug}/"><span>Anterior</span>${esc(older.title)}</a>` : '<span></span>'}
