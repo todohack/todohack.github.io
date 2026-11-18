@@ -817,3 +817,8 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 :root.neon-mode .matrix { filter: hue-rotate(170deg) saturate(2.2) brightness(1.2); }
 :root.neon-mode .progress { background: linear-gradient(90deg, #3ee8ff, #ff3fc8); box-shadow: 0 0 10px #ff3fc8; }
 :root.neon-mode ::selection { background: rgba(255, 63, 200, .45); color: #fff; }
+.hud-cpu s { background: #22d3ee; }
+.hud-buff b, .hud-buff { color: #22d3ee; }
+.hud-gear b { color: #c084fc; }
+.hud-spell b { color: #93c5fd; }
+.game-hud .hud-spell.is-low b { color: #f87171; }

@@ -70,11 +70,16 @@ const sprites = () => {
   };
 };
 // Partículas, números flotantes, anillos y temblor: lo comparten snake y dungeon
-const fxLayer = () => ({ floats: [], parts: [], rings: [], shake: 0, fade: 0 });
+const fxLayer = () => ({ floats: [], parts: [], rings: [], beams: [], shake: 0, fade: 0 });
 const burst = (fx, x, y, col, n = 14, now = performance.now()) => {
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = 30 + Math.random() * 80; fx.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, col, t: now, life: 350 + Math.random() * 350 }); }
 };
 const drawFx = (ctx, fx, t) => {
+  fx.beams = fx.beams.filter(b => t - b.t < 260);
+  for (const b of fx.beams) { // rayos de hechizo: línea brillante que se desvanece
+    ctx.globalAlpha = 1 - (t - b.t) / 260; ctx.strokeStyle = b.col; ctx.lineWidth = 3; ctx.shadowColor = b.col; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke(); ctx.shadowBlur = 0;
+  }
   fx.parts = fx.parts.filter(p => t - p.t < p.life);
   for (const p of fx.parts) {
     const a = (t - p.t) / 1000;
@@ -358,16 +363,62 @@ const MON = [
   { g: 'D', n: 'botnet DDoS', d: 7, hp: 13, a: 5, f: 2, xp: 16, sp: 'fast', ar: 'la' },
   { g: 'z', n: 'zero-day', d: 8, hp: 22, a: 8, f: 3, xp: 24 },
   { g: 'A', n: 'grupo APT', d: 9, hp: 28, a: 9, f: 4, xp: 30 },
-  { g: 'R', n: 'Señor del Ransomware', d: 10, hp: 95, a: 13, f: 5, xp: 120, sp: 'boss' },
+  { g: 'R', n: 'Señor del Ransomware', d: 10, hp: 120, a: 14, f: 5, xp: 120, sp: 'boss' },
 ];
-const EXPLOITS = ['un exploit de desbordamiento', 'una inyección SQL afilada', 'un payload ofuscado', 'una cadena ROP', 'un XSS persistente'];
-const SHIELDS = ['un firewall de aplicación', 'un parche de kernel', 'segmentación de red', 'MFA reforzado', 'un EDR nuevo'];
+// Armas: daño extra + una propiedad. t = capa mínima en la que puede aparecer.
+const WEAPONS = [
+  { n: 'teclado mecánico', d: 0, t: 0, p: '', x: 'Tu arma de siempre. Clac, clac.' },
+  { n: 'Rubber Ducky', d: 1, t: 1, p: 'fast', x: 'Teclea más rápido que tú: 30% de golpe doble.' },
+  { n: 'payload ofuscado', d: 2, t: 2, p: 'pierce', x: 'El antivirus no lo ve venir: ignora la defensa.' },
+  { n: 'XSS persistente', d: 2, t: 2, p: 'poison', x: 'Deja código malicioso: daño durante 3 turnos.' },
+  { n: 'diccionario rockyou', d: 5, t: 3, p: 'brute', x: 'Fuerza bruta: pega fuerte, pero falla 1 de cada 4.' },
+  { n: 'secuestro de sesión', d: 3, t: 3, p: 'drain', x: 'Te quedas con su sesión: te curas un tercio del daño.' },
+  { n: 'desbordamiento de búfer', d: 3, t: 4, p: 'stun', x: 'Segfault: 25% de dejarlo aturdido un turno.' },
+  { n: 'Mimikatz', d: 3, t: 4, p: 'loot', x: 'Vuelca credenciales: cada baja te da criptos.' },
+  { n: 'Wireshark afilado', d: 3, t: 5, p: 'reveal', x: 'Ves todo el tráfico: nada invisible ni disfrazado se te escapa.' },
+  { n: 'movimiento lateral', d: 4, t: 5, p: 'chain', x: 'Pivota: el golpe salta a otro enemigo cercano.' },
+  { n: 'Metasploit', d: 4, t: 6, p: 'cleave', x: 'Módulo multiobjetivo: golpea a todos los que te rodean.' },
+  { n: 'cadena ROP', d: 5, t: 7, p: 'crit', x: 'Gadgets bien encadenados: 25% de golpe triple.' },
+  { n: 'zero-day propio', d: 6, t: 8, p: 'zero', x: 'Nadie tiene parche: ignora la defensa y 25% de golpe triple.' },
+];
+// Armaduras: defensa + una propiedad.
+const ARMORS = [
+  { n: 'sudadera con capucha', d: 0, t: 0, p: '', x: 'Mucho estilo, cero protección.' },
+  { n: 'antivirus gratuito', d: 1, t: 1, p: '', x: 'Algo es algo.' },
+  { n: 'VPN', d: 1, t: 1, p: 'dodge', x: 'No saben dónde estás: 15% de esquivar.' },
+  { n: 'firewall de host', d: 2, t: 2, p: '', x: 'Filtra lo básico.' },
+  { n: 'MFA reforzado', d: 2, t: 3, p: 'mfa', x: 'Inmune a los robos del keylogger y a los engaños del phisher.' },
+  { n: 'sandbox', d: 2, t: 3, p: 'thorns', x: 'Quien te ataca se ejecuta aislado: le devuelves 2 de daño.' },
+  { n: 'EDR', d: 3, t: 4, p: 'regen', x: 'Detecta y repara: recuperas vida el doble de rápido.' },
+  { n: 'honeypot', d: 2, t: 5, p: 'decoy', x: 'Señuelo: 25% de que el ataque vaya contra la trampa.' },
+  { n: 'backup 3-2-1', d: 2, t: 5, p: 'revive', x: 'Si caes, restauras desde la copia una vez, con media vida.' },
+  { n: 'WAF', d: 4, t: 6, p: '', x: 'Filtra casi todo lo que llega.' },
+  { n: 'arquitectura Zero Trust', d: 5, t: 8, p: 'dodge', x: 'No confía en nadie: mucha defensa y 15% de esquivar.' },
+];
+const PROP = { fast: 'golpe doble', pierce: 'perfora', poison: 'veneno', brute: 'fuerza bruta', drain: 'roba vida', stun: 'aturde', loot: 'saqueo', reveal: 'revela', chain: 'en cadena', cleave: 'barrido', crit: 'crítico', zero: 'perfora + crítico', dodge: 'esquiva', mfa: 'anti robo', thorns: 'espinas', regen: 'regenera', decoy: 'señuelo', revive: 'resucita' };
+// Hechizos: se aprenden con los scripts (?) y gastan CPU, que se regenera sola.
+const SPELLS = {
+  scan: { n: 'Escaneo de puertos', c: 2, x: 'Revela la capa entera y todo lo que se esconde.' },
+  sqli: { n: 'Inyección SQL', c: 3, x: 'Rayo contra el enemigo visible más cercano.' },
+  emp: { n: 'Pulso EMP', c: 5, x: 'Daña a todos los enemigos a la vista.' },
+  hotfix: { n: 'Parche en caliente', c: 4, x: 'Te cura sin gastar parches.' },
+  crypt: { n: 'Cifrado AES', c: 4, x: 'Escudo que absorbe daño.' },
+  proxy: { n: 'Proxy', c: 2, x: 'Te teletransporta a otro punto de la capa.' },
+  quar: { n: 'Cuarentena', c: 4, x: 'Congela 5 turnos al enemigo más cercano.' },
+  flood: { n: 'SYN flood', c: 4, x: 'Aturde 2 turnos a todo lo que te rodea.' },
+  social: { n: 'Ingeniería social', c: 6, x: 'Convence al enemigo más cercano de luchar a tu lado.' },
+  priv: { n: 'Escalada de privilegios', c: 5, x: 'Daño doble durante 6 turnos.' },
+  exfil: { n: 'Exfiltración', c: 2, x: 'Atrae hacia ti todos los objetos a la vista.' },
+  kill9: { n: 'kill -9', c: 7, x: 'Fulmina a un enemigo a la vista (al jefe le quita 25).' },
+};
 const ART = { a: o => (o.ar === 'la' ? 'a la' : 'al'), el: o => (o.ar === 'la' ? 'La' : 'El') };
+const gearTxt = g => `${g.n} (+${g.d}${g.p ? ', ' + PROP[g.p] : ''})`;
+const gearScore = g => g.d + (g.p ? 2 : 0);
 
 function dungeon(T) {
   const W = 46, H = 17, R = 7, LAST = 10;
   sprites();
-  const m = mount(T, { pad: touch ? dpad(true, [['p', 'parche'], ['e', 'script'], ['>', 'bajar'], ['Escape', 'salir']]) : '' });
+  const m = mount(T, { pad: touch ? dpad(true, [['p', 'parche'], ['z', 'hechizo'], ['c', 'cambiar'], ['g', 'coger'], ['>', 'bajar'], ['Escape', 'salir']]) : '' });
   const cv = document.createElement('canvas'); cv.className = 'game-cv';
   const hud = document.createElement('div'); hud.className = 'game-hud';
   m.scr.classList.add('game-log'); m.scr.after(cv); cv.after(hud);
@@ -384,14 +435,20 @@ function dungeon(T) {
   const now = () => performance.now();
   const float = (x, y, txt, col) => fx.floats.push({ x: x * TS + 8, y: y * TS + 4, txt, col, t: now() });
   const pop = (x, y, col, n) => burst(fx, x * TS + 8, y * TS + 8, col, n);
+  const ring = (x, y, r, col) => fx.rings.push({ x: x * TS + 8, y: y * TS + 8, r, col, t: now() });
+  const beam = (a, b, col) => fx.beams.push({ x1: a.x * TS + 8, y1: a.y * TS + 8, x2: b.x * TS + 8, y2: b.y * TS + 8, col, t: now() });
   const lunge = (e, tx, ty) => { e.lg = { dx: Math.sign(tx - e.x), dy: Math.sign(ty - e.y), t: now() }; };
+  const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   let P, depth, map, seen, vis, mons, items, stairs, turn, log, state, cause;
   const say = t => { log.push(t); if (log.length > 50) log.shift(); };
   const walk = (x, y) => x >= 0 && y >= 0 && x < W && y < H && map[y][x] > 0;
   const monAt = (x, y) => mons.find(o => o.x === x && o.y === y);
   const itemAt = (x, y) => items.find(o => o.x === x && o.y === y);
   const busy = (x, y) => monAt(x, y) || itemAt(x, y) || (x === P.x && y === P.y) || (stairs && x === stairs.x && y === stairs.y);
-  const need = l => 8 * l + 4 * l * l;
+  const need = l => 10 * l + 5 * l * l;
+  const cpuMax = () => 7 + P.lvl;
+  const atkNow = () => (P.atk + P.w.d) * (P.priv > 0 ? 2 : 1);
+  const defNow = () => P.def + P.a.d;
 
   const carve = (a, b) => {
     const hz = Math.random() < .5;
@@ -403,8 +460,14 @@ function dungeon(T) {
   const freeIn = r => { for (let k = 0; k < 40; k++) { const x = rnd(r.x, r.x + r.w - 1), y = rnd(r.y, r.y + r.h - 1); if (!busy(x, y)) return { x, y }; } return null; };
   const freeNear = (x, y) => { for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) if (walk(x + dx, y + dy) && !busy(x + dx, y + dy)) return { x: x + dx, y: y + dy }; return null; };
   // Los enemigos viejos se endurecen en capas profundas: un bot de la capa 8 ya no cae de un golpe
-  const spawn = (t, pos) => { if (!pos) return; const k = 1 + .1 * Math.max(0, depth - t.d); mons.push({ ...t, ...pos, hp: Math.round(t.hp * k), a: Math.round(t.a * (1 + .05 * Math.max(0, depth - t.d))), xp: Math.round(t.xp * (t.sp === 'boss' ? 1 : .8)), awake: false, hidden: t.sp === 'mimic' }); };
-  const rollItem = () => { const r = Math.random(); return r < .28 ? '!' : r < .5 ? '$' : r < .64 ? '%' : r < .78 ? '?' : r < .89 ? ')' : '['; };
+  const spawn = (t, pos) => { if (!pos) return; const k = 1 + .16 * Math.max(0, depth - t.d); mons.push({ ...t, ...pos, hp: Math.round(t.hp * k), a: Math.round(t.a * (1 + .09 * Math.max(0, depth - t.d))), xp: Math.round(t.xp * (t.sp === 'boss' ? 1 : .6)), awake: false, hidden: t.sp === 'mimic' }); };
+  // El equipo profundo es mejor: casi siempre sale de los 4 niveles más altos disponibles
+  const rollGear = list => { const pool = list.filter(g => g.t >= 1 && g.t <= depth); return { ...(Math.random() < .7 ? pickOne(pool.slice(-4)) : pickOne(pool)) }; };
+  const rollItem = () => {
+    const r = Math.random();
+    const k = r < .26 ? '!' : r < .46 ? '$' : r < .58 ? '%' : r < .74 ? '?' : r < .88 ? ')' : '[';
+    return k === ')' ? { k, w: rollGear(WEAPONS) } : k === '[' ? { k, a: rollGear(ARMORS) } : { k };
+  };
 
   const gen = () => {
     let rooms;
@@ -422,16 +485,16 @@ function dungeon(T) {
     for (let i = 1; i < rooms.length; i++) carve(rooms[i - 1], rooms[i]);
     carve(rooms[0], rooms[rnd(2, rooms.length - 1)]); // un bucle extra para poder huir
     seen = map.map(r => r.map(() => false));
-    depth++; fx.fade = now(); fx.parts = []; fx.floats = []; fx.rings = [];
+    depth++; fx.fade = now(); fx.parts = []; fx.floats = []; fx.rings = []; fx.beams = [];
     const first = rooms[0], last = rooms[rooms.length - 1];
     mons = []; items = []; stairs = null;
     P.x = first.cx; P.y = first.cy; P.vx = undefined; cam = -999;
     if (depth < LAST) stairs = { x: last.cx, y: last.cy };
     const pool = MON.filter(t => t.d <= depth && t.sp !== 'boss');
-    for (let i = 0; i < 3 + depth + (depth >> 2); i++) spawn(Math.random() < .7 ? pickOne(pool.slice(-4)) : pickOne(pool), freeIn(rooms[rnd(1, rooms.length - 1)]));
+    for (let i = 0; i < 3 + depth + (depth >> 1); i++) spawn(Math.random() < .7 ? pickOne(pool.slice(-4)) : pickOne(pool), freeIn(rooms[rnd(1, rooms.length - 1)]));
     if (depth === LAST) spawn(MON[MON.length - 1], freeIn(last));
-    for (let i = rnd(4, 7); i > 0; i--) { const pos = freeIn(pickOne(rooms)); if (pos) items.push({ ...pos, k: rollItem() }); }
-    say(depth === 1 ? 'Entras en la red profunda. Encuentra el > para bajar de capa. Pulsa ? para ver los controles.'
+    for (let i = rnd(5, 8); i > 0; i--) { const pos = freeIn(pickOne(rooms)); if (pos) items.push({ ...pos, ...rollItem() }); }
+    say(depth === 1 ? 'Entras en la red profunda. Encuentra el > para bajar. Pulsa ? para ver los controles.'
       : depth === LAST ? 'Capa 10. Todo huele a cifrado: el Señor del Ransomware está cerca.' : `Bajas a la capa ${depth}.`);
     fov();
   };
@@ -453,19 +516,25 @@ function dungeon(T) {
         if ((x - P.x) ** 2 + (y - P.y) ** 2 <= R * R && los(P.x, P.y, x, y)) { vis[y][x] = true; seen[y][x] = true; }
   };
   const isWall = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (walk(x + dx, y + dy)) return true; return false; };
-  const shown = o => !(o.sp === 'invis' && !o.seen && Math.max(Math.abs(o.x - P.x), Math.abs(o.y - P.y)) > 1);
+  const revealing = () => P.w.p === 'reveal';
+  const shown = o => revealing() || !(o.sp === 'invis' && !o.seen && cheb(o, P) > 1);
+  const disguised = o => o.hidden && !revealing();
 
-  const HELP = 'flechas o hjkl mover · yubn diagonales · . esperar · > bajar · p parche · e script · esc salir';
+  const HELP = 'flechas/hjkl mover · yubn diagonal · . esperar · z hechizo · c cambiar hechizo · g coger equipo · p parche · > bajar · esc salir';
   const render = () => {
     if (state !== 'play') return;
     const msgs = log.slice(-2);
     m.scr.innerHTML = `${msgs.length > 1 ? `<span class="g-dim">${esc(msgs[0])}</span>` : ' '}\n${esc(msgs[msgs.length - 1] || ' ')}`;
-    const pct = Math.max(0, P.hp / P.max), xpPct = P.xp / need(P.lvl);
+    const pct = Math.max(0, P.hp / P.max), xpPct = P.xp / need(P.lvl), sp = SPELLS[P.spells[P.sel]];
     hud.innerHTML = `<span class="hud-hp ${pct <= .25 ? 'is-low' : ''}"><b>HP</b><i><s style="width:${(pct * 100).toFixed(0)}%"></s></i>${P.hp}/${P.max}</span>`
+      + `<span class="hud-cpu"><b>CPU</b><i><s style="width:${(P.cpu / cpuMax() * 100).toFixed(0)}%"></s></i>${P.cpu}/${cpuMax()}</span>`
       + `<span class="hud-xp"><b>Nv ${P.lvl}</b><i><s style="width:${(Math.min(1, xpPct) * 100).toFixed(0)}%"></s></i></span>`
-      + `<span>Capa <b>${depth}</b>/${LAST}</span><span>ATK <b>${P.atk}</b></span><span>DEF <b>${P.def}</b></span>`
-      + `<span class="${P.energy < 80 ? 'is-low' : ''}">Energía <b>${P.energy}</b></span><span>₿ <b>${P.gold}</b></span>`
-      + `<span>Parches <b>${P.patches}</b></span><span>Scripts <b>${P.scripts}</b></span><span class="hud-turn">turno ${turn}</span>`;
+      + `<span>Capa <b>${depth}</b>/${LAST}</span><span>ATK <b>${atkNow()}</b></span><span>DEF <b>${defNow()}</b></span>`
+      + `<span class="${P.energy < 80 ? 'is-low' : ''}">Energía <b>${P.energy}</b></span><span>₿ <b>${P.gold}</b></span><span>Parches <b>${P.patches}</b></span>`
+      + (P.shield > 0 ? `<span class="hud-buff">Escudo <b>${P.shield}</b></span>` : '') + (P.priv > 0 ? `<span class="hud-buff">Root ×2 <b>${P.priv}</b></span>` : '')
+      + `<span class="hud-gear">Arma <b>${esc(gearTxt(P.w))}</b></span><span class="hud-gear">Armadura <b>${esc(gearTxt(P.a))}</b></span>`
+      + `<span class="hud-spell ${P.cpu < sp.c ? 'is-low' : ''}">Hechizo <b>${esc(sp.n)}</b> (${sp.c} CPU) · ${P.spells.length}/${Object.keys(SPELLS).length} conocidos</span>`
+      + `<span class="hud-turn">turno ${turn}</span>`;
   };
   const sprAt = (spr, white, e, t, seed, alpha = 1, glow = '') => {
     let ox = 0, oy = 0;
@@ -511,20 +580,28 @@ function dungeon(T) {
     for (const it of items) {
       if (!vis[it.y][it.x]) continue;
       const b = (it.k === '$' || it.k === '*') ? Math.round(Math.sin(t / 200 + it.x) * 1.5) : 0;
-      if (it.k === '*') { ctx.shadowColor = '#f2b33d'; ctx.shadowBlur = 14; }
+      const g = it.k === '*' ? '#f2b33d' : (it.w || it.a) && (it.w || it.a).p ? '#c084fc' : ''; // el equipo con propiedad brilla
+      if (g) { ctx.shadowColor = g; ctx.shadowBlur = 10 + 4 * Math.sin(t / 200); }
       ctx.drawImage(SPR[it.k], it.x * TS, it.y * TS + b, TS, TS);
       ctx.shadowBlur = 0;
     }
     for (const o of mons) {
       if (!vis[o.y][o.x] || !shown(o)) continue;
-      const key = o.hidden ? '!' : o.g === 'D' && Math.floor(t / 180) % 2 ? 'D2' : o.g;
-      sprAt(SPR[key], WHITE[key], o, t, o.x * 1.7 + o.y, o.sp === 'invis' && !o.seen ? .5 : 1, o.sp === 'boss' ? '#f0abfc' : '');
-      if (!o.hidden && o.hp < o.max) { // barra de vida sobre los enemigos heridos
+      const key = disguised(o) ? '!' : o.g === 'D' && Math.floor(t / 180) % 2 ? 'D2' : o.g;
+      const glow = o.ally ? '#4ade80' : o.stun > 0 ? '#93c5fd' : o.sp === 'boss' ? '#f0abfc' : o.poison ? '#a3e635' : '';
+      sprAt(SPR[key], WHITE[key], o, t, o.x * 1.7 + o.y, o.sp === 'invis' && !o.seen && !revealing() ? .5 : 1, glow);
+      if (!disguised(o) && o.hp < o.max) { // barra de vida sobre los heridos (verde si es aliado)
         ctx.fillStyle = '#05080f'; ctx.fillRect(Math.round(o.vx * TS) + 2, Math.round(o.vy * TS) - 3, 12, 3);
-        ctx.fillStyle = '#f87171'; ctx.fillRect(Math.round(o.vx * TS) + 2, Math.round(o.vy * TS) - 3, Math.max(1, Math.round(12 * o.hp / o.max)), 3);
+        ctx.fillStyle = o.ally ? '#4ade80' : '#f87171'; ctx.fillRect(Math.round(o.vx * TS) + 2, Math.round(o.vy * TS) - 3, Math.max(1, Math.round(12 * o.hp / o.max)), 3);
       }
     }
-    if (state === 'play') sprAt(SPR.me, WHITE.me, P, t, 0, 1, P.conf ? '#c084fc' : '');
+    if (state === 'play') {
+      sprAt(SPR.me, WHITE.me, P, t, 0, 1, P.conf ? '#c084fc' : P.priv > 0 ? '#f87171' : '');
+      if (P.shield > 0) { // burbuja de cifrado
+        ctx.globalAlpha = .35 + .15 * Math.sin(t / 150); ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(P.vx * TS + 8, P.vy * TS + 8, 11, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    }
     // luz de antorcha alrededor del jugador, con parpadeo
     const cx = P.vx * TS + 8, cy = P.vy * TS + 8, r = (R + .6) * TS * (1 + .03 * Math.sin(t / 90) + .02 * Math.sin(t / 37));
     const g = ctx.createRadialGradient(cx, cy, r * .2, cx, cy, r);
@@ -539,90 +616,175 @@ function dungeon(T) {
 
   const levelUp = () => {
     while (P.xp >= need(P.lvl)) {
-      P.lvl++; P.max += 4; P.hp = Math.min(P.max, P.hp + 4);
-      P.atk++; if (P.lvl % 3 === 0) P.def++;
-      say(`Subes a nivel ${P.lvl}. Te sientes más afilado.`);
-      fx.rings.push({ x: P.x * TS + 8, y: P.y * TS + 8, r: 40, col: '#f2b33d', t: now() }); float(P.x, P.y - .6, `NIVEL ${P.lvl}`, '#f2b33d');
+      P.lvl++; P.max += 3; P.hp = Math.min(P.max, P.hp + 3);
+      if (P.lvl % 2 === 0) P.atk++; if (P.lvl % 4 === 0) P.def++;
+      P.cpu = cpuMax();
+      say(`Subes a nivel ${P.lvl}. Más vida y la CPU al máximo.`);
+      ring(P.x, P.y, 40, '#f2b33d'); float(P.x, P.y - .6, `NIVEL ${P.lvl}`, '#f2b33d');
     }
   };
   const kill = o => {
     mons.splice(mons.indexOf(o), 1);
-    P.xp += o.xp; P.kills++;
     pop(o.x, o.y, SPR_COL[o.g] || '#fff', o.sp === 'boss' ? 60 : 16);
-    if (o.sp === 'boss') fx.shake = now();
-    if (o.sp === 'boss') { items.push({ x: o.x, y: o.y, k: '*' }); say('El Señor del Ransomware cae y suelta la clave maestra (*). ¡Recógela!'); }
-    else { say(`Eliminas ${ART.a(o)} ${o.n}.`); if (Math.random() < .2 && !itemAt(o.x, o.y)) items.push({ x: o.x, y: o.y, k: '$' }); }
+    if (o.ally) { say(`Tu aliado ${o.n} cae luchando.`); return; }
+    P.xp += o.xp; P.kills++;
+    if (o.sp === 'boss') { fx.shake = now(); items.push({ x: o.x, y: o.y, k: '*' }); say('El Señor del Ransomware cae y suelta la clave maestra (*). ¡Recógela!'); }
+    else {
+      say(`Eliminas ${ART.a(o)} ${o.n}.`);
+      if (P.w.p === 'loot') { const g = rnd(3, 8) * depth; P.gold += g; float(o.x, o.y - .5, `+${g} ₿`, '#f2b33d'); }
+      else if (Math.random() < .2 && !itemAt(o.x, o.y)) items.push({ x: o.x, y: o.y, k: '$' });
+    }
     levelUp();
   };
-  const hurt = (o, d) => {
+  const hurt = (o, d, col = '#fde68a') => {
     o.hp -= d; o.awake = true; o.fl = now();
-    float(o.x, o.y, `−${d}`, '#fde68a');
+    float(o.x, o.y, `−${d}`, col);
     if (o.hp <= 0) return kill(o), true;
-    if (o.sp === 'split' && mons.length < 30) {
+    if (o.sp === 'split' && !o.ally && mons.length < 30) {
       const pos = freeNear(o.x, o.y);
-      if (pos && o.hp >= 2) { o.hp = Math.ceil(o.hp / 2); mons.push({ ...o, ...pos }); say('¡El gusano se replica!'); }
+      if (pos && o.hp >= 2) { o.hp = Math.ceil(o.hp / 2); mons.push({ ...o, ...pos, poison: null }); say('¡El gusano se replica!'); }
     }
     return false;
   };
-  const attack = o => {
+  const foesAround = (x, y) => mons.filter(o => !o.ally && Math.max(Math.abs(o.x - x), Math.abs(o.y - y)) <= 1);
+  // Un golpe del jugador con todas las propiedades del arma
+  const strike = (o, extra = true) => {
     if (o.hidden) { o.hidden = false; say(`¡Ese parche era un ${o.n}!`); }
-    const d = Math.max(1, P.atk + rnd(0, 2) - o.f);
+    const w = P.w;
+    if (w.p === 'brute' && Math.random() < .25) { float(o.x, o.y, 'fallo', '#9ca3af'); say('Fallas: la contraseña no estaba en el diccionario.'); return; }
+    let d = atkNow() + rnd(0, 2) - (w.p === 'pierce' || w.p === 'zero' ? 0 : o.f);
+    if ((w.p === 'crit' || w.p === 'zero') && Math.random() < .25) { d *= 3; float(o.x, o.y - .6, '¡CRÍTICO!', '#f87171'); }
+    d = Math.max(1, d);
+    if (hurt(o, d)) return;
+    say(`Golpeas ${ART.a(o)} ${o.n} (−${d}).`);
+    if (w.p === 'poison') { o.poison = { d: 1 + Math.ceil(depth / 3), n: 3 }; }
+    if (w.p === 'stun' && Math.random() < .25) { o.stun = 1; float(o.x, o.y - .6, 'segfault', '#93c5fd'); }
+    if (w.p === 'drain') { const h = Math.ceil(d / 3); P.hp = Math.min(P.max, P.hp + h); float(P.x, P.y, `+${h}`, '#4ade80'); }
+    if (extra && w.p === 'fast' && Math.random() < .3 && mons.includes(o)) { say('¡Golpe doble!'); strike(o, false); }
+    if (extra && w.p === 'chain') {
+      const next = mons.find(f => !f.ally && f !== o && cheb(f, o) <= 2 && vis[f.y][f.x]);
+      if (next) { beam(o, next, '#c084fc'); hurt(next, Math.max(1, Math.ceil(d / 2))); }
+    }
+  };
+  const attack = o => {
     lunge(P, o.x, o.y);
-    if (!hurt(o, d)) say(`Golpeas ${ART.a(o)} ${o.n} (−${d}).`);
+    if (P.w.p === 'cleave') { const around = foesAround(P.x, P.y); around.forEach(f => strike(f)); if (around.length > 1) say(`Barrido: ${around.length} enemigos alcanzados.`); }
+    else strike(o);
   };
   const teleport = o => { for (let k = 0; k < 200; k++) { const x = rnd(1, W - 2), y = rnd(1, H - 2); if (walk(x, y) && !busy(x, y)) { o.x = x; o.y = y; return; } } };
   const hit = o => {
     if (o.hidden) { o.hidden = false; say(`¡Ese parche era un ${o.n}!`); }
-    const d = Math.max(1, o.a + rnd(0, 2) - P.def);
-    P.hp -= d;
-    lunge(o, P.x, P.y); P.fl = now(); fx.shake = now(); float(P.x, P.y, `−${d}`, '#f87171');
-    say(`${ART.el(o)} ${o.n} te golpea (−${d}).`);
-    if (o.sp === 'steal' && P.gold > 0) { const s = Math.min(P.gold, rnd(5, 15) * depth); P.gold -= s; say(`¡El keylogger te roba ${s} ₿ y huye!`); teleport(o); o.awake = false; }
-    if (o.sp === 'confuse' && Math.random() < .5) { P.conf = 4; say('El phisher te engaña: estás confundido.'); }
+    lunge(o, P.x, P.y);
+    const a = P.a;
+    if (a.p === 'dodge' && Math.random() < .15) { float(P.x, P.y, 'esquivas', '#93c5fd'); say(`Esquivas ${ART.a(o)} ${o.n}.`); return; }
+    if (a.p === 'decoy' && Math.random() < .25) { float(P.x, P.y, 'señuelo', '#c084fc'); say(`${ART.el(o)} ${o.n} ataca al honeypot.`); return; }
+    let d = Math.max(1, o.a + rnd(0, 2) - Math.floor(defNow() * .8));
+    if (P.shield > 0) { const ab = Math.min(P.shield, d); P.shield -= ab; d -= ab; float(P.x, P.y - .5, `cifrado −${ab}`, '#22d3ee'); }
+    if (d > 0) {
+      P.hp -= d; P.fl = now(); fx.shake = now(); float(P.x, P.y, `−${d}`, '#f87171');
+      say(`${ART.el(o)} ${o.n} te golpea (−${d}).`);
+    }
+    if (a.p === 'thorns' && hurt(o, 2, '#c084fc')) return checkDeath(o);
+    if (a.p !== 'mfa') {
+      if (o.sp === 'steal' && P.gold > 0) { const s = Math.min(P.gold, rnd(5, 15) * depth); P.gold -= s; say(`¡El keylogger te roba ${s} ₿ y huye!`); teleport(o); o.awake = false; }
+      if (o.sp === 'confuse' && Math.random() < .5) { P.conf = 4; say('El phisher te engaña: estás confundido.'); }
+    }
     if (o.sp === 'boss' && Math.random() < .35) { P.energy = Math.max(0, P.energy - 40); say('El ransomware cifra tus reservas: −40 de energía.'); }
-    if (P.hp <= 0) die(`${ART.el(o).toLowerCase()} ${o.n}`);
+    checkDeath(o);
+  };
+  const checkDeath = o => {
+    if (P.hp > 0) return;
+    if (P.a.p === 'revive' && !P.a.used) {
+      P.a.used = true; P.hp = Math.ceil(P.max / 2);
+      ring(P.x, P.y, 50, '#4ade80'); float(P.x, P.y - .6, 'RESTAURADO', '#4ade80');
+      return say('Caes... y restauras desde el backup 3-2-1. Una sola vez.');
+    }
+    die(o ? `${ART.el(o).toLowerCase()} ${o.n}` : 'agotamiento: se acabó el café');
+  };
+  const step = (o, tx, ty) => {
+    const sx = Math.sign(tx - o.x), sy = Math.sign(ty - o.y);
+    for (const [mx, my] of [[sx, sy], [sx, 0], [0, sy]]) {
+      const nx = o.x + mx, ny = o.y + my;
+      if ((mx || my) && walk(nx, ny) && !monAt(nx, ny) && !(nx === P.x && ny === P.y)) { o.x = nx; o.y = ny; return; }
+    }
+  };
+  const allyTurn = o => {
+    let foe = null, fd = 99;
+    for (const f of mons) if (!f.ally) { const d = cheb(o, f); if (d < fd) { fd = d; foe = f; } }
+    if (foe && fd <= 1) {
+      lunge(o, foe.x, foe.y);
+      const d = Math.max(1, o.a + rnd(0, 2) - foe.f);
+      if (!hurt(foe, d, '#86efac')) say(`Tu aliado ${o.n} ataca ${ART.a(foe)} ${foe.n}.`);
+      return;
+    }
+    if (foe && fd <= 6) return step(o, foe.x, foe.y);
+    if (cheb(o, P) > 2) step(o, P.x, P.y);
   };
   const monTurn = o => {
     if (state !== 'play' || !mons.includes(o)) return;
-    const dx = P.x - o.x, dy = P.y - o.y, dist = Math.max(Math.abs(dx), Math.abs(dy));
+    if (o.poison) {
+      const pd = o.poison.d; if (--o.poison.n <= 0) o.poison = null;
+      if (hurt(o, pd, '#a3e635')) return;
+    }
+    if (o.stun > 0) { o.stun--; return; }
+    if (o.ally) return allyTurn(o);
+    const dist = cheb(o, P);
     if (!o.awake) { if (vis[o.y][o.x] && dist <= 6 && Math.random() < .7) o.awake = true; else return; }
     if (o.hidden && dist > 1) return; // el troyano espera quieto, disfrazado de parche
     if (dist <= 1) return hit(o);
-    const sx = Math.sign(dx), sy = Math.sign(dy);
-    for (const [mx, my] of [[sx, sy], [sx, 0], [0, sy]]) {
-      if ((mx || my) && walk(o.x + mx, o.y + my) && !monAt(o.x + mx, o.y + my)) { o.x += mx; o.y += my; return; }
-    }
+    const al = mons.find(f => f.ally && cheb(f, o) <= 1);
+    if (al && Math.random() < .6) { lunge(o, al.x, al.y); hurt(al, Math.max(1, o.a + rnd(0, 2) - al.f), '#f87171'); return; }
+    step(o, P.x, P.y);
   };
   const endTurn = () => {
     turn++;
     P.energy = Math.max(0, P.energy - 1);
+    if (P.priv > 0 && --P.priv === 0) say('Pierdes los privilegios de root.');
+    if (turn % 4 === 0 && P.cpu < cpuMax()) P.cpu++;
     if (P.energy === 80) say('Te estás quedando sin energía. Busca café (%).');
-    if (P.energy === 0 && turn % 3 === 0) { P.hp--; if (P.hp <= 0) return die('agotamiento: se acabó el café'); }
-    if (turn % 12 === 0 && P.hp < P.max && P.energy > 0) P.hp++; // regeneración lenta
+    if (P.energy === 0 && turn % 3 === 0) { P.hp--; if (P.hp <= 0) { checkDeath(null); if (state !== 'play') return; } }
+    if (turn % (P.a.p === 'regen' ? 6 : 12) === 0 && P.hp < P.max && P.energy > 0) P.hp++; // regeneración lenta
     for (const o of [...mons]) { monTurn(o); if (o.sp === 'fast') monTurn(o); }
     if (state === 'play') { fov(); render(); }
   };
+  const equip = it => {
+    const slot = it.w ? 'w' : 'a', gear = it.w || it.a, old = P[slot];
+    P[slot] = gear;
+    items.splice(items.indexOf(it), 1);
+    if (old.d > 0 || old.p) items.push({ x: P.x, y: P.y, k: it.k, [slot]: old }); // el equipo viejo queda en el suelo
+    pop(P.x, P.y, SPR_COL[it.k], 12); float(P.x, P.y - .4, gear.n, '#c084fc');
+    say(`Equipas ${gearTxt(gear)}: ${gear.x}`);
+  };
   const pickup = () => {
     if (stairs && P.x === stairs.x && P.y === stairs.y) say('Aquí hay un acceso a la capa inferior. Pulsa > para bajar.');
-    const it = itemAt(P.x, P.y);
-    if (!it) return;
+    for (const it of items.filter(i => i.x === P.x && i.y === P.y)) { if (state !== 'play') break; take(it); } // varios objetos en la misma casilla
+  };
+  const take = it => {
+    if (it.w || it.a) {
+      const gear = it.w || it.a, cur = it.w ? P.w : P.a;
+      if (gearScore(gear) > gearScore(cur)) return equip(it);
+      return say(`Aquí hay ${gearTxt(gear)}: ${gear.x} Pulsa g para cambiarlo por tu ${it.w ? 'arma' : 'armadura'}.`);
+    }
     items.splice(items.indexOf(it), 1);
     pop(P.x, P.y, SPR_COL[it.k] || '#fff', 10);
-    const tag = { ')': 'ATK +1', '[': 'DEF +1', '%': 'café', '!': '+parche', '?': '+script' }[it.k];
-    if (tag) float(P.x, P.y - .4, tag, SPR_COL[it.k]);
-    if (it.k === '!') { P.patches++; say('Recoges un parche de seguridad (p para aplicarlo).'); }
-    else if (it.k === '?') { P.scripts++; say('Recoges un script misterioso (e para ejecutarlo).'); }
+    if (it.k === '!') { P.patches++; float(P.x, P.y - .4, '+parche', '#22c55e'); say('Recoges un parche de seguridad (p para aplicarlo).'); }
+    else if (it.k === '?') {
+      const unknown = Object.keys(SPELLS).filter(k => !P.spells.includes(k));
+      if (unknown.length) {
+        const k = pickOne(unknown); P.spells.push(k); P.sel = P.spells.length - 1;
+        float(P.x, P.y - .4, SPELLS[k].n, '#93c5fd'); say(`Aprendes «${SPELLS[k].n}»: ${SPELLS[k].x} (z lo lanza, c cambia de hechizo)`);
+      } else { P.cpu = cpuMax(); say('Ya conoces todos los scripts: este te recarga la CPU.'); }
+    }
     else if (it.k === '$') { const g = rnd(4, 12) * depth; P.gold += g; say(`+${g} ₿ en criptos abandonadas.`); }
-    else if (it.k === '%') { P.energy = Math.min(700, P.energy + 220); say('Un café cargado. La energía vuelve.'); }
-    else if (it.k === ')') { P.atk++; say(`Equipas ${pickOne(EXPLOITS)}: ATK +1.`); }
-    else if (it.k === '[') { P.def++; say(`Instalas ${pickOne(SHIELDS)}: DEF +1.`); }
+    else if (it.k === '%') { P.energy = Math.min(700, P.energy + 220); float(P.x, P.y - .4, 'café', '#d6a77a'); say('Un café cargado. La energía vuelve.'); }
     else if (it.k === '*') win();
   };
   const move = (dx, dy) => {
     let conf = false;
     if (P.conf > 0) { P.conf--; conf = true; [dx, dy] = pickOne([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]); }
     const nx = P.x + dx, ny = P.y + dy, o = monAt(nx, ny);
-    if (o) attack(o);
+    if (o && o.ally) { o.x = P.x; o.y = P.y; P.x = nx; P.y = ny; pickup(); } // intercambias el sitio con tu aliado
+    else if (o) attack(o);
     else if (walk(nx, ny)) { P.x = nx; P.y = ny; pickup(); }
     else if (!conf) return; // chocar con la pared no gasta turno
     else say('Das tumbos, confundido.');
@@ -631,22 +793,47 @@ function dungeon(T) {
   const usePatch = () => {
     if (!P.patches) { say('No te quedan parches.'); return render(); }
     P.patches--; const h = 8 + depth * 2; P.hp = Math.min(P.max, P.hp + h);
-    float(P.x, P.y, `+${h}`, '#4ade80'); fx.rings.push({ x: P.x * TS + 8, y: P.y * TS + 8, r: 22, col: '#4ade80', t: now() });
+    float(P.x, P.y, `+${h}`, '#4ade80'); ring(P.x, P.y, 22, '#4ade80');
     say(`Aplicas un parche: +${h} HP.`); endTurn();
   };
-  const useScript = () => {
-    if (!P.scripts) { say('No tienes scripts.'); return render(); }
-    P.scripts--;
-    const eff = pickOne(['map', 'tele', 'emp', 'scan']);
-    if (eff === 'map') { for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(x, y) || isWall(x, y)) seen[y][x] = true; say('El script era un mapa de red: ves toda la capa.'); }
-    else if (eff === 'tele') { pop(P.x, P.y, '#93c5fd', 18); teleport(P); P.vx = undefined; pop(P.x, P.y, '#93c5fd', 18); say('El script te reenvía a otro punto de la capa.'); }
-    else if (eff === 'emp') {
-      const hitList = mons.filter(o => vis[o.y][o.x]);
-      fx.rings.push({ x: P.x * TS + 8, y: P.y * TS + 8, r: R * TS, col: '#22d3ee', t: now() }); fx.shake = now();
-      hitList.forEach(o => hurt(o, 6 + depth));
-      say(hitList.length ? `¡Pulso EMP! ${hitList.length} enemigo${hitList.length > 1 ? 's' : ''} afectado${hitList.length > 1 ? 's' : ''}.` : 'Pulso EMP... contra nadie.');
-    } else { mons.forEach(o => { o.hidden = false; o.seen = true; }); say('Escaneo completo: se acabaron los disfraces y lo invisible.'); }
-    endTurn();
+  const nearestFoe = () => mons.filter(o => !o.ally && vis[o.y][o.x] && shown(o)).sort((a, b) => cheb(a, P) - cheb(b, P))[0];
+  const cast = () => {
+    const k = P.spells[P.sel], sp = SPELLS[k];
+    if (P.cpu < sp.c) { say(`CPU insuficiente para «${sp.n}» (necesitas ${sp.c}).`); return render(); }
+    const needsTarget = ['sqli', 'quar', 'social', 'kill9'].includes(k);
+    const tgt = needsTarget ? nearestFoe() : null;
+    if (needsTarget && (!tgt || (k === 'social' && tgt.sp === 'boss'))) { say(k === 'social' && tgt ? 'El Señor del Ransomware no se deja convencer.' : 'No hay ningún objetivo a la vista.'); return render(); }
+    P.cpu -= sp.c;
+    if (tgt) { tgt.hidden = false; beam(P, tgt, k === 'social' ? '#4ade80' : k === 'quar' ? '#93c5fd' : '#f87171'); }
+    if (k === 'scan') {
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(x, y) || isWall(x, y)) seen[y][x] = true;
+      mons.forEach(o => { o.hidden = false; o.seen = true; }); ring(P.x, P.y, 90, '#4ade80');
+      say('Escaneo de puertos: ves toda la capa y nada se esconde.');
+    } else if (k === 'sqli') { const d = 4 + Math.round(1.5 * depth); if (!hurt(tgt, d, '#f87171')) say(`' OR 1=1 -- La inyección SQL golpea ${ART.a(tgt)} ${tgt.n} (−${d}).`); }
+    else if (k === 'emp') {
+      const list = mons.filter(o => !o.ally && vis[o.y][o.x]);
+      ring(P.x, P.y, R * TS, '#22d3ee'); fx.shake = now();
+      list.forEach(o => hurt(o, 3 + depth, '#22d3ee'));
+      say(list.length ? `¡Pulso EMP! ${list.length} enemigo${list.length > 1 ? 's' : ''} afectado${list.length > 1 ? 's' : ''}.` : 'Pulso EMP... contra nadie.');
+    } else if (k === 'hotfix') { const h = 5 + Math.round(1.5 * depth); P.hp = Math.min(P.max, P.hp + h); float(P.x, P.y, `+${h}`, '#4ade80'); ring(P.x, P.y, 22, '#4ade80'); say(`Parche en caliente: +${h} HP sin reiniciar.`); }
+    else if (k === 'crypt') { P.shield = 6 + depth; ring(P.x, P.y, 18, '#22d3ee'); say(`Cifrado AES: un escudo absorbe los próximos ${P.shield} de daño.`); }
+    else if (k === 'proxy') { pop(P.x, P.y, '#93c5fd', 18); teleport(P); P.vx = undefined; pop(P.x, P.y, '#93c5fd', 18); say('Proxy: reapareces en otro punto de la capa.'); }
+    else if (k === 'quar') { tgt.stun = 5; float(tgt.x, tgt.y - .5, 'cuarentena', '#93c5fd'); say(`${ART.el(tgt)} ${tgt.n} queda en cuarentena 5 turnos.`); }
+    else if (k === 'flood') {
+      const around = foesAround(P.x, P.y); around.forEach(o => { o.stun = 2; float(o.x, o.y - .5, 'SYN', '#93c5fd'); });
+      ring(P.x, P.y, 26, '#93c5fd'); say(around.length ? `SYN flood: ${around.length} enemigo${around.length > 1 ? 's' : ''} aturdido${around.length > 1 ? 's' : ''}.` : 'SYN flood... a nadie.');
+    } else if (k === 'social') { tgt.ally = true; tgt.awake = true; tgt.stun = 0; float(tgt.x, tgt.y - .5, 'aliado', '#4ade80'); say(`Ingeniería social: ${ART.el(tgt).toLowerCase()} ${tgt.n} ahora lucha a tu lado.`); }
+    else if (k === 'priv') { P.priv = 6; ring(P.x, P.y, 30, '#f87171'); say('Escalada de privilegios: eres root. Daño doble durante 6 turnos.'); }
+    else if (k === 'exfil') {
+      const list = items.filter(it => vis[it.y][it.x] && !(it.x === P.x && it.y === P.y));
+      list.forEach(it => { beam(it, P, '#f2b33d'); it.x = P.x; it.y = P.y; });
+      say(list.length ? `Exfiltración: ${list.length} objeto${list.length > 1 ? 's' : ''} hacia ti.` : 'Exfiltración: no hay nada que robar a la vista.');
+      pickup();
+    } else if (k === 'kill9') {
+      if (tgt.sp === 'boss') { if (!hurt(tgt, 25, '#f87171')) say('kill -9 al jefe: aguanta, pero pierde 25.'); }
+      else { hurt(tgt, tgt.hp, '#f87171'); say(`kill -9: proceso ${tgt.n} terminado sin preguntas.`); }
+    }
+    if (state === 'play') endTurn();
   };
   const score = won => P.gold + depth * 100 + P.xp * 2 + (won ? 1000 : 0);
   const die = c => {
@@ -662,7 +849,9 @@ function dungeon(T) {
   causa     ${esc(cause)}
   capa      ${depth}/${LAST}        nivel   ${P.lvl}
   turnos    ${turn}           bajas   ${P.kills}
-  criptos   ${P.gold} ₿
+  arma      ${esc(gearTxt(P.w))}
+  armadura  ${esc(gearTxt(P.a))}
+  hechizos  ${P.spells.length}/${Object.keys(SPELLS).length}       criptos ${P.gold} ₿
   puntos    ${sc}           récord  ${b}
 
   Último mensaje: ${esc(log[log.length - 1] || '')}
@@ -679,6 +868,7 @@ Recuperas la clave maestra y descifras la red entera.
 El Señor del Ransomware ya no cobra rescates a nadie.
 
   nivel ${P.lvl} · ${turn} turnos · ${P.kills} bajas · ${P.gold} ₿
+  con ${esc(gearTxt(P.w))} y ${esc(gearTxt(P.a))}
   puntos ${sc} · récord ${b}
 
 Tu recompensa: <b class="g-boss">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ==')}</b>
@@ -687,7 +877,8 @@ Tu recompensa: <b class="g-boss">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ=
 [r] jugar otra vez · [esc] salir`;
   };
   const reset = () => {
-    P = { hp: 20, max: 20, atk: 3, def: 0, lvl: 1, xp: 0, energy: 450, gold: 0, patches: 2, scripts: 0, conf: 0, kills: 0, x: 0, y: 0 };
+    P = { hp: 20, max: 20, atk: 3, def: 0, lvl: 1, xp: 0, energy: 450, gold: 0, patches: 2, conf: 0, kills: 0, x: 0, y: 0,
+      w: { ...WEAPONS[0] }, a: { ...ARMORS[0] }, spells: ['scan'], sel: 0, cpu: 8, shield: 0, priv: 0 };
     depth = 0; turn = 0; log = []; state = 'play'; cv.hidden = hud.hidden = false;
     size(); gen(); render();
   };
@@ -710,7 +901,17 @@ Tu recompensa: <b class="g-boss">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ=
       say(depth === LAST ? 'No hay más capas: la salida es la clave maestra.' : 'Aquí no hay acceso a otra capa.'); return render();
     }
     if (e.key === 'p') return usePatch();
-    if (e.key === 'e') return useScript();
+    if (e.key === 'z' || e.key === 'e') return cast();
+    if (e.key === 'c' || e.key === 'Tab') {
+      e.preventDefault();
+      P.sel = (P.sel + 1) % P.spells.length; const sp = SPELLS[P.spells[P.sel]];
+      say(`Hechizo listo: «${sp.n}» (${sp.c} CPU). ${sp.x}`); return render();
+    }
+    if (e.key === 'g') {
+      const it = itemAt(P.x, P.y);
+      if (it && (it.w || it.a)) { equip(it); return endTurn(); }
+      say('Aquí no hay equipo que coger.'); return render();
+    }
     if (e.key === '?') { say(HELP); return render(); }
   }, () => { cancelAnimationFrame(raf); removeEventListener('resize', size); });
 }
