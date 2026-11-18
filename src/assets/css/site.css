@@ -844,3 +844,4 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 .city-shop li.off span, .city-shop li.off b { opacity: .45; }
 .city-shop li b { color: #f2b33d; }
 .city-shop li em { grid-column: 1 / -1; font-style: normal; font-size: 11px; color: #8b95a8; }
+.hud-keys { flex-basis: 100%; color: #64748b; font-size: 11px; }

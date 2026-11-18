@@ -258,8 +258,8 @@ function snake(T) {
   const place = () => { do food = [rnd(0, W - 1), rnd(0, H - 1)]; while (s.some(p => p[0] === food[0] && p[1] === food[1])); };
   const hud = () => {
     m.scr.innerHTML = dead
-      ? `<b class="g-bad">GUSANO DETENIDO</b> · ${score} paquetes · récord ${best('hs-snake', score)}\n[r] otra vez · [esc] salir`
-      : `paquetes ${score} · récord ${+store.get('hs-snake') || 0} · flechas o hjkl para girar · esc sale`;
+      ? `<b class="g-bad">GUSANO DETENIDO</b> · ${score} paquetes · récord ${best('hs-snake', score)}\n${touch ? 'toca «otra vez»' : 'Espacio u Enter'} para jugar otra vez · Esc salir`
+      : `paquetes ${score} · récord ${+store.get('hs-snake') || 0} · ${touch ? 'usa las flechas' : 'flechas o WASD para girar'} · Esc sale`;
   };
   const frame = t => {
     raf = requestAnimationFrame(frame);
@@ -324,7 +324,7 @@ function snake(T) {
   return session(T, m, e => {
     const d = DIRS[e.key];
     if (d) { e.preventDefault(); if (!(d[0] === -dir[0] && d[1] === -dir[1])) next = d; }
-    else if (e.key === 'r' && dead) reset();
+    else if (dead && ['r', 'R', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); reset(); }
   }, () => { clearInterval(timer); cancelAnimationFrame(raf); });
 }
 
@@ -397,11 +397,11 @@ const CASES = [
   { p: 1, t: 'Ventana emergente en el navegador:\n«¡Tu PC tiene 5 virus! Llama ya al 800-SOPORTE.»', w: 'Scareware: una web no puede escanear tu equipo. Cierra la pestaña.' },
 ];
 function phish(T) {
-  const m = mount(T, { pad: '<div class="pad-acts"><button type="button" data-k="p">phishing</button><button type="button" data-k="l">legítimo</button><button type="button" data-k="Escape">salir</button></div>' });
+  const m = mount(T, { pad: '<div class="pad-acts"><button type="button" data-k="p">← phishing</button><button type="button" data-k="l">legítimo →</button><button type="button" data-k="Escape">salir</button></div>' });
   let deck, i, ok, answered;
   const draw = extra => {
     const c = deck[i];
-    m.scr.innerHTML = `¿PHISHING O LEGÍTIMO? · caso ${i + 1}/${deck.length} · aciertos ${ok}\n\n${esc(c.t)}\n\n${extra || '[p] phishing · [l] legítimo · esc sale'}`;
+    m.scr.innerHTML = `¿PHISHING O LEGÍTIMO? · caso ${i + 1}/${deck.length} · aciertos ${ok}\n\n${esc(c.t)}\n\n${extra || '← o A: phishing · → o D: legítimo · esc sale'}`;
     T.out.scrollTop = T.out.scrollHeight;
   };
   const finish = () => {
@@ -412,10 +412,12 @@ function phish(T) {
   const reset = () => { deck = [...CASES].sort(() => Math.random() - .5).slice(0, 8); i = 0; ok = 0; answered = false; draw(); };
   reset();
   return session(T, m, e => {
-    if (answered === 'end') { if (e.key === 'r') reset(); return; }
+    if (answered === 'end') { if (['r', 'R', 'Enter', ' '].includes(e.key)) reset(); return; }
     if (answered) { answered = false; if (++i >= deck.length) return finish(); return draw(); }
-    if (e.key !== 'p' && e.key !== 'l') return;
-    const right = (e.key === 'p') === !!deck[i].p;
+    const k = { ArrowLeft: 'p', a: 'p', A: 'p', p: 'p', ArrowRight: 'l', d: 'l', D: 'l', l: 'l' }[e.key];
+    if (!k) return;
+    e.preventDefault();
+    const right = (k === 'p') === !!deck[i].p;
     if (right) ok++;
     answered = true;
     draw(`${right ? '<b class="g-ok">✓ Correcto.</b>' : '<b class="g-bad">✗ No.</b>'} Era ${deck[i].p ? 'phishing' : 'legítimo'}. ${esc(deck[i].w)}\n\n(cualquier tecla para seguir)`);
@@ -490,7 +492,7 @@ const gearScore = g => g.d + (g.p ? 2 : 0);
 function dungeon(T) {
   const W = 46, H = 17, R = 7, LAST = 10;
   sprites();
-  const m = mount(T, { pad: touch ? dpad(true, [['p', 'parche'], ['z', 'hechizo'], ['c', 'cambiar'], ['g', 'coger'], ['>', 'bajar'], ['Escape', 'salir']]) : '' });
+  const m = mount(T, { pad: touch ? dpad(true, [['Enter', 'acción'], ['f', 'hechizo'], ['q', 'cambiar'], ['r', 'parche'], ['Escape', 'salir']]) : '' });
   const cv = document.createElement('canvas'); cv.className = 'game-cv';
   const hud = document.createElement('div'); hud.className = 'game-hud';
   m.scr.classList.add('game-log'); m.scr.after(cv); cv.after(hud);
@@ -566,7 +568,7 @@ function dungeon(T) {
     for (let i = 0; i < 3 + depth + (depth >> 1); i++) spawn(Math.random() < .7 ? pickOne(pool.slice(-4)) : pickOne(pool), freeIn(rooms[rnd(1, rooms.length - 1)]));
     if (depth === LAST) spawn(MON[MON.length - 1], freeIn(last));
     for (let i = rnd(5, 8); i > 0; i--) { const pos = freeIn(pickOne(rooms)); if (pos) items.push({ ...pos, ...rollItem() }); }
-    say(depth === 1 ? 'Entras en la red profunda. Encuentra el > para bajar. Pulsa ? para ver los controles.'
+    say(depth === 1 ? 'Entras en la red profunda. Busca la salida verde y pulsa Espacio encima para bajar. WASD mover · Espacio acción · F hechizo · Q cambiar · R parche.'
       : depth === LAST ? 'Capa 10. Todo huele a cifrado: el Señor del Ransomware está cerca.' : `Bajas a la capa ${depth}.`);
     fov();
   };
@@ -592,7 +594,7 @@ function dungeon(T) {
   const shown = o => revealing() || !(o.sp === 'invis' && !o.seen && cheb(o, P) > 1);
   const disguised = o => o.hidden && !revealing();
 
-  const HELP = 'flechas/hjkl mover · yubn diagonal · . esperar · z hechizo · c cambiar hechizo · g coger equipo · p parche · > bajar · esc salir';
+  const HELP = 'WASD o flechas mover · Espacio acción (bajar, coger o esperar) · F hechizo · Q cambiar hechizo · R parche · Esc salir';
   const render = () => {
     if (state !== 'play') return;
     const msgs = log.slice(-2), newest = msgs[msgs.length - 1] || ' ', fresh = said !== shownLog;
@@ -607,7 +609,8 @@ function dungeon(T) {
       + (P.shield > 0 ? `<span class="hud-buff">Escudo <b>${P.shield}</b></span>` : '') + (P.priv > 0 ? `<span class="hud-buff">Root ×2 <b>${P.priv}</b></span>` : '')
       + `<span class="hud-gear">Arma <b>${esc(gearTxt(P.w))}</b></span><span class="hud-gear">Armadura <b>${esc(gearTxt(P.a))}</b></span>`
       + `<span class="hud-spell ${P.cpu < sp.c ? 'is-low' : ''}">Hechizo <b>${esc(sp.n)}</b> (${sp.c} CPU) · ${P.spells.length}/${Object.keys(SPELLS).length} conocidos</span>`
-      + `<span class="hud-turn">turno ${turn}</span>`;
+      + `<span class="hud-turn">turno ${turn}</span>`
+      + (touch ? '' : '<span class="hud-keys">WASD mover · Espacio acción · F hechizo · Q cambiar · R parche</span>');
   };
   const sprAt = (spr, white, e, t, seed, alpha = 1, glow = '') => {
     let ox = 0, oy = 0;
@@ -831,14 +834,14 @@ function dungeon(T) {
     say(`Equipas ${gearTxt(gear)}: ${gear.x}`);
   };
   const pickup = () => {
-    if (stairs && P.x === stairs.x && P.y === stairs.y) say('Aquí hay un acceso a la capa inferior. Pulsa > para bajar.');
+    if (stairs && P.x === stairs.x && P.y === stairs.y) say(touch ? 'Salida a la capa inferior: toca «acción» para bajar.' : 'Salida a la capa inferior: pulsa Espacio para bajar.');
     for (const it of items.filter(i => i.x === P.x && i.y === P.y)) { if (state !== 'play') break; take(it); } // varios objetos en la misma casilla
   };
   const take = it => {
     if (it.w || it.a) {
       const gear = it.w || it.a, cur = it.w ? P.w : P.a;
       if (gearScore(gear) > gearScore(cur)) return equip(it);
-      return say(`Aquí hay ${gearTxt(gear)}: ${gear.x} Pulsa g para cambiarlo por tu ${it.w ? 'arma' : 'armadura'}.`);
+      return say(`Aquí hay ${gearTxt(gear)}: ${gear.x} ${touch ? 'Toca «acción»' : 'Pulsa Espacio'} para cambiarlo por tu ${it.w ? 'arma' : 'armadura'}.`);
     }
     items.splice(items.indexOf(it), 1);
     pop(P.x, P.y, SPR_COL[it.k] || '#fff', 10);
@@ -938,7 +941,7 @@ function dungeon(T) {
       '',
       ` <span class="g-dim">› ${esc(log[log.length - 1] || '')}</span>`,
       '',
-      ' [r] reconectar desde la capa 1   [esc] salir <span class="rv-cur"></span>',
+      ' [Espacio] reconectar desde la capa 1   [Esc] salir <span class="rv-cur"></span>',
     ].join('\n'), 70);
   };
   const win = () => {
@@ -961,7 +964,7 @@ function dungeon(T) {
       ` Tu recompensa: <b class="g-boss rv-blink">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ==')}</b>`,
       ' <span class="g-dim">(guárdala y escríbela con «submit» en la terminal)</span>',
       '',
-      ' [r] jugar otra vez   [esc] salir <span class="rv-cur"></span>',
+      ' [Espacio] jugar otra vez   [Esc] salir <span class="rv-cur"></span>',
     ].join('\n'), 110);
   };
   const reset = () => {
@@ -972,6 +975,7 @@ function dungeon(T) {
   };
   const KEYS = {
     ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+    w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0],
     k: [0, -1], j: [0, 1], h: [-1, 0], l: [1, 0], y: [-1, -1], u: [1, -1], b: [-1, 1], n: [1, 1],
     8: [0, -1], 2: [0, 1], 4: [-1, 0], 6: [1, 0], 7: [-1, -1], 9: [1, -1], 1: [-1, 1], 3: [1, 1],
     Home: [-1, -1], PageUp: [1, -1], End: [-1, 1], PageDown: [1, 1],
@@ -980,17 +984,21 @@ function dungeon(T) {
   raf = requestAnimationFrame(frame);
   addEventListener('resize', size);
   return session(T, m, e => {
-    if (state !== 'play') { if ((state === 'dead' || state === 'won') && (e.key === 'r' || e.key === 'R')) reset(); return; }
+    if (state !== 'play') { if ((state === 'dead' || state === 'won') && ['r', 'R', 'Enter', ' '].includes(e.key)) { e.preventDefault(); reset(); } return; }
     const d = KEYS[e.key];
     if (d) { e.preventDefault(); return move(...d); }
-    if (e.key === '.' || e.key === '5' || e.key === ' ') { e.preventDefault(); return endTurn(); }
-    if (e.key === '>') {
+    // Espacio o Enter: una sola tecla de acción según lo que tengas debajo (bajar, coger equipo o esperar)
+    if (e.key === ' ' || e.key === 'Enter' || e.key === '>') {
+      e.preventDefault();
       if (stairs && P.x === stairs.x && P.y === stairs.y) { gen(); return render(); }
-      say(depth === LAST ? 'No hay más capas: la salida es la clave maestra.' : 'Aquí no hay acceso a otra capa.'); return render();
+      const it = itemAt(P.x, P.y);
+      if (it && (it.w || it.a)) { equip(it); return endTurn(); }
+      return endTurn();
     }
-    if (e.key === 'p') return usePatch();
-    if (e.key === 'z' || e.key === 'e') return cast();
-    if (e.key === 'c' || e.key === 'Tab') {
+    if (e.key === '.' || e.key === '5') { e.preventDefault(); return endTurn(); }
+    if (e.key === 'r' || e.key === 'R' || e.key === 'p') return usePatch();
+    if (e.key === 'f' || e.key === 'F' || e.key === 'z' || e.key === 'e') return cast();
+    if (e.key === 'q' || e.key === 'Q' || e.key === 'c' || e.key === 'Tab') {
       e.preventDefault();
       P.sel = (P.sel + 1) % P.spells.length; const sp = SPELLS[P.spells[P.sel]];
       say(`Hechizo listo: «${sp.n}» (${sp.c} CPU). ${sp.x}`); return render();
@@ -1075,7 +1083,7 @@ function ciudad(T) {
   const TW = 16, BK = 9, NBX = 7, NBY = 5, MW = 2 + BK * NBX + 2 + 2, MH = 2 + BK * NBY + 2 + 2;
   const hold = (k, t) => `<button type="button" data-h="${k}">${t}</button>`;
   const pad = touch ? `<div class="pad-dirs">${['', hold('up', '↑'), '', hold('left', '←'), '', hold('right', '→'), '', hold('down', '↓'), ''].map(x => x || '<span></span>').join('')}</div>`
-    + `<div class="pad-acts">${hold('fire', 'disparar')}${hold('nitro', 'turbo')}<button type="button" data-k="e">auto / sí</button><button type="button" data-k="t">hablar</button><button type="button" data-k="q">arma</button><button type="button" data-k="m">destino</button><button type="button" data-k="Escape">salir</button></div>` : '';
+    + `<div class="pad-acts">${hold('fire', 'disparar')}${hold('nitro', 'turbo')}<button type="button" data-k="e">acción</button><button type="button" data-k="q">arma</button><button type="button" data-k="m">destino</button><button type="button" data-k="Escape">salir</button></div>` : '';
   const m = mount(T, { pad });
   const cv = document.createElement('canvas'); cv.className = 'game-cv';
   const hud = document.createElement('div'); hud.className = 'game-hud';
@@ -1393,7 +1401,7 @@ function ciudad(T) {
     parkOwned();
     const guns = P.own.map((o, i) => o && i >= GUN0 && P.ammo[i] > 0 ? i : -1).filter(i => i >= 0);
     P.w = guns.length ? guns[guns.length - 1] : P.own.lastIndexOf(true);
-    say(MI < CITY_MISSIONS.length ? 'Ciudad Zero-Day. Sigue la ruta verde hasta Nodo. WASD/flechas · espacio ataca · E auto · T hablar · Q arma · M destino (tiendas).' : 'Ciudad liberada. Pasea, compra y mejora autos: te lo ganaste.');
+    say(MI < CITY_MISSIONS.length ? 'Ciudad Zero-Day. Sigue la ruta verde hasta Nodo. WASD mover · Espacio atacar · E acción (hablar, auto, continuar) · Q arma · M destino · Mayús turbo.' : 'Ciudad liberada. Pasea, compra y mejora autos: te lo ganaste.');
   };
   const persist = () => { prog = { ...prog, mi: MI, cash: P.cash, own: [...P.own], ammo: [...P.ammo], armor: Math.round(P.armor) }; store.set('city', JSON.stringify(prog)); };
 
@@ -1402,7 +1410,7 @@ function ciudad(T) {
   const renderDialog = () => {
     const [who, txt] = talk.lines[talk.i];
     dlg.hidden = false;
-    dlg.innerHTML = `<b class="city-who">${esc(who)}</b><span class="rv" style="--dur:${Math.min(1.4, .3 + txt.length * .012).toFixed(2)}s;--st:${Math.min(60, txt.length)}">${esc(txt)}</span><small>${touch ? 'toca «auto / sí»' : 'E o espacio'} para continuar · ${talk.i + 1}/${talk.lines.length}</small>`;
+    dlg.innerHTML = `<b class="city-who">${esc(who)}</b><span class="rv" style="--dur:${Math.min(1.4, .3 + txt.length * .012).toFixed(2)}s;--st:${Math.min(60, txt.length)}">${esc(txt)}</span><small>${touch ? 'toca «acción»' : 'E, Enter o Espacio'} para continuar · ${talk.i + 1}/${talk.lines.length}</small>`;
   };
   const advance = () => {
     if (++talk.i < talk.lines.length) return renderDialog();
@@ -1596,7 +1604,7 @@ function ciudad(T) {
       return say('Te bajas del auto.');
     }
     const c = cars.filter(c => !c.dead && dist(c, P) < 18).sort((a, b) => dist(a, P) - dist(b, P))[0];
-    if (!c) return say('No hay ningún auto cerca. Acércate a uno y pulsa E.');
+    if (!c) return say('No hay nada cerca: acércate a una persona o a un auto y pulsa E.');
     if (c.kind === 'soc') return say('La furgoneta del SOC está blindada. Mejor huye.');
     if (c.kind === 'van') return say('La furgoneta va cerrada: destrúyela.');
     if (c.drv && c.owned === undefined) {
@@ -2158,8 +2166,9 @@ function ciudad(T) {
       + `<span>Arma <b>${esc(w.n)}</b>${w.melee ? '' : ` (${P.ammo[P.w]})`}</span><span>₿ <b>${P.cash}</b></span>`
       + `<span class="${stars ? 'is-low' : ''}">Rastreo <b>${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</b></span>`
       + `<span class="hud-spell">${mission ? `Misión ${mission.i + 1}: <b>${esc(CITY_MISSIONS[mission.i].t)}</b>` : MI < CITY_MISSIONS.length ? `Siguiente misión: <b>${esc(CITY_MISSIONS[MI].t)}</b>` : '<b>Ciudad liberada</b>'}</span>`
-      + (nt ? `<span class="hud-buff">[T] hablar con ${esc(nt.name || (nt.clerk ? 'el dependiente' : 'la persona'))}</span>` : nc ? '<span class="hud-buff">[E] subir al auto</span>' : '')
-      + `<span class="hud-turn">${MI}/${CITY_MISSIONS.length} misiones</span>`;
+      + (nt ? `<span class="hud-buff">[E] hablar con ${esc(nt.name || (nt.clerk ? 'el dependiente' : 'la persona'))}</span>` : nc ? '<span class="hud-buff">[E] subir al auto</span>' : '')
+      + `<span class="hud-turn">${MI}/${CITY_MISSIONS.length} misiones</span>`
+      + (touch ? '' : '<span class="hud-keys">WASD mover · Espacio atacar · E acción · Q arma · M destino · Mayús turbo</span>');
   };
   const frame = t => {
     raf = requestAnimationFrame(frame);
@@ -2195,7 +2204,7 @@ function ciudad(T) {
         cols2(` ${dots('bajas')}${N(P.kills)}`, `${dots('misiones', 10)}${N(MI)}/${CITY_MISSIONS.length}`),
         cols2(` ${dots('criptos')}${N(P.cash)} ₿`, `${dots('factura', 10)}<b class="g-bad">−${lost} ₿</b>`),
         '',
-        ' [r] despertar en el hospital   [esc] salir <span class="rv-cur"></span>',
+        ' [Espacio] despertar en el hospital   [Esc] salir <span class="rv-cur"></span>',
       ].join('\n'), 80);
     }, 900);
   };
@@ -2241,14 +2250,20 @@ function ciudad(T) {
       else if (['q', 'Q', 'Backspace'].includes(e.key)) closeShop();
       return;
     }
-    if (state === 'dead') { if (e.key === 'r' || e.key === 'R') { reset(); const h = door(3, 4); P.x = h.x + 30; P.y = h.y; say('Despiertas en el Hospital San Parche. La factura llegará por correo… cifrado.'); } return; }
+    if (state === 'dead') { if (['r', 'R', ' ', 'Enter', 'e', 'E'].includes(e.key)) { reset(); const h = door(3, 4); P.x = h.x + 30; P.y = h.y; say('Despiertas en el Hospital San Parche. La factura llegará por correo… cifrado.'); } return; }
     if (state === 'won') {
       if (e.key === 'c' || e.key === 'C') { P.own = P.own.map(() => true); P.ammo = P.ammo.map((a, i) => a + (CITY_W[i].ammo || 0)); persist(); state = 'play'; cv.hidden = hud.hidden = false; say('Paseo libre: la ciudad es tuya.'); }
       if (e.key === 'r' || e.key === 'R') { store.set('city', '{}'); reset(false); }
       return;
     }
     if (state !== 'play') return;
-    if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') toggleCar();
+    if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+      if (P.car) toggleCar();
+      else {
+        const p = nearTalk(), c = cars.filter(c => !c.dead && c.kind !== 'soc' && c.kind !== 'van' && dist(c, P) < 18).sort((a, b) => dist(a, P) - dist(b, P))[0];
+        if (p && (!c || dist(p, P) < dist(c, P))) talkTo(); else toggleCar();
+      }
+    }
     if (e.key === 't' || e.key === 'T') talkTo();
     if (e.key === 'm' || e.key === 'M') { waypoint = waypoint + 1 >= POI.length ? -1 : waypoint + 1; say(waypoint >= 0 ? `Destino marcado: ${POI[waypoint].n}. Sigue la ruta.` : 'Destino borrado.'); }
     if (e.key === 'q' || e.key === 'Q' || e.key === 'Tab') {
