@@ -822,3 +822,13 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 .hud-gear b { color: #c084fc; }
 .hud-spell b { color: #93c5fd; }
 .game-hud .hud-spell.is-low b { color: #f87171; }
+
+/* Texto de terminal animado: barrido de cursor por línea, glitch en títulos, barra de descifrado y cursor parpadeante */
+.rv { display: inline-block; max-width: 100%; vertical-align: top; animation: rv-in var(--dur, .26s) steps(var(--st, 16), end) var(--d, 0ms) both; }
+.rv-fast { --dur: .18s; --st: 10; }
+@keyframes rv-in { from { clip-path: inset(0 100% 0 0); filter: brightness(2.2); } 70% { filter: brightness(1.4); } to { clip-path: inset(0); filter: none; } }
+.rv-glitch { display: inline-block; animation: rv-glitch 2.8s steps(1) 1.2s infinite; }
+@keyframes rv-glitch { 0%, 92%, 100% { transform: none; text-shadow: none; } 93% { transform: translateX(2px); text-shadow: -2px 0 #22d3ee, 2px 0 #f0abfc; } 95% { transform: translateX(-2px); text-shadow: 2px 0 #22d3ee, -2px 0 #f0abfc; } 97% { transform: none; text-shadow: 1px 0 #f87171; } }
+.rv-bar { display: inline-block; animation: rv-in 1.1s steps(24, end) var(--d, 0ms) both; }
+.rv-blink { animation: hud-blink 1s steps(1) infinite; }
+.rv-cur { display: inline-block; width: .6em; height: 1.05em; vertical-align: -.15em; background: currentColor; animation: hud-blink 1s steps(1) infinite; }

@@ -10,6 +10,25 @@ const pickOne = a => a[Math.random() * a.length | 0];
 const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 const touch = matchMedia('(hover: none)').matches;
 const best = (k, score) => { const b = +store.get(k) || 0; if (score > b) store.set(k, score); return Math.max(b, score); };
+// Pantallas de texto con estética de terminal: cada línea entra con un barrido de cursor y los números cuentan hacia arriba.
+// Cada línea del html debe cerrar sus propias etiquetas. data-n="123" marca un número que cuenta.
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reveal = (el, html, step = 55) => {
+  const lines = html.split('\n');
+  el.innerHTML = lines.map((l, i) => `<span class="rv" style="--d:${i * step}ms">${l || ' '}</span>`).join('\n');
+  el.querySelectorAll('[data-n]').forEach(n => {
+    const end = +n.dataset.n, line = n.closest('.rv'), delay = parseFloat(line.style.getPropertyValue('--d')) || 0;
+    if (still || !end) { n.textContent = end; return; }
+    const t0 = performance.now() + delay, dur = 700;
+    const tick = t => { const k = Math.min(1, Math.max(0, (t - t0) / dur)); n.textContent = String(Math.round(end * (1 - (1 - k) ** 3))).padStart(String(end).length); if (k < 1 && n.isConnected) requestAnimationFrame(tick); };
+    n.textContent = '0'.padStart(String(end).length); requestAnimationFrame(tick);
+  });
+};
+const N = v => `<b data-n="${v}">${v}</b>`;
+const cols2 = (l, r, w = 24) => { const vis = l.replace(/<[^>]+>/g, ''); return l + ' '.repeat(Math.max(2, w - [...vis].length)) + r; };
+const dots = (label, w = 12) => (label + ' ').padEnd(w, '.') + ' ';
+const boxed = (txt, cls) => { const w = [...txt].length + 4; return [`<span class="${cls}">+${'='.repeat(w)}+</span>`, `<span class="${cls}">|  ${txt}  |</span>`, `<span class="${cls}">+${'='.repeat(w)}+</span>`]; };
+const stamp = t => `[${(t / 1000).toFixed(3).padStart(8)}]`;
 
 // ---------- Sprites pixel art (8×8, dibujados aquí mismo, sin imágenes) ----------
 const TS = 16; // casilla en pantalla: sprite de 8×8 a escala 2
@@ -334,7 +353,7 @@ function phish(T) {
   };
   const finish = () => {
     const rank = ok === deck.length ? 'Ojo de halcón. Nadie te pesca.' : ok >= 6 ? 'Muy bien. Un par más y eres el filtro antispam de tu familia.' : ok >= 4 ? 'Vas bien, pero los estafadores también practican.' : 'Cuidado: hoy te habrían pescado. Lee el blog y vuelve a intentarlo.';
-    m.scr.innerHTML = `RESULTADO: ${ok}/${deck.length} · récord ${best('hs-phish', ok)}\n${rank}\n\n[r] otra ronda · [esc] salir`;
+    reveal(m.scr, [...boxed(`RESULTADO ${ok}/${deck.length}`, ok >= 6 ? 'g-ok' : 'g-bad'), `${dots('récord')}${N(best('hs-phish', ok))}`, '', esc(rank), '', '[r] otra ronda · [esc] salir <span class="rv-cur"></span>'].join('\n'), 90);
     answered = 'end';
   };
   const reset = () => { deck = [...CASES].sort(() => Math.random() - .5).slice(0, 8); i = 0; ok = 0; answered = false; draw(); };
@@ -439,8 +458,8 @@ function dungeon(T) {
   const beam = (a, b, col) => fx.beams.push({ x1: a.x * TS + 8, y1: a.y * TS + 8, x2: b.x * TS + 8, y2: b.y * TS + 8, col, t: now() });
   const lunge = (e, tx, ty) => { e.lg = { dx: Math.sign(tx - e.x), dy: Math.sign(ty - e.y), t: now() }; };
   const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-  let P, depth, map, seen, vis, mons, items, stairs, turn, log, state, cause;
-  const say = t => { log.push(t); if (log.length > 50) log.shift(); };
+  let P, depth, map, seen, vis, mons, items, stairs, turn, log, state, cause, killer = null, shownLog = 0, said = 0;
+  const say = t => { log.push(t); said++; if (log.length > 50) log.shift(); };
   const walk = (x, y) => x >= 0 && y >= 0 && x < W && y < H && map[y][x] > 0;
   const monAt = (x, y) => mons.find(o => o.x === x && o.y === y);
   const itemAt = (x, y) => items.find(o => o.x === x && o.y === y);
@@ -523,8 +542,9 @@ function dungeon(T) {
   const HELP = 'flechas/hjkl mover · yubn diagonal · . esperar · z hechizo · c cambiar hechizo · g coger equipo · p parche · > bajar · esc salir';
   const render = () => {
     if (state !== 'play') return;
-    const msgs = log.slice(-2);
-    m.scr.innerHTML = `${msgs.length > 1 ? `<span class="g-dim">${esc(msgs[0])}</span>` : ' '}\n${esc(msgs[msgs.length - 1] || ' ')}`;
+    const msgs = log.slice(-2), newest = msgs[msgs.length - 1] || ' ', fresh = said !== shownLog;
+    shownLog = said;
+    m.scr.innerHTML = `${msgs.length > 1 ? `<span class="g-dim">${esc(msgs[0])}</span>` : ' '}\n<span class="${fresh ? 'rv rv-fast' : ''}">› ${esc(newest)}</span>`;
     const pct = Math.max(0, P.hp / P.max), xpPct = P.xp / need(P.lvl), sp = SPELLS[P.spells[P.sel]];
     hud.innerHTML = `<span class="hud-hp ${pct <= .25 ? 'is-low' : ''}"><b>HP</b><i><s style="width:${(pct * 100).toFixed(0)}%"></s></i>${P.hp}/${P.max}</span>`
       + `<span class="hud-cpu"><b>CPU</b><i><s style="width:${(P.cpu / cpuMax() * 100).toFixed(0)}%"></s></i>${P.cpu}/${cpuMax()}</span>`
@@ -700,6 +720,7 @@ function dungeon(T) {
       ring(P.x, P.y, 50, '#4ade80'); float(P.x, P.y - .6, 'RESTAURADO', '#4ade80');
       return say('Caes... y restauras desde el backup 3-2-1. Una sola vez.');
     }
+    killer = o;
     die(o ? `${ART.el(o).toLowerCase()} ${o.n}` : 'agotamiento: se acabó el café');
   };
   const step = (o, tx, ty) => {
@@ -845,42 +866,55 @@ function dungeon(T) {
   const panic = () => {
     state = 'dead'; cv.hidden = hud.hidden = true;
     const sc = score(false), b = best('hs-dungeon', sc);
-    m.scr.innerHTML = `<b class="g-bad">*** KERNEL PANIC: conexión terminada ***</b>
-
-  causa     ${esc(cause)}
-  capa      ${depth}/${LAST}        nivel   ${P.lvl}
-  turnos    ${turn}           bajas   ${P.kills}
-  arma      ${esc(gearTxt(P.w))}
-  armadura  ${esc(gearTxt(P.a))}
-  hechizos  ${P.spells.length}/${Object.keys(SPELLS).length}       criptos ${P.gold} ₿
-  puntos    ${sc}           récord  ${b}
-
-  Último mensaje: ${esc(log[log.length - 1] || '')}
-
-[r] reconectar desde la capa 1 · [esc] salir`;
+    const mod = killer ? killer.n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_') + '.ko' : 'cafeina.ko';
+    const t = turn * 1000 + rnd(0, 999);
+    const rec = sc >= b && sc > 0;
+    reveal(m.scr, [
+      `<span class="g-dim">${stamp(t)} todosh: visitante@capa${depth} desconectado</span>`,
+      `<span class="g-dim">${stamp(t + 64)} ${mod}: ${killer ? 'escritura en memoria protegida' : 'cafeína bajo el umbral'}</span>`,
+      `<span class="g-dim">${stamp(t + 131)} Call Trace: hit+0x3f · monTurn+0x1f</span>`,
+      `<span class="g-dim">${stamp(t + 202)} ---[ fin de la traza ]---</span>`,
+      ...boxed('*** KERNEL PANIC - CONEXIÓN TERMINADA ***', 'g-bad rv-glitch'),
+      ` ${dots('causa')}<b class="g-bad">${esc(cause)}</b>`,
+      cols2(` ${dots('capa')}${N(depth)}/${LAST}`, `${dots('nivel', 9)}${N(P.lvl)}`),
+      cols2(` ${dots('turnos')}${N(turn)}`, `${dots('bajas', 9)}${N(P.kills)}`),
+      ` ${dots('arma')}<b class="g-item">${esc(gearTxt(P.w))}</b>`,
+      ` ${dots('armadura')}<b class="g-item">${esc(gearTxt(P.a))}</b>`,
+      cols2(` ${dots('hechizos')}${N(P.spells.length)}/${Object.keys(SPELLS).length}`, `${dots('criptos', 9)}${N(P.gold)} ₿`),
+      cols2(` ${dots('puntos')}<b class="g-me" data-n="${sc}">${sc}</b>`, `${dots('récord', 9)}${N(b)}${rec ? '  <b class="rv-blink g-me">★ NUEVO RÉCORD</b>' : ''}`),
+      '',
+      ` <span class="g-dim">› ${esc(log[log.length - 1] || '')}</span>`,
+      '',
+      ' [r] reconectar desde la capa 1   [esc] salir <span class="rv-cur"></span>',
+    ].join('\n'), 70);
   };
   const win = () => {
     state = 'won'; cv.hidden = hud.hidden = true;
     const sc = score(true), b = best('hs-dungeon', sc);
     store.set('dungeon-win', '1');
-    m.scr.innerHTML = `<b class="g-ok">*** ACCESO TOTAL ***</b>
-
-Recuperas la clave maestra y descifras la red entera.
-El Señor del Ransomware ya no cobra rescates a nadie.
-
-  nivel ${P.lvl} · ${turn} turnos · ${P.kills} bajas · ${P.gold} ₿
-  con ${esc(gearTxt(P.w))} y ${esc(gearTxt(P.a))}
-  puntos ${sc} · récord ${b}
-
-Tu recompensa: <b class="g-boss">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ==')}</b>
-(guárdala y escribe «submit» con ella en la terminal)
-
-[r] jugar otra vez · [esc] salir`;
+    reveal(m.scr, [
+      '<span class="g-ok">[ OK ]</span> clave maestra verificada',
+      '<span class="g-ok">[ OK ]</span> rescates cancelados en 10 capas',
+      '<span class="g-ok">[ OK ]</span> descifrando la red profunda',
+      ' [<span class="rv-bar g-ok">########################</span>] 100%',
+      ...boxed('*** ACCESO TOTAL ***', 'g-ok rv-glitch'),
+      ' El Señor del Ransomware ya no cobra rescates a nadie.',
+      cols2(` ${dots('nivel')}${N(P.lvl)}`, `${dots('turnos', 9)}${N(turn)}`),
+      cols2(` ${dots('bajas')}${N(P.kills)}`, `${dots('criptos', 9)}${N(P.gold)} ₿`),
+      ` ${dots('arma')}<b class="g-item">${esc(gearTxt(P.w))}</b>`,
+      ` ${dots('armadura')}<b class="g-item">${esc(gearTxt(P.a))}</b>`,
+      cols2(` ${dots('puntos')}<b class="g-me" data-n="${sc}">${sc}</b>`, `${dots('récord', 9)}${N(b)}`),
+      '',
+      ` Tu recompensa: <b class="g-boss rv-blink">${atob('RkxBR3tyZXlfZGVfbGFfcmVkX3Byb2Z1bmRhfQ==')}</b>`,
+      ' <span class="g-dim">(guárdala y escríbela con «submit» en la terminal)</span>',
+      '',
+      ' [r] jugar otra vez   [esc] salir <span class="rv-cur"></span>',
+    ].join('\n'), 110);
   };
   const reset = () => {
     P = { hp: 20, max: 20, atk: 3, def: 0, lvl: 1, xp: 0, energy: 450, gold: 0, patches: 2, conf: 0, kills: 0, x: 0, y: 0,
       w: { ...WEAPONS[0] }, a: { ...ARMORS[0] }, spells: ['scan'], sel: 0, cpu: 8, shield: 0, priv: 0 };
-    depth = 0; turn = 0; log = []; state = 'play'; cv.hidden = hud.hidden = false;
+    depth = 0; turn = 0; log = []; said = 0; shownLog = 0; killer = null; state = 'play'; cv.hidden = hud.hidden = false;
     size(); gen(); render();
   };
   const KEYS = {

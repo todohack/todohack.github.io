@@ -524,7 +524,12 @@ function buildTerm() {
 <form class="term-in"><label><span class="term-ps" aria-hidden="true">visitante@todohack:~$</span><input name="c" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Escribe un comando"></label></form>`;
   document.body.append(dlg);
   const out = dlg.querySelector('.term-out'), input = dlg.querySelector('input');
-  const print = (html, cls = '') => { const p = document.createElement('div'); p.className = 'tl ' + cls; p.innerHTML = html; out.append(p); out.scrollTop = out.scrollHeight; return p; };
+  // La salida entra línea a línea con barrido de cursor; lo que escribe el visitante aparece tal cual
+  const sweep = html => {
+    const L = html.split('\n'), ok = l => (l.match(/<[a-z]/g) || []).length === (l.match(/<\//g) || []).length;
+    return L.every(ok) ? L.map((l, i) => `<span class="rv" style="--d:${Math.min(i, 40) * 22}ms">${l || ' '}</span>`).join('\n') : `<span class="rv">${html}</span>`;
+  };
+  const print = (html, cls = '') => { const p = document.createElement('div'); p.className = 'tl ' + cls; p.innerHTML = calm || cls.includes('t-cmd') || !html ? html : sweep(html); out.append(p); out.scrollTop = out.scrollHeight; return p; };
   const hist = []; let hi = 0;
   const game = async name => {
     const form = dlg.querySelector('.term-in');
