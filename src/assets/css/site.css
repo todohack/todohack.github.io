@@ -543,7 +543,7 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
 .translate-menu a:hover, .translate-menu a:focus-visible { background: var(--surface); color: var(--ink); }
 @media (max-width: 900px) {
   .sidebar { grid-template-columns: 40px 1fr auto auto; grid-template-areas: "avatar name translate toggle" "nav nav nav nav"; }
-  .translate { position: relative !important; top: auto; right: auto; grid-area: translate; width: 40px; height: 40px; }
+  .translate { position: relative !important; top: auto; right: auto; left: auto; grid-area: translate; width: 40px; height: 40px; }
   .translate-btn { width: 40px; height: 40px; border-color: transparent; }
   .translate-menu { left: auto; right: -52px; }
 }
