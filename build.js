@@ -194,7 +194,14 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
     about: 'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0',
     search: 'M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5',
   };
-  const navItem = (href, label, key, extra = '') => `<a href="${href}" data-icon="${NAV_D[key]}"${nav === key ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAV_ICONS[key]}</svg><span>${label}</span>${extra}</a>`;
+  // Al pasar el ratón cada icono se transforma en su versión «hacker»: prompt, código, identidad verificada y mira de escaneo.
+  const NAV_HOVER = {
+    home: 'M4 17l6-6-6-6M12 19h8',
+    blog: 'M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M10 12.5l-2.5 2.5 2.5 2.5M14 12.5l2.5 2.5-2.5 2.5',
+    about: 'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21a8 8 0 0 1 11.5-7.2M16 19l2 2 4-4',
+    search: 'M12 2v4M12 18v4M2 12h4M18 12h4M7 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0M12 11.5v1',
+  };
+  const navItem = (href, label, key, extra = '') => `<a href="${href}" data-icon="${NAV_D[key]}" data-hover="${NAV_HOVER[key]}"${nav === key ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAV_ICONS[key]}</svg><span>${label}</span>${extra}</a>`;
     // Redes y © en el lateral; en móvil el lateral es cabecera, así que se repiten al final del contenido.
   const foot = `    <div class="contact">
       <a href="https://github.com/${s.github}" target="_blank" rel="noopener" title="GitHub" data-icon="${ICONS.github}">${icon('github', 'GitHub')}</a>
@@ -223,7 +230,7 @@ ${post ? `<meta property="article:published_time" content="${post.date.toISOStri
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1522" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
-<script>/* Tema antes del primer pintado para evitar parpadeo */document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>/* Tema antes del primer pintado para evitar parpadeo */document.documentElement.classList.add('js');addEventListener('pagereveal',function(e){if(!e.viewTransition||!e.viewTransition.types)return;var T=['glitch','crt','decrypt','terminal','rain','blinds','radar','packet','signal','firewall'],i=Math.random()*T.length|0;try{if(sessionStorage.getItem('vt')===T[i])i=(i+1)%T.length;sessionStorage.setItem('vt',T[i])}catch(x){}e.viewTransition.types.add(T[i])});try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="icon" href="/assets/img/favicon/favicon.ico">
 <link rel="apple-touch-icon" href="/assets/img/favicon/apple-touch-icon.png">
 <link rel="alternate" type="application/rss+xml" title="${esc(site.title)}" href="/feed.xml">

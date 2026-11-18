@@ -252,13 +252,12 @@ if (cv && matchMedia('(hover: hover) and (pointer: fine) and (min-width: 901px)'
   };
   const frame = t => {
     raf = requestAnimationFrame(frame);
-    if (t - last < 33) return; // ~30 fps
+    if (t - last < (inside ? 33 : 55)) return; // ~30 fps con el ratón; la lluvia de fondo, más lenta
     last = t;
     alpha += ((inside ? 1 : 0) - alpha) * .12; // aparece y desaparece con suavidad
     fx += (mx - fx) * .3; fy += (my - fy) * .3; // el foco sigue al cursor con un leve retardo, sin saltos
     const w = side.clientWidth, h = side.clientHeight;
     ctx.clearRect(0, 0, w, h);
-    if (!inside && alpha < .02) { cancelAnimationFrame(raf); raf = 0; return; }
     for (let c = 0; c < cols; c++) heads[c] = (heads[c] + speeds[c]) % (rows + TRAIL);
     const dark = root.dataset.theme === 'dark';
     // En claro el verde translúcido sobre blanco casi desaparece: tono más profundo, más opacidad y trazo más grueso.
@@ -266,6 +265,21 @@ if (cv && matchMedia('(hover: hover) and (pointer: fine) and (min-width: 901px)'
     const gain = dark ? 1 : 2.4, curve = dark ? 1.8 : 1.3;
     ctx.font = `${dark ? 500 : 600} ${CELL - 2}px "SF Mono", ui-monospace, Menlo, Consolas, monospace`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Lluvia de fondo, siempre activa y tenue para no competir con el menú; el foco del ratón la intensifica.
+    const amb = dark ? .12 : .1 * gain;
+    for (let c = 0; c < cols; c++) {
+      const hd = heads[c] | 0;
+      for (let l = 0; l < TRAIL; l++) {
+        const r = hd - l;
+        if (r < 0 || r >= rows) continue;
+        const x = c * CELL + CELL / 2, y = r * CELL + CELL / 2;
+        if (alpha > .05 && Math.hypot(x - fx, y - fy) < R) continue;
+        const k = r * cols + c;
+        if (l === 0) chars[k] = pick();
+        ctx.fillStyle = `rgba(${l === 0 ? bright : tint},${amb * (1 - l / TRAIL) ** 1.4 * (l === 0 ? 1.5 : 1)})`;
+        ctx.fillText(chars[k], x, y);
+      }
+    }
     const pr = (t - pt) / PULSE * R * 1.7;                    // radio del pulso de entrada
     const pa = Math.max(0, 1 - (t - pt) / PULSE);            // y su intensidad, que se apaga al crecer
     // Solo se recorren las celdas dentro del foco (y del pulso mientras dura): barato aunque el menú sea alto.
@@ -305,8 +319,56 @@ if (cv && matchMedia('(hover: hover) and (pointer: fine) and (min-width: 901px)'
     if (!raf) { if (!cols) resize(); raf = requestAnimationFrame(frame); }
   });
   side.addEventListener('mouseleave', () => { inside = false; });
+  const start = () => { if (!raf && !document.hidden) { if (!cols) resize(); raf = requestAnimationFrame(frame); } };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else start(); });
+  start();
   addEventListener('resize', () => { cols = 0; if (raf) resize(); });
 }
+
+// ---------- Glitch de letras (bienvenida y títulos de los posts) ----------
+// Cada letra va por su cuenta: invisible, cambiada por otra o ya bien. Avanza a saltos, no con fundido.
+// Las invisibles conservan su hueco y la altura queda fija, así que el titular no mueve la página.
+function glitchIn(h, text, steps = 13) {
+  h.textContent = text;
+  h.style.minHeight = h.offsetHeight + 'px';
+  h.setAttribute('aria-label', text);
+  const glyphs = 'ABCDEFGHKMNPRSTXZabdeghkmnpqrsxz0123456789#$%&@';
+  const rnd = () => glyphs[Math.random() * glyphs.length | 0];
+  const cells = [...text].map(c => {
+    const el = document.createElement('span');
+    el.setAttribute('aria-hidden', 'true');
+    el.textContent = c;
+    const r = Math.random();
+    return { el, c, state: c === ' ' ? 'ok' : r < .45 ? 'off' : r < .8 ? 'bad' : 'ok' };
+  });
+  h.replaceChildren(...cells.map(x => x.el));
+  const paint = x => {
+    x.el.className = x.state === 'ok' ? '' : 'g-' + x.state;
+    x.el.textContent = x.state === 'bad' ? rnd() : x.c;
+  };
+  cells.forEach(paint);
+  let n = 0;
+  const tick = () => {
+    n++;
+    const k = n / steps;
+    for (const x of cells) {
+      if (x.c === ' ') continue;
+      if (n >= steps) x.state = 'ok';
+      else if (x.state !== 'ok') { if (Math.random() < k * .6) x.state = 'ok'; else if (Math.random() < .35) x.state = x.state === 'off' ? 'bad' : 'off'; }
+      else if (k < .7 && Math.random() < .06) x.state = Math.random() < .5 ? 'off' : 'bad';
+      paint(x);
+    }
+    if (n < steps) return setTimeout(tick, 55 + Math.random() * 45);
+    h.textContent = text;
+    h.removeAttribute('aria-label');
+    h.style.minHeight = '';
+  };
+  setTimeout(tick, 120);
+}
+
+// Títulos de los posts: el mismo glitch, más corto, al entrar en cada artículo
+const postTitle = document.querySelector('.post-header h1');
+if (postTitle && !matchMedia('(prefers-reduced-motion: reduce)').matches) glitchIn(postTitle, postTitle.textContent, 9);
 
 // ---------- Bienvenida: un mensaje al azar en cada visita, con efecto glitch ----------
 const welcome = document.querySelector('.welcome');
@@ -330,45 +392,8 @@ if (welcome && welcomeData) {
     h.textContent = m.h;
     show();
   } else {
-    // Cada letra va por su cuenta: invisible, cambiada por otra o ya bien. Avanza a saltos, no con fundido.
-    // Las invisibles conservan su hueco y la altura queda fija, así que el titular no mueve la página.
-    h.textContent = m.h;
-    h.style.minHeight = h.offsetHeight + 'px';
-    h.setAttribute('aria-label', m.h);
-    const glyphs = 'ABCDEFGHKMNPRSTXZabdeghkmnpqrsxz0123456789#$%&@';
-    const rnd = () => glyphs[Math.random() * glyphs.length | 0];
-    const cells = [...m.h].map(c => {
-      const el = document.createElement('span');
-      el.setAttribute('aria-hidden', 'true');
-      el.textContent = c;
-      const r = Math.random();
-      return { el, c, state: c === ' ' ? 'ok' : r < .45 ? 'off' : r < .8 ? 'bad' : 'ok' };
-    });
-    h.replaceChildren(...cells.map(x => x.el));
-    const paint = x => {
-      x.el.className = x.state === 'ok' ? '' : 'g-' + x.state;
-      x.el.textContent = x.state === 'bad' ? rnd() : x.c;
-    };
-    cells.forEach(paint);
     welcome.classList.add('is-ready');
-    const steps = 13;
-    let n = 0;
-    const tick = () => {
-      n++;
-      const k = n / steps;
-      for (const x of cells) {
-        if (x.c === ' ') continue;
-        if (n >= steps) x.state = 'ok';
-        else if (x.state !== 'ok') { if (Math.random() < k * .6) x.state = 'ok'; else if (Math.random() < .35) x.state = x.state === 'off' ? 'bad' : 'off'; }
-        else if (k < .7 && Math.random() < .06) x.state = Math.random() < .5 ? 'off' : 'bad';
-        paint(x);
-      }
-      if (n < steps) return setTimeout(tick, 55 + Math.random() * 45);
-      h.textContent = m.h;
-      h.removeAttribute('aria-label');
-      h.style.minHeight = '';
-    };
-    setTimeout(tick, 120);
+    glitchIn(h, m.h, 13);
   }
 }
 

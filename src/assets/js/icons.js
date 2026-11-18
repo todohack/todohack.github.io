@@ -29,13 +29,13 @@ if (themeIcon) {
   document.addEventListener('themechange', () => themeIcon.morphTo(themeD()));
 }
 
-// Menú: el icono se convierte en flecha al pasar el ratón o enfocar con teclado
+// Menú: cada icono se transforma en su versión propia (data-hover) al pasar el ratón o enfocar con teclado
 document.querySelectorAll('.nav a[data-icon]').forEach(a => {
   const svg = a.querySelector('svg');
   if (!svg) return;
   const m = make(a.dataset.icon, 18, 1.8);
   svg.replaceWith(m);
-  const on = () => m.morphTo(ARROW), off = () => m.morphTo(a.dataset.icon);
+  const on = () => m.morphTo(a.dataset.hover || ARROW), off = () => m.morphTo(a.dataset.icon);
   a.addEventListener('mouseenter', on); a.addEventListener('mouseleave', off);
   a.addEventListener('focus', on); a.addEventListener('blur', off);
 });
