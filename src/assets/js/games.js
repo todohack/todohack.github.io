@@ -160,7 +160,7 @@ const drawFx = (ctx, fx, t) => {
   }
   fx.rings = fx.rings.filter(r => t - r.t < 520);
   for (const r of fx.rings) {
-    const k = (t - r.t) / 520;
+    const k = Math.max(0, (t - r.t) / 520); // un efecto creado tras la marca del fotograma daría un radio negativo
     ctx.globalAlpha = 1 - k; ctx.strokeStyle = r.col; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(r.x, r.y, 6 + k * r.r, 0, 6.283); ctx.stroke();
   }
@@ -1039,8 +1039,8 @@ const CAR_T = {
 const CITY_MISSIONS = [
   { t: 'Primer contacto' }, { t: 'El pendrive' }, { t: 'Apaga el C2' }, { t: 'Furgoneta de exfiltración' }, { t: 'Antenas zombi' }, { t: 'El jefe de Los Cifrados' },
 ];
-const AVS = ['Av. Kernel', 'Av. Firewall', 'Av. Proxy', 'Av. Sudo', 'Av. Root', 'Av. Socket', 'Av. Bash', 'Av. Hash'];
-const CALLES = ['Calle Ping', 'Calle 404', 'Calle Token', 'Calle Cookie', 'Calle Payload', 'Calle Puerto'];
+const AVS = ['Av. Kernel', 'Av. Firewall', 'Av. Proxy', 'Av. Sudo', 'Av. Root', 'Av. Socket', 'Av. Bash', 'Av. Hash', 'Av. Daemon', 'Av. Cron', 'Av. Shell', 'Av. Vector'];
+const CALLES = ['Calle Ping', 'Calle 404', 'Calle Token', 'Calle Cookie', 'Calle Ribera', 'Calle Payload', 'Calle Puerto', 'Calle Buffer', 'Calle Muelle'];
 const CITY_SIGNS = ['HACK', '404', 'ROOT', 'VPN', '0DAY', 'SUDO', 'PING', 'CAFE', 'BYTE', 'SSH', 'NEON', 'RAM', 'LOGS', 'TOR'];
 const CAR_COLS = ['#ef4444', '#3b82f6', '#22c55e', '#e5e7eb', '#a855f7', '#14b8a6', '#f472b6', '#64748b', '#0ea5e9'];
 const PAINTS = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7', '#ec4899', '#e5e7eb', '#111827'];
@@ -1077,10 +1077,10 @@ const FILM_LINES = ['¡Esto va directo a redes!', '¡Grabando, grabando!', '¡Qu
 const GANG_LINES = ['¡Paga el rescate en Monero!', '¡Tus archivos son nuestros!', '¡Aquí no pasa nadie sin la clave!', '¡Doble extorsión, mae!', '¡El jefe quiere tus datos!'];
 const DRONE_LINES = ['UNIDAD SOC: DETÉNGASE', 'SUJETO IDENTIFICADO', 'REGISTRANDO INCIDENTE', 'ALTO, CIUDADANO'];
 const HONKS = ['¡Piii!', '¡Muévase, mae!', '¡Está en verde!', '¡Piii piii!'];
-const RES_LINES = ['Nodo te espera en el círculo verde.', 'Aquí parcheamos lo que Los Cifrados rompen.', 'Tus autos comprados quedan aparcados aquí.', 'La armería está en Av. Proxy; el taller, en Av. Kernel.', 'Los drones solo te siguen si haces daño a civiles.'];
+const RES_LINES = ['Nodo te espera en el círculo verde.', 'Aquí parcheamos lo que Los Cifrados rompen.', 'Tus autos comprados quedan aparcados aquí.', 'La armería está en el Barrio Neón; el taller, en el Puerto Industrial.', 'Los drones solo te siguen si haces daño a civiles.'];
 
 function ciudad(T) {
-  const TW = 16, BK = 9, NBX = 7, NBY = 5, MW = 2 + BK * NBX + 2 + 2, MH = 2 + BK * NBY + 2 + 2;
+  const TW = 16, BK = 9, NBX = 11, NBY = 8, MW = 2 + BK * NBX + 2 + 2, MH = 2 + BK * NBY + 2 + 2;
   const hold = (k, t) => `<button type="button" data-h="${k}">${t}</button>`;
   const pad = touch ? `<div class="pad-dirs">${['', hold('up', '↑'), '', hold('left', '←'), '', hold('right', '→'), '', hold('down', '↓'), ''].map(x => x || '<span></span>').join('')}</div>`
     + `<div class="pad-acts">${hold('fire', 'disparar')}${hold('nitro', 'turbo')}<button type="button" data-k="e">acción</button><button type="button" data-k="q">arma</button><button type="button" data-k="m">destino</button><button type="button" data-k="Escape">salir</button></div>` : '';
@@ -1110,10 +1110,22 @@ function ciudad(T) {
   const map = new Uint8Array(MW * MH); // 0 calle · 1 acera · 2 edificio · 3 parque · 4 agua · 5 árbol · 6 plaza
   const bid = new Uint16Array(MW * MH); // identificador de edificio: casillas con el mismo id forman un edificio
   const at = (tx, ty) => tx < 0 || ty < 0 || tx >= MW || ty >= MH ? 4 : map[ty * MW + tx];
-  const SPECIAL = { '1,1': 'base', '4,2': 'c2', '6,4': 'dock', '2,3': 'armeria', '0,2': 'taller', '5,1': 'lot', '3,4': 'hospital' };
+  const SPECIAL = { '1,1': 'base', '8,6': 'c2', '10,7': 'dock', '2,6': 'armeria', '6,6': 'taller', '5,2': 'lot', '9,1': 'hospital' };
+  const RIVER = 4; // fila de manzanas que ocupa el río; las avenidas lo cruzan como puentes
+  const MERGES = [[5, 0, 'mplaza'], [8, 2, 'mpark'], [2, 2, 'mpark'], [3, 6, 'mplaza']]; // supermanzanas que cortan una avenida
+  // Barrios: cada zona tiene su arquitectura, el color de sus aceras y su densidad de neón
+  const BARRIOS = {
+    bash: { n: 'Barrio Bash', kinds: ['house', 'house', 'apart', 'house', 'green'], park: .22, walk: '#4a4338', signs: .15 },
+    kernel: { n: 'Distrito Kernel', kinds: ['office', 'office', 'mall', 'office', 'data'], park: .06, walk: '#3d4558', signs: .35 },
+    sudo: { n: 'Campus Sudo', kinds: ['lab', 'data', 'lab', 'green'], park: .35, walk: '#384a40', signs: .2 },
+    neon: { n: 'Barrio Neón', kinds: ['club', 'mall', 'club', 'apart'], park: .08, walk: '#3d3049', signs: 1 },
+    puerto: { n: 'Puerto Industrial', kinds: ['ware', 'containers', 'ware', 'containers', 'data'], park: .04, walk: '#3f3f3f', signs: .1 },
+  };
+  const barrioOf = (bx, by) => by < RIVER ? (bx < 4 ? 'bash' : bx < 8 ? 'kernel' : 'sudo') : (bx < 5 ? 'neon' : 'puerto');
   const SHOPB = { armeria: 1, taller: 1, hospital: 1 };
   const btype = {};
-  for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) btype[bx + ',' + by] = SPECIAL[bx + ',' + by] || (Math.random() < .16 ? 'park' : 'build');
+  for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) btype[bx + ',' + by] = by === RIVER ? 'river' : SPECIAL[bx + ',' + by] || (Math.random() < BARRIOS[barrioOf(bx, by)].park ? 'park' : 'build');
+  for (const [bx, by, k] of MERGES) btype[bx + ',' + by] = btype[(bx + 1) + ',' + by] = k;
   const rr = (tx, ty) => [(tx - 2) % BK, (ty - 2) % BK];
   const BTYPES = ['office', 'apart', 'ware', 'mall', 'data', 'green', 'apart', 'office'];
   const kindOfB = {}; // tipo de cada edificio
@@ -1123,6 +1135,7 @@ function ciudad(T) {
     else {
       const [rx, ry] = rr(tx, ty), bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK);
       if (rx < 2 || ry < 2 || bx >= NBX || by >= NBY) t = 0;
+      else if (btype[bx + ',' + by] === 'river') t = 4;
       else if (rx === 2 || rx === 8 || ry === 2 || ry === 8) t = 1;
       else {
         const k = btype[bx + ',' + by];
@@ -1130,11 +1143,21 @@ function ciudad(T) {
           t = 2;
           const id = SHOPB[k] ? 1000 + bx * 10 + by : 1 + bx * 40 + by * 4 + (rx < 5 ? 0 : 1) + (ry < 5 ? 0 : 2);
           bid[ty * MW + tx] = id;
-          kindOfB[id] = SHOPB[k] ? k : BTYPES[(bx * 7 + by * 3 + (rx < 5 ? 0 : 1) * 5 + (ry < 5 ? 0 : 2)) % BTYPES.length];
+          const ks = BARRIOS[barrioOf(bx, by)].kinds;
+          kindOfB[id] = SHOPB[k] ? k : ks[(bx * 7 + by * 3 + (rx < 5 ? 0 : 1) * 5 + (ry < 5 ? 0 : 2)) % ks.length];
         } else t = k === 'park' ? ((rx === 5 || ry === 5) ? 6 : Math.random() < .25 ? 5 : 3) : 6;
       }
     }
     map[ty * MW + tx] = t;
+  }
+  // Supermanzanas: se elimina el tramo de avenida entre dos manzanas y se convierte en parque con lago o en plaza con fuente
+  for (const [bx, by, k] of MERGES) {
+    const x0 = 2 + BK * bx + 3, x1 = 2 + BK * (bx + 1) + 7, y0 = 2 + BK * by + 3, y1 = 2 + BK * by + 7, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+      const e = ((tx - cx) / 3.2) ** 2 + ((ty - cy) / 1.6) ** 2;
+      map[ty * MW + tx] = k === 'mpark' ? (e < 1 ? 4 : e > 2 && Math.random() < .14 ? 5 : 3) : (e < .35 ? 4 : 6);
+    }
+    for (const ty of [2 + BK * by + 2, 2 + BK * by + 8]) for (const tx of [2 + BK * (bx + 1), 2 + BK * (bx + 1) + 1]) map[ty * MW + tx] = 1; // sin tramos de calle sin salida
   }
   const tAt = (x, y) => at(Math.floor(x / TW), Math.floor(y / TW));
   const solid = t => t === 2 || t === 4 || t === 5;
@@ -1147,22 +1170,25 @@ function ciudad(T) {
   const isInter = (tx, ty) => { const [rx, ry] = rr(tx, ty); return at(tx, ty) === 0 && rx < 2 && ry < 2; };
   // Puntos de interés: tiendas y servicios
   const POI = [
-    { k: 'armeria', n: 'Armería 0xDEAD', ...door(2, 3), col: '#ef4444', ico: 'gun' },
-    { k: 'taller', n: 'Taller Pit Stop Overclock', ...door(0, 2), col: '#f97316', ico: 'wrench' },
-    { k: 'lot', n: 'Concesionario AutoHash', ...door(5, 1), col: '#22d3ee', ico: 'car' },
-    { k: 'hospital', n: 'Hospital San Parche', ...door(3, 4), col: '#f1f5f9', ico: 'cross' },
+    { k: 'armeria', n: 'Armería 0xDEAD', ...door(2, 6), col: '#ef4444', ico: 'gun' },
+    { k: 'taller', n: 'Taller Pit Stop Overclock', ...door(6, 6), col: '#f97316', ico: 'wrench' },
+    { k: 'lot', n: 'Concesionario AutoHash', ...door(5, 2), col: '#22d3ee', ico: 'car' },
+    { k: 'hospital', n: 'Hospital San Parche', ...door(9, 1), col: '#f1f5f9', ico: 'cross' },
   ];
   const streetAt = (x, y) => {
     const tx = Math.floor(x / TW), ty = Math.floor(y / TW), t = at(tx, ty), [rx, ry] = rr(tx, ty), bx = Math.floor((tx - 2) / BK), by = Math.floor((ty - 2) / BK);
-    if (t === 4) return 'Bahía de los Logs';
+    if (t === 4) return by === RIVER && tx > 1 && tx < MW - 2 ? 'Río Base64' : (btype[bx + ',' + by] || '').startsWith('m') ? 'Lago del parque' : 'Bahía de los Logs';
     if (t === 6 || t === 1 || t === 3) {
       const k = btype[bx + ',' + by];
-      const named = { base: 'Refugio de la resistencia', c2: 'Plaza roja (C2)', dock: 'Muelle de carga', park: 'Parque del Cifrado César', lot: 'Concesionario AutoHash', armeria: 'Armería 0xDEAD', taller: 'Taller Pit Stop Overclock', hospital: 'Hospital San Parche' };
+      const named = { mpark: 'Gran Parque del Cifrado', mplaza: barrioOf(clamp(bx, 0, NBX - 1), clamp(by, 0, NBY - 1)) === 'neon' ? 'Plaza Neón' : 'Plaza del Kernel', base: 'Refugio de la resistencia', c2: 'Plaza roja (C2)', dock: 'Muelle de carga', park: 'Parque del Cifrado César', lot: 'Concesionario AutoHash', armeria: 'Armería 0xDEAD', taller: 'Taller Pit Stop Overclock', hospital: 'Hospital San Parche' };
       if (named[k] && (t !== 1 || SHOPB[k] || k === 'lot')) return named[k];
     }
     if (t !== 0) return '';
-    if (rx < 2 && ry < 2) return `${AVS[clamp(bx, 0, 7)]} / ${CALLES[clamp(by, 0, 5)]}`;
-    return rx < 2 ? AVS[clamp(bx, 0, 7)] : CALLES[clamp(by, 0, 5)];
+    if (rx < 2 && ry < 2) return `${AVS[clamp(bx, 0, NBX)]} / ${CALLES[clamp(by, 0, NBY)]}`;
+    if (rx < 2 && by === RIVER && ry >= 2) return `Puente de ${AVS[clamp(bx, 0, NBX)]}`;
+    return rx < 2 ? AVS[clamp(bx, 0, NBX)] : CALLES[clamp(by, 0, NBY)];
+  };
+  const barrioAt = (x, y) => { const bx = clamp(Math.floor((Math.floor(x / TW) - 2) / BK), 0, NBX - 1), by = clamp(Math.floor((Math.floor(y / TW) - 2) / BK), 0, NBY - 1); return barrioOf(bx, by === RIVER ? RIVER - 1 : by);
   };
 
   let gameT = 0;
@@ -1175,8 +1201,11 @@ function ciudad(T) {
   const lamps = [], manholes = [], props = [], signs = [];
   for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) {
     const ox = 2 + BK * bx, oy = 2 + BK * by;
+    if (btype[bx + ',' + by] === 'river') continue;
     for (const [rx, ry, dx, dy] of [[2, 2, -5, -5], [8, 2, 5, -5], [2, 8, -5, 5], [8, 8, 5, 5]]) lamps.push({ x: (ox + rx) * TW + 8 + dx, y: (oy + ry) * TW + 8 + dy });
-    if (btype[bx + ',' + by] === 'build' && (bx + by) % 2 === 0) signs.push({ x: (ox + 3) * TW + 3, y: (oy + 3) * TW + 3, txt: CITY_SIGNS[(bx * 5 + by * 3) % CITY_SIGNS.length], col: NEONS[(bx * 3 + by) % 4], ph: Math.random() * 10 });
+    const bar = BARRIOS[barrioOf(bx, by)];
+    if (btype[bx + ',' + by] === 'build' && Math.random() < bar.signs) signs.push({ x: (ox + 3) * TW + 3, y: (oy + 3) * TW + 3, txt: CITY_SIGNS[(bx * 5 + by * 3) % CITY_SIGNS.length], col: NEONS[(bx * 3 + by) % 4], ph: Math.random() * 10 });
+    if (btype[bx + ',' + by] === 'build' && bar.signs >= 1) signs.push({ x: (ox + 5) * TW + 2, y: (oy + 6) * TW + 2, txt: pickOne(['CLUB', 'BAR', 'LIVE', '24H', 'KARAOKE', 'DJ']), col: pickOne(NEONS), ph: Math.random() * 10 });
   }
   for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
     const t = at(tx, ty), [rx, ry] = rr(tx, ty), r = Math.random();
@@ -1189,8 +1218,8 @@ function ciudad(T) {
   const mini = document.createElement('canvas'); mini.width = MW; mini.height = MH;
   {
     const g = mapCv.getContext('2d'), mg = mini.getContext('2d');
-    const ROOF = { office: '#1d3557', apart: '#7a3b2e', ware: '#4b5563', mall: '#3f3a52', data: '#141a24', green: '#24402c', armeria: '#3b0d0d', taller: '#3a3a3a', hospital: '#d9dde4' };
-    const WALL = { office: '#122238', apart: '#4a2620', ware: '#2d333d', mall: '#2a2638', data: '#0b0f16', green: '#1c2b22', armeria: '#250707', taller: '#232323', hospital: '#a8afba' };
+    const ROOF = { house: '#8b3a2b', lab: '#c4ccd8', club: '#17101f', containers: '#3f3f46', office: '#1d3557', apart: '#7a3b2e', ware: '#4b5563', mall: '#3f3a52', data: '#141a24', green: '#24402c', armeria: '#3b0d0d', taller: '#3a3a3a', hospital: '#d9dde4' };
+    const WALL = { house: '#5c2a20', lab: '#8a94a3', club: '#0d0814', containers: '#27272a', office: '#122238', apart: '#4a2620', ware: '#2d333d', mall: '#2a2638', data: '#0b0f16', green: '#1c2b22', armeria: '#250707', taller: '#232323', hospital: '#a8afba' };
     for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
       const t = at(tx, ty), x = tx * TW, y = ty * TW, [rx, ry] = rr(tx, ty), h = (tx * 73 + ty * 151) % 97;
       if (t === 0) {
@@ -1207,9 +1236,13 @@ function ciudad(T) {
         if (rx === 1 && ry === 3) g.fillRect(x, y, TW, 1);
         if (ry === 1 && rx === 7) g.fillRect(x + TW - 1, y, 1, TW);
         if (ry === 0 && rx === 3) g.fillRect(x, y, 1, TW);
+        g.fillStyle = '#9aa4b5'; // barandillas de los puentes sobre el río
+        if (at(tx - 1, ty) === 4) g.fillRect(x, y, 2, TW); if (at(tx + 1, ty) === 4) g.fillRect(x + TW - 2, y, 2, TW);
+        if (at(tx, ty - 1) === 4) g.fillRect(x, y, TW, 2); if (at(tx, ty + 1) === 4) g.fillRect(x, y + TW - 2, TW, 2);
       } else if (t === 1) {
-        g.fillStyle = '#3b4253'; g.fillRect(x, y, TW, TW); g.fillStyle = '#343a4a'; g.fillRect(x, y, TW, 1); g.fillRect(x, y, 1, TW); g.fillRect(x + 8, y, 1, TW);
-        g.fillStyle = '#4a5265';
+        const wb = BARRIOS[barrioOf(clamp(Math.floor((tx - 2) / BK), 0, NBX - 1), clamp(Math.floor((ty - 2) / BK), 0, NBY - 1))].walk;
+        g.fillStyle = wb; g.fillRect(x, y, TW, TW); g.fillStyle = shade(wb, -.15); g.fillRect(x, y, TW, 1); g.fillRect(x, y, 1, TW); g.fillRect(x + 8, y, 1, TW);
+        g.fillStyle = shade(wb, .18);
         if (at(tx - 1, ty) === 0) g.fillRect(x, y, 2, TW); if (at(tx + 1, ty) === 0) g.fillRect(x + TW - 2, y, 2, TW);
         if (at(tx, ty - 1) === 0) g.fillRect(x, y, TW, 2); if (at(tx, ty + 1) === 0) g.fillRect(x, y + TW - 2, TW, 2);
       } else if (t === 2) {
@@ -1225,11 +1258,15 @@ function ciudad(T) {
         else if (kind === 'data') { g.fillStyle = '#374151'; for (const [cx, cy] of [[4, 4], [12, 4], [4, 12], [12, 12]]) { g.beginPath(); g.arc(x + cx, y + cy, 3, 0, 6.283); g.fill(); } g.fillStyle = '#4ade80'; g.fillRect(x + 8, y + 8, 1, 1); }
         else if (kind === 'green') { g.fillStyle = '#2f6b3f'; g.fillRect(x + 2, y + 2, 5, 5); g.fillRect(x + 9, y + 9, 5, 5); g.fillStyle = '#7c4a1e'; g.fillRect(x + 2, y + 9, 5, 5); }
         else if (kind === 'taller') { g.fillStyle = shade(base, .1); if ((tx + ty) % 2) g.fillRect(x, y, TW, TW); }
+        else if (kind === 'house') { g.fillStyle = shade(base, .14); g.fillRect(x, y, TW, 7); g.fillStyle = shade(base, -.18); g.fillRect(x, y + 8, TW, 8); g.fillStyle = shade(base, .35); g.fillRect(x, y + 7, TW, 1); if (h < 18) { g.fillStyle = '#3f3f46'; g.fillRect(x + 11, y + 2, 3, 4); } }
+        else if (kind === 'lab') { g.fillStyle = 'rgba(56,189,248,.45)'; g.fillRect(x + 2, y + 5, 12, 3); g.fillStyle = '#94a3b8'; if (h < 30) g.fillRect(x + 4, y + 10, 4, 3); }
+        else if (kind === 'containers') { const C = ['#b91c1c', '#1d4ed8', '#15803d', '#c2410c', '#0e7490', '#a16207']; for (const yy of [2, 9]) { const c0 = C[(h + yy) % 6]; g.fillStyle = c0; g.fillRect(x + 1, y + yy, 14, 5); g.fillStyle = shade(c0, -.3); for (let i = 3; i < 14; i += 3) g.fillRect(x + 1 + i, y + yy, 1, 5); } }
         // pretil
         g.fillStyle = shade(base, .28);
         if (!same(-1, 0)) g.fillRect(x, y, 2, TW); if (!same(0, -1)) g.fillRect(x, y, TW, 2);
         g.fillStyle = '#0b0e16';
         if (!same(1, 0)) g.fillRect(x + TW - 2, y, 2, TW);
+        if (kind === 'club') { const nc = id % 2 ? '#ff3fc8' : '#3ee8ff'; g.shadowColor = nc; g.shadowBlur = 6; g.fillStyle = nc; if (!same(-1, 0)) g.fillRect(x + 2, y, 1, TW); if (!same(0, -1)) g.fillRect(x, y + 2, TW, 1); if (!same(1, 0)) g.fillRect(x + TW - 3, y, 1, TW); g.shadowBlur = 0; }
         if (front) {
           const wall = WALL[kind];
           g.fillStyle = wall; g.fillRect(x, y + 7, TW, 9);
@@ -1260,6 +1297,8 @@ function ciudad(T) {
       mg.fillStyle = t === 0 ? '#2a3040' : t === 1 ? '#4b5366' : t === 2 ? '#141824' : t === 4 ? '#0a2540' : t === 6 ? '#5b4630' : '#1b4329';
       mg.fillRect(tx, ty, 1, 1);
     }
+    // fondo un poco más oscuro: así personas, autos y objetos destacan sobre él
+    g.fillStyle = 'rgba(3,5,10,.24)'; g.fillRect(0, 0, mapCv.width, mapCv.height);
     g.textAlign = 'center';
     for (const [k, v] of Object.entries(btype)) {
       const [bx, by] = k.split(',').map(Number), c = blockMid(bx, by);
@@ -1270,6 +1309,9 @@ function ciudad(T) {
       if (v === 'armeria') { g.strokeStyle = '#ef4444'; g.lineWidth = 2; g.beginPath(); g.arc(c.x, c.y - 10, 12, 0, 6.283); g.stroke(); g.beginPath(); g.moveTo(c.x - 17, c.y - 10); g.lineTo(c.x + 17, c.y - 10); g.moveTo(c.x, c.y - 27); g.lineTo(c.x, c.y + 7); g.stroke(); label('ARMERÍA 0xDEAD', '#f87171', c.y + 33); }
       if (v === 'taller') { g.fillStyle = '#facc15'; for (let i = -36; i < 36; i += 8) g.fillRect(c.x + i, c.y - 36, 4, 3); label('PIT STOP', '#fb923c', c.y - 12); label('OVERCLOCK', '#fb923c', c.y - 2); g.fillStyle = '#6b7280'; for (let i = -24; i <= 16; i += 20) g.fillRect(c.x + i, c.y + 30, 14, 6); }
       if (v === 'hospital') { g.fillStyle = '#ef4444'; g.fillRect(c.x - 4, c.y - 22, 8, 22); g.fillRect(c.x - 11, c.y - 15, 22, 8); label('HOSPITAL', '#f1f5f9', c.y + 33); }
+      if (v === 'mplaza' && btype[(bx - 1) + ',' + by] !== 'mplaza') label(barrioOf(bx, by) === 'neon' ? 'PLAZA NEÓN' : 'PLAZA DEL KERNEL', '#f2b33d', c.y - 26);
+      if (v === 'mpark' && btype[(bx - 1) + ',' + by] !== 'mpark') label('GRAN PARQUE', '#86efac', c.y - 26);
+      if (v === 'dock') { g.strokeStyle = '#facc15'; g.lineWidth = 2; for (const dx of [-24, 18]) { g.strokeRect(c.x + dx - 4, c.y - 30, 8, 8); g.beginPath(); g.moveTo(c.x + dx, c.y - 26); g.lineTo(c.x + dx, c.y + 50); g.stroke(); g.beginPath(); g.moveTo(c.x + dx - 3, c.y - 26); g.lineTo(c.x + dx + 3, c.y + 50); g.stroke(); } label('MUELLE', '#facc15', c.y + 33); }
       if (v === 'lot') { g.fillStyle = '#1e293b'; g.fillRect(c.x - 30, c.y - 38, 60, 18); g.fillStyle = 'rgba(56,189,248,.4)'; g.fillRect(c.x - 28, c.y - 36, 56, 14); label('AUTOHASH', '#22d3ee', c.y - 26); }
     }
     g.textAlign = 'start';
@@ -1313,6 +1355,7 @@ function ciudad(T) {
     if (type === 'exfil') { g.fillStyle = '#f87171'; g.font = 'bold 6px monospace'; g.fillText('RW', 4, 8); }
     return (sprCache[key] = c);
   };
+  const carWhite = type => { const k = 'w-' + type; if (sprCache[k]) return sprCache[k]; const src = carSpr(type, '#888888'), c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height); return (sprCache[k] = c); };
   const PAL = {
     me: { s: '#34508a', h: '#5f80c2', k: '#0b111d' }, gang: { s: '#7f1d1d', h: '#111827', k: '#1f2937' }, boss: { s: '#701a75', h: '#f0abfc', k: '#f0abfc' },
     lia: { s: '#0e7490', h: '#4a2511', k: '#c68642' }, nodo: { s: '#166534', h: '#9ca3af', k: '#8d5524' }, res: { s: '#15803d', h: '#1f1300', k: '#e0ac69' }, jog: { s: '#f472b6', h: '#d4a017', k: '#ffdbac' },
@@ -1324,7 +1367,7 @@ function ciudad(T) {
   // Migración: el progreso antiguo tenía 6 armas; ahora hay 11 (5 de cuerpo a cuerpo nuevas)
   if (prog.own && prog.own.length === 6) { const o = prog.own, a = prog.ammo || []; prog.own = [o[0], false, false, false, false, false, o[1], o[2], o[3], o[4], o[5]]; prog.ammo = [0, 0, 0, 0, 0, 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 0]; }
   let P, cars, peds, drones, bullets, pickups, objs, birds, steam, bubbles, swings, mission, MI = prog.mi || 0, state = 'play', raf = 0, lastT = now(), hudT = 0, banner = null;
-  let needLeave = false, talk = null, shop = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0, waypoint = -1, poiLeave = null;
+  let curBarrio = '', needLeave = false, talk = null, shop = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0, waypoint = -1, poiLeave = null;
   const keys = {};
   const base = blockMid(1, 1);
   const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -1389,14 +1432,14 @@ function ciudad(T) {
     cars = []; peds = []; drones = []; bullets = []; pickups = []; objs = []; birds = []; steam = []; bubbles = []; swings = []; mission = null; state = 'play'; banner = null; talk = null; shop = null; dlg.hidden = true;
     cv.hidden = hud.hidden = false;
     size();
-    for (let i = 0; i < 24; i++) spawnCar('civ', false);
-    for (let i = 0; i < 38; i++) spawnPed('civ');
+    for (let i = 0; i < 38; i++) spawnCar('civ', false);
+    for (let i = 0; i < 56; i++) spawnPed('civ');
     for (let i = 0; i < 5; i++) spawnPed('jog');
     for (let i = 0; i < 6; i++) spawnBirds(false);
     const nodo = spawnPed('nodo', base.x, base.y - 12); nodo.name = 'Nodo'; nodo.fixed = true;
     for (let i = 0; i < 3; i++) { const r = spawnPed('res', base.x + rnd(-30, 30), base.y + rnd(-20, 20)); r.fixed = true; }
     for (const poi of POI) { const c = spawnPed('clerk', poi.x + 12, poi.y - 2); c.fixed = true; c.clerk = poi.k; }
-    for (let i = 0; i < 3; i++) { const p = inter(rnd(3, 7), rnd(2, 5)); for (let j = 0; j < 3; j++) spawnPed('gang', p.x + rnd(-20, 20), p.y + rnd(-20, 20)); } // patrullas lejos del refugio
+    for (let i = 0; i < 6; i++) { const p = inter(rnd(4, 10), rnd(5, 8)); for (let j = 0; j < 3; j++) spawnPed('gang', p.x + rnd(-20, 20), p.y + rnd(-20, 20)); } // patrullas lejos del refugio
     for (let i = 0; i < 10; i++) { const [tx, ty] = pickOne(walkTiles); pickups.push({ x: tx * TW + 8, y: ty * TW + 8, k: pickOne(['hp', 'cash', 'ammo', 'cash', 'cash']) }); }
     parkOwned();
     const guns = P.own.map((o, i) => o && i >= GUN0 && P.ammo[i] > 0 ? i : -1).filter(i => i >= 0);
@@ -1666,11 +1709,11 @@ function ciudad(T) {
   };
 
   // ---------- Misiones ----------
-  const M_PT = { 0: inter(4, 1), 1: inter(5, 3) };
+  const M_PT = { 0: inter(4, 1), 1: inter(3, 7) };
   const missionIntro = i => ({
     0: [['Nodo', 'Por fin llegas. Soy Nodo, de la resistencia. Los Cifrados han secuestrado la red de toda la ciudad.'], ['Nodo', `Nuestra informante, Lía, te espera en ${interName(M_PT[0])}. Sigue la ruta amarilla y no llames la atención.`], ['Nodo', 'Con el dinero de las misiones podrás comprar armas en la armería y autos en AutoHash. Pulsa M para ver las tiendas.']],
     1: [['Nodo', `Lía confirmó que Los Cifrados guardan un pendrive con claves de descifrado en ${interName(M_PT[1])}.`], ['Nodo', 'Hay cuatro guardias. Toma el pendrive y vuelve aquí. En cuanto lo toques, sonarán todas sus alarmas.']],
-    2: [['Nodo', 'El pendrive tenía la dirección de su servidor de mando y control: la plaza roja, entre Av. Sudo y Av. Root.'], ['Nodo', 'Destruye los tres racks antes de 100 segundos o migrarán a otro servidor. Un bate o una katana también sirven.']],
+    2: [['Nodo', `El pendrive tenía la dirección de su servidor de mando y control: la plaza roja del Puerto Industrial, entre ${AVS[8]} y ${AVS[9]}.`], ['Nodo', 'Destruye los tres racks antes de 100 segundos o migrarán a otro servidor. Un bate o una katana también sirven.']],
     3: [['Lía', '¡Una furgoneta negra con matrícula RW sale ahora mismo con datos robados del hospital!'], ['Lía', 'Necesitas un auto rápido: roba uno o usa el tuyo. Persíguela y destrúyela antes de 80 segundos.']],
     4: [['Nodo', 'Han montado cuatro antenas en las esquinas de la ciudad. Reparten el malware a cada teléfono.'], ['Nodo', 'Derríbalas todas, en el orden que quieras. Un todoterreno corta camino por los parques.']],
     5: [['Nodo', 'Es la hora. El jefe de Los Cifrados está en el muelle, al sureste, con toda su banda.'], ['Nodo', 'Pásate por la armería si te hace falta un chaleco. Si cae, sus claves maestras quedan libres para todos.']],
@@ -1687,10 +1730,10 @@ function ciudad(T) {
     const guards = (p, n) => { for (let j = 0; j < n; j++) { const g = spawnPed('gang', p.x + rnd(-26, 26), p.y + rnd(-26, 26)); g.m = true; } };
     if (i === 0) { mission.kind = 'goto'; mission.pt = M_PT[0]; const l = spawnPed('lia', mission.pt.x + 14, mission.pt.y - 14); l.fixed = true; l.name = 'Lía'; l.m = true; }
     if (i === 1) { mission.kind = 'fetch'; const p = M_PT[1]; pickups.push({ x: p.x, y: p.y, k: 'drive', m: true }); mission.pt = p; guards(p, 4); }
-    if (i === 2) { mission.kind = 'destroy'; mission.time = 100; const c = blockMid(4, 2); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
+    if (i === 2) { mission.kind = 'destroy'; mission.time = 100; const c = blockMid(8, 6); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
     if (i === 3) { mission.kind = 'van'; mission.time = 80; const v = spawnCar('van', false); mission.van = v; if (v) v.m = true; }
-    if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(7, 0), inter(0, 5), inter(7, 5)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
-    if (i === 5) { mission.kind = 'boss'; const d = blockMid(6, 4); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 6); }
+    if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(NBX, 0), inter(0, NBY), inter(NBX, NBY)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
+    if (i === 5) { mission.kind = 'boss'; const d = blockMid(10, 7); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 6); }
   };
   const REWARD = [[150, 6, 'pistola de ping'], [400, 0, ''], [500, 7, 'escopeta DDoS'], [600, 8, 'subfusil de fuerza bruta'], [800, 9, 'lanzador EMP'], [2000, 10, 'cañón de fibra']];
   const missionDone = () => {
@@ -1928,17 +1971,21 @@ function ciudad(T) {
     missionUpdate();
     const obj = objective();
     if (obj) { const k = `${Math.floor(obj.pt.x / TW)},${Math.floor(obj.pt.y / TW)},${!!P.car}`; if (gameT - routeT > .4 || k !== routeKey) { route = computeRoute(obj.pt); routeT = gameT; routeKey = k; } } else route = [];
-    const st = streetAt(P.x, P.y); if (st && st !== street) { street = st; streetT = now(); }
-    if (cars.filter(c => c.kind === 'civ' && !c.dead && c.owned === undefined).length < 22 && Math.random() < dt) spawnCar('civ', true);
-    if (peds.filter(p => p.kind === 'civ').length < 34 && Math.random() < dt) spawnPed('civ');
+    const st = streetAt(P.x, P.y), bz = barrioAt(P.x, P.y);
+    if (bz !== curBarrio) { curBarrio = bz; street = `${BARRIOS[bz].n.toUpperCase()}${st ? ' · ' + st : ''}`; streetT = now(); } // al cambiar de barrio se anuncia su nombre
+    else if (st && !street.endsWith(st)) { street = st; streetT = now(); }
+    if (cars.filter(c => c.kind === 'civ' && !c.dead && c.owned === undefined).length < 36 && Math.random() < dt) spawnCar('civ', true);
+    if (peds.filter(p => p.kind === 'civ').length < 52 && Math.random() < dt) spawnPed('civ');
   };
 
   // ---------- Dibujo ----------
   const drawPerson = (p, t) => {
+    if (p.kind === 'me') { ctx.strokeStyle = 'rgba(62,232,255,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 7, 5, 0, 0, 6.283); ctx.stroke(); }
     const d4 = ((Math.round(p.ang / (Math.PI / 2)) % 4) + 4) % 4, fr = p.moving ? Math.floor(t / 140) % 2 : 0, fl = p.fl && t - p.fl < 90;
     const s = p.kind === 'boss' ? 12 : 8, pp = p.persona && PERSONAS[p.persona];
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(Math.round(p.x) + 1, Math.round(p.y) + 2, s / 2, s / 2.6, 0, 0, 6.283); ctx.fill();
     ctx.save(); ctx.translate(Math.round(p.x), Math.round(p.y)); ctx.rotate(d4 * Math.PI / 2);
+    ctx.globalAlpha = .4; const ws = personSpr(p.pal, fr, true); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) ctx.drawImage(ws, -s / 2 + dx, -s / 2 + dy, s, s); ctx.globalAlpha = 1; // halo que lo separa del suelo
     ctx.drawImage(personSpr(p.pal, fr, fl), -s / 2, -s / 2, s, s);
     ctx.restore();
     const fx2 = p.x + Math.cos(p.ang) * 5, fy2 = p.y + Math.sin(p.ang) * 5;
@@ -1950,6 +1997,7 @@ function ciudad(T) {
     if (armed) { ctx.strokeStyle = '#9aa4b5'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(p.ang) * 3, p.y + Math.sin(p.ang) * 3); ctx.lineTo(p.x + Math.cos(p.ang) * 8, p.y + Math.sin(p.ang) * 8); ctx.stroke(); }
     else if (p === P && P.w > 0) { const col = P.w === 5 ? '#3ee8ff' : P.w === 4 ? '#facc15' : P.w === 3 ? '#a16207' : '#9ca3af'; ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(p.ang + .6) * 3, p.y + Math.sin(p.ang + .6) * 3); ctx.lineTo(p.x + Math.cos(p.ang + .3) * (P.w === 5 ? 11 : 8), p.y + Math.sin(p.ang + .3) * (P.w === 5 ? 11 : 8)); ctx.stroke(); }
     if (p.stun > gameT) { ctx.fillStyle = '#facc15'; for (let i = 0; i < 3; i++) { const a = t / 200 + i * 2.1; ctx.fillRect(Math.round(p.x + Math.cos(a) * 5), Math.round(p.y - 7 + Math.sin(a) * 2), 1, 1); } }
+    if ((p.kind === 'gang' || p.kind === 'boss' || p.aggro > gameT) && dist(p, P) < 170) { const b = Math.sin(t / 150) * 1.5; ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(p.x - 3, p.y - 13 + b); ctx.lineTo(p.x + 3, p.y - 13 + b); ctx.lineTo(p.x, p.y - 9 + b); ctx.fill(); }
     if (p.name && dist(p, P) < 90) { ctx.font = 'bold 6px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.lineWidth = 2; ctx.strokeStyle = '#05080f'; ctx.strokeText(p.name, p.x, p.y - 8); ctx.fillStyle = p.kind === 'lia' ? '#3ee8ff' : '#4ade80'; ctx.fillText(p.name, p.x, p.y - 8); }
   };
   const hpBar = (e, w = 12) => { if (e.hp >= e.max) return; ctx.fillStyle = '#05080f'; ctx.fillRect(Math.round(e.x - w / 2), Math.round(e.y - 11), w, 2); ctx.fillStyle = '#f87171'; ctx.fillRect(Math.round(e.x - w / 2), Math.round(e.y - 11), Math.max(1, Math.round(w * e.hp / e.max)), 2); };
@@ -1989,6 +2037,7 @@ function ciudad(T) {
     ctx.fillStyle = 'rgba(96,165,250,.25)';
     for (let ty = Math.max(0, Math.floor(oy / TW)); ty <= Math.min(MH - 1, Math.floor((oy + VH) / TW)); ty++) for (let tx = Math.max(0, Math.floor(ox / TW)); tx <= Math.min(MW - 1, Math.floor((ox + VW) / TW)); tx++) {
       if (at(tx, ty) !== 4) continue;
+      if (Math.floor((ty - 2) / BK) === RIVER && (ty - 2) % BK >= 2 && tx > 1 && tx < MW - 2) { const k2 = (ty * 5 + tx) % 9; ctx.fillStyle = 'rgba(147,197,253,.28)'; ctx.fillRect(tx * TW + ((t / 45 + k2 * 5) % TW), ty * TW + (k2 % 14) + 1, 5, 1); ctx.fillStyle = 'rgba(96,165,250,.25)'; continue; }
       const k = (tx * 7 + ty * 13) % 16, s = (t / 90 + k * 3) % 20;
       if (s < 12) ctx.fillRect(tx * TW + k % 10, ty * TW + (k * 5) % 14, 4 + (s > 6 ? 12 - s : s) * .5, 1);
     }
@@ -2018,7 +2067,8 @@ function ciudad(T) {
       if (!vis(pk.x, pk.y)) continue;
       const b = Math.round(Math.sin(t / 200 + pk.x) * 1.5);
       if (pk.k === 'drive') { ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 10; ctx.fillStyle = '#22d3ee'; ctx.fillRect(pk.x - 3, pk.y - 5 + b, 6, 9); ctx.fillStyle = '#cbd5e1'; ctx.fillRect(pk.x - 2, pk.y - 8 + b, 4, 3); ctx.shadowBlur = 0; continue; }
-      ctx.drawImage(SPR[pk.k === 'hp' ? '!' : pk.k === 'cash' ? '$' : '?'], pk.x - 6, pk.y - 6 + b, 12, 12);
+      const gc = pk.k === 'hp' ? '#4ade80' : pk.k === 'cash' ? '#f2b33d' : '#93c5fd'; ctx.strokeStyle = gc; ctx.globalAlpha = .5 + .3 * Math.sin(t / 180); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pk.x, pk.y, 8 + Math.sin(t / 180), 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.drawImage(SPR[pk.k === 'hp' ? '!' : pk.k === 'cash' ? '$' : '?'], pk.x - 7, pk.y - 7 + b, 14, 14);
     }
     for (const o of objs) {
       if (o.hp <= 0) { ctx.fillStyle = '#1f2937'; ctx.fillRect(o.x - 5, o.y - 3, 10, 6); continue; }
@@ -2051,6 +2101,7 @@ function ciudad(T) {
         ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(10, -3); ctx.lineTo(62, -16); ctx.lineTo(62, 16); ctx.lineTo(10, 3); ctx.fill();
       }
       const spr = carSpr(c.dead ? 'sedan' : c.type, c.dead ? '#1f2328' : c.col);
+      if (!c.dead) { const ws = carWhite(c.type); ctx.globalAlpha = .28; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) ctx.drawImage(ws, -10 + dx, -Math.floor(ws.height / 2) + dy); ctx.globalAlpha = 1; }
       ctx.drawImage(spr, -10, -Math.floor(spr.height / 2));
       if (!c.dead) {
         if (c.drv && Math.abs(c.speed) < 8) { ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 5; ctx.fillRect(-10, -3, 1, 2); ctx.fillRect(-10, 2, 1, 2); ctx.shadowBlur = 0; }
@@ -2064,7 +2115,7 @@ function ciudad(T) {
     }
     if (!P.car && state !== 'dying') drawPerson({ ...P, kind: 'me', pal: PAL.me }, t);
     for (const s of swings) { // estela del golpe cuerpo a cuerpo
-      const k = (now() - s.t) / 180; ctx.strokeStyle = s.col; ctx.globalAlpha = 1 - k; ctx.lineWidth = 2;
+      const k = Math.min(1, Math.max(0, (now() - s.t) / 180)); ctx.strokeStyle = s.col; ctx.globalAlpha = 1 - k; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(s.x, s.y, s.r * (.7 + k * .3), s.a - s.arc / 2, s.a + s.arc / 2); ctx.stroke(); ctx.globalAlpha = 1;
     }
     for (const dr of drones) {
@@ -2098,7 +2149,7 @@ function ciudad(T) {
     for (const b of bubbles) if (vis(b.e.x, b.e.y, 60)) drawBubble(b, t);
     ctx.restore();
     const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .7);
-    vg.addColorStop(0, 'rgba(5,8,15,0)'); vg.addColorStop(1, 'rgba(5,8,15,.5)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
+    vg.addColorStop(0, 'rgba(5,8,15,0)'); vg.addColorStop(1, 'rgba(5,8,15,.3)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
     if (obj) {
       const sx = obj.pt.x - ox, sy = obj.pt.y - oy;
       if (sx < 8 || sy < 8 || sx > VW - 8 || sy > VH - 8) {
@@ -2110,7 +2161,7 @@ function ciudad(T) {
       const meters = route.length * 5, dir = compass(Math.atan2(obj.pt.y - P.y, obj.pt.x - P.x));
       const txt = obj.txt, sub = meters > 8 ? `${meters} m al ${dir}` : 'has llegado';
       ctx.font = 'bold 8px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
-      const maxW = VW - MW * .6 - 14; // el recuadro no pisa el minimapa
+      const maxW = VW - MW * .5 - 14; // el recuadro no pisa el minimapa
       let line = txt; while (ctx.measureText(line).width > maxW - 12 && line.length > 8) line = line.slice(0, -2);
       if (line !== txt) line = line.trimEnd() + '…';
       const w = Math.min(maxW, Math.max(ctx.measureText(line).width, ctx.measureText(sub).width) + 12);
@@ -2124,7 +2175,7 @@ function ciudad(T) {
       const k = (t - streetT) / 3200;
       if (k < 1) { ctx.globalAlpha = k < .1 ? k * 10 : k > .75 ? (1 - k) / .25 : 1; ctx.font = 'bold 9px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.lineWidth = 3; ctx.strokeStyle = '#05080f'; ctx.strokeText(street, 6, VH - 8); ctx.fillStyle = '#e5e7eb'; ctx.fillText(street, 6, VH - 8); ctx.globalAlpha = 1; }
     }
-    const ms = .6, mw = MW * ms, mh = MH * ms, mx = VW - mw - 4, my = 4;
+    const ms = .5, mw = MW * ms, mh = MH * ms, mx = VW - mw - 4, my = 4;
     ctx.globalAlpha = .88; ctx.fillStyle = '#05080f'; ctx.fillRect(mx - 1, my - 1, mw + 2, mh + 2); ctx.drawImage(mini, mx, my, mw, mh); ctx.globalAlpha = 1;
     if (route.length) { ctx.strokeStyle = obj ? obj.col : '#4ade80'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mx + P.x / TW * ms, my + P.y / TW * ms); for (let i = 0; i < route.length; i += 2) ctx.lineTo(mx + route[i].x / TW * ms, my + route[i].y / TW * ms); ctx.stroke(); }
     const dot = (e, c, s = 2) => { ctx.fillStyle = c; ctx.fillRect(Math.round(mx + e.x / TW * ms - s / 2), Math.round(my + e.y / TW * ms - s / 2), s, s); };
@@ -2250,7 +2301,7 @@ function ciudad(T) {
       else if (['q', 'Q', 'Backspace'].includes(e.key)) closeShop();
       return;
     }
-    if (state === 'dead') { if (['r', 'R', ' ', 'Enter', 'e', 'E'].includes(e.key)) { reset(); const h = door(3, 4); P.x = h.x + 30; P.y = h.y; say('Despiertas en el Hospital San Parche. La factura llegará por correo… cifrado.'); } return; }
+    if (state === 'dead') { if (['r', 'R', ' ', 'Enter', 'e', 'E'].includes(e.key)) { reset(); const h = door(9, 1); P.x = h.x + 30; P.y = h.y; say('Despiertas en el Hospital San Parche. La factura llegará por correo… cifrado.'); } return; }
     if (state === 'won') {
       if (e.key === 'c' || e.key === 'C') { P.own = P.own.map(() => true); P.ammo = P.ammo.map((a, i) => a + (CITY_W[i].ammo || 0)); persist(); state = 'play'; cv.hidden = hud.hidden = false; say('Paseo libre: la ciudad es tuya.'); }
       if (e.key === 'r' || e.key === 'R') { store.set('city', '{}'); reset(false); }
