@@ -211,7 +211,8 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
 <title>${esc(full)}</title>
 <meta name="description" content="${esc(description || site.description)}">
 ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${abs}">
-<meta property="og:site_name" content="${esc(site.title)}">
+${site.googleVerification ? `<meta name="google-site-verification" content="${esc(site.googleVerification)}">
+` : ''}<meta property="og:site_name" content="${esc(site.title)}">
 <meta property="og:type" content="${type}">
 <meta property="og:title" content="${esc(title || site.title)}">
 <meta property="og:description" content="${esc(description || site.description)}">
