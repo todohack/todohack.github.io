@@ -305,6 +305,8 @@ function write(rel, html) {
 // _site se regenera completo en cada build: así nunca quedan páginas huérfanas.
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync(path.join(ROOT, 'src/assets'), path.join(OUT, 'assets'), { recursive: true });
+// src/static/ va tal cual a la raíz del sitio (p. ej. el archivo de verificación de Google Search Console).
+if (fs.existsSync(path.join(ROOT, 'src/static'))) fs.cpSync(path.join(ROOT, 'src/static'), OUT, { recursive: true });
 
 // ---------- Traducir ----------
 // Sin script de Google en el sitio: cada idioma enlaza a la página traducida por el proxy translate.goog.
