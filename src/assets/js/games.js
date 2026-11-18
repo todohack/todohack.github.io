@@ -347,7 +347,7 @@ function snake(T) {
     const sc = score + (won ? lives * 10 : 0), b = best('hs-snake', sc);
     reveal(m.scr, [
       ...boxed(won ? '*** RED LIMPIA ***' : '*** GUSANO DETENIDO ***', won ? 'g-ok rv-glitch' : 'g-bad rv-glitch'),
-      won ? ' Superaste los 5 niveles. Ni un firewall te paró.' : ` Llegaste al nivel ${level} de ${LEVELS}.`,
+      won ? ' Superaste los 5 niveles. Ni un firewall te paró.' : ` Llegaste al nivel ${level} de ${LEVELS}. <span class="g-ok">Consejo:</span> no persigas cajas pegadas a los muros; el escudo perdona un choque y el throttle te da tiempo.`,
       cols2(` ${dots('cajas')}${N(score)}`, `${dots('vidas', 9)}${N(lives)}`),
       cols2(` ${dots('puntos')}<b class="g-me" data-n="${sc}">${sc}</b>`, `${dots('récord', 9)}${N(b)}`),
       '',
@@ -457,10 +457,17 @@ function snake(T) {
 }
 
 // ===================== crack: descifra la contraseña =====================
-const WORDS = ['CLAVE', 'VIRUS', 'TOKEN', 'PROXY', 'LINUX', 'CIFRA', 'REDES', 'DATOS', 'LOGIN', 'ADMIN', 'SHELL', 'MACRO', 'PATCH', 'FALLO', 'ERROR', 'CACHE', 'BYTES', 'TRAZA', 'CARGA', 'SPOOF', 'PHISH', 'DEBUG', 'NODOS', 'LLAVE', 'SALTO', 'FIRMA', 'ALIAS', 'RUTAS', 'PIXEL', 'BOTON'];
+const CLUES = { CLAVE: 'Lo que nunca debes compartir', VIRUS: 'Malware que se copia a sí mismo', TOKEN: 'Credencial temporal de una sesión', PROXY: 'Intermediario entre tú e internet', LINUX: 'El sistema del pingüino',
+  CIFRA: 'Convierte un mensaje en ilegible', REDES: 'Conectan unos equipos con otros', DATOS: 'Lo que más buscan los atacantes', LOGIN: 'Inicio de sesión', ADMIN: 'Usuario con todos los permisos',
+  SHELL: 'Línea de comandos', MACRO: 'Código peligroso dentro de un Word o Excel', PATCH: 'Arreglo de seguridad, en inglés', FALLO: 'Error en el software', ERROR: 'Lo que sale en rojo',
+  CACHE: 'Memoria rápida y temporal', BYTES: 'Ocho bits cada uno', TRAZA: 'Rastro de lo que ejecutó un programa', CARGA: 'El payload, en español', SPOOF: 'Suplantar, en inglés',
+  PHISH: 'Pesca de contraseñas, en inglés', DEBUG: 'Depurar, en inglés', NODOS: 'Puntos de una red', LLAVE: 'Sinónimo de clave', SALTO: 'Valor aleatorio que se añade antes de un hash',
+  FIRMA: 'Prueba digital de autenticidad', ALIAS: 'Nombre alternativo', RUTAS: 'Caminos que siguen los paquetes', PIXEL: 'Punto de una imagen', BOTON: 'Lo que pulsas con el ratón' };
+const WORDS = Object.keys(CLUES);
 function crack(T) {
   const m = mount(T, { text: true, pad: touch ? '<div class="pad-acts"><button type="button" data-k="Backspace">borrar</button><button type="button" data-k="Enter">probar</button><button type="button" data-k="Escape">salir</button></div>' : '' });
-  let secret, rows, cur, over;
+  let secret, rows, cur, over, hints = [];
+  const TRIES = 6;
   const norm = c => c.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   const score = g => {
     const res = Array(5).fill('no'), left = {};
@@ -469,8 +476,8 @@ function crack(T) {
     return res;
   };
   const draw = (msg = '') => {
-    const lines = ['DESCIFRA LA CONTRASEÑA · 5 letras, 6 intentos', ''];
-    for (let i = 0; i < 6; i++) {
+    const lines = [`DESCIFRA LA CONTRASEÑA · 5 letras, ${TRIES} intentos`, `<span class="g-ok">Pista:</span> ${CLUES[secret]}`, ''];
+    for (let i = 0; i < TRIES; i++) {
       const r = rows[i];
       if (r) lines.push('  ' + [...r.g].map((c, j) => `<b class="c-${r.s[j]}">${c}</b>`).join(' '));
       else if (i === rows.length && !over) lines.push('  ' + [...cur.padEnd(5, '_')].map(c => `<b class="c-cur">${c}</b>`).join(' '));
@@ -479,26 +486,31 @@ function crack(T) {
     const used = {};
     rows.forEach(r => [...r.g].forEach((c, j) => { const s = r.s[j]; if (used[c] !== 'ok') used[c] = s === 'ok' ? 'ok' : (used[c] === 'near' ? 'near' : s); }));
     lines.push('', 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('').map(c => used[c] ? `<span class="k-${used[c]}">${c}</span>` : c).join(''));
+    if (hints.length && !over) lines.push('', hints.map(i => `<span class="g-item">la letra ${i + 1} es ${secret[i]}</span>`).join(' · '));
     lines.push('', msg || (over ? '' : 'escribe y pulsa Enter · verde: bien · ámbar: está en otro sitio · esc sale'));
     m.scr.innerHTML = lines.join('\n');
   };
-  const reset = () => { secret = pickOne(WORDS); rows = []; cur = ''; over = false; draw(); };
+  const reset = () => { secret = pickOne(WORDS); rows = []; cur = ''; over = false; hints = []; draw(); };
   reset();
   return session(T, m, e => {
-    if (over) { if (e.key === 'r' || e.key === 'R' || e.key === 'Enter') reset(); return; }
+    if (over) { if (['r', 'R', 'Enter', ' '].includes(e.key)) reset(); return; }
     if (e.key === 'Backspace') { e.preventDefault(); cur = cur.slice(0, -1); return draw(); }
     if (e.key === 'Enter') {
       e.preventDefault();
       if (cur.length < 5) return draw('faltan letras');
       rows.push({ g: cur, s: score(cur) });
       const won = cur === secret; cur = '';
-      if (won || rows.length === 6) {
+      if (!won && rows.length === 4) { // al atascarse se revela una letra que aún no está en verde
+        const free = [0, 1, 2, 3, 4].filter(i => !hints.includes(i) && !rows.some(r => r.s[i] === 'ok'));
+        if (free.length) hints.push(pickOne(free));
+      }
+      if (won || rows.length === TRIES) {
         over = true;
         const streak = won ? (+store.get('crack-racha') || 0) + 1 : 0;
         store.set('crack-racha', streak);
         return draw(won
           ? `<b class="g-ok">ACCESO CONCEDIDO</b> en ${rows.length} intento${rows.length > 1 ? 's' : ''} · racha ${streak}\nEn la vida real una clave de 5 letras cae en milisegundos: usa frases largas.\n[r] otra · [esc] salir`
-          : `<b class="g-bad">ACCESO DENEGADO</b>. La contraseña era <b>${secret}</b>.\n[r] otra · [esc] salir`);
+          : `<b class="g-bad">ACCESO DENEGADO</b>. La contraseña era <b>${secret}</b> (${CLUES[secret].toLowerCase()}).\nConsejo: empieza con palabras de muchas vocales distintas y usa la pista de arriba.\n[Enter] otra · [Esc] salir`);
       }
       return draw();
     }
@@ -529,7 +541,7 @@ function phish(T) {
   let deck, i, ok, answered;
   const draw = extra => {
     const c = deck[i];
-    m.scr.innerHTML = `¿PHISHING O LEGÍTIMO? · caso ${i + 1}/${deck.length} · aciertos ${ok}\n\n${esc(c.t)}\n\n${extra || '← o A: phishing · → o D: legítimo · esc sale'}`;
+    m.scr.innerHTML = `¿PHISHING O LEGÍTIMO? · caso ${i + 1}/${deck.length} · aciertos ${ok}\n\n${esc(c.t)}\n\n<span class="g-dim">Revisa: ¿el dominio es exacto? · ¿te meten prisa? · ¿piden datos, códigos o dinero? · ¿el enlace es raro?</span>\n\n${extra || '← o A: phishing · → o D: legítimo · esc sale'}`;
     T.out.scrollTop = T.out.scrollHeight;
   };
   const finish = () => {
@@ -687,7 +699,7 @@ function dungeon(T) {
     for (let i = 1; i < rooms.length; i++) carve(rooms[i - 1], rooms[i]);
     carve(rooms[0], rooms[rnd(2, rooms.length - 1)]); // un bucle extra para poder huir
     seen = map.map(r => r.map(() => false));
-    depth++; fx.fade = now(); fx.parts = []; fx.floats = []; fx.rings = []; fx.beams = [];
+    depth++; fx.fade = now(); fx.parts = []; fx.floats = []; fx.rings = []; fx.beams = []; depthT0 = turn;
     const first = rooms[0], last = rooms[rooms.length - 1];
     mons = []; items = []; stairs = null;
     P.x = first.cx; P.y = first.cy; P.vx = undefined; cam = -999;
@@ -951,7 +963,7 @@ function dungeon(T) {
     if (P.energy === 0 && turn % 3 === 0) { P.hp--; if (P.hp <= 0) { checkDeath(null); if (state !== 'play') return; } }
     if (turn % (P.a.p === 'regen' ? 6 : 12) === 0 && P.hp < P.max && P.energy > 0) P.hp++; // regeneración lenta
     for (const o of [...mons]) { monTurn(o); if (o.sp === 'fast') monTurn(o); }
-    if (state === 'play') { fov(); render(); }
+    if (state === 'play') { tips(); fov(); render(); }
   };
   const equip = it => {
     const slot = it.w ? 'w' : 'a', gear = it.w || it.a, old = P[slot];
@@ -1041,7 +1053,33 @@ function dungeon(T) {
     }
     if (state === 'play') endTurn();
   };
-  const score = won => P.gold + depth * 100 + P.xp * 2 + (won ? 1000 : 0);
+  const score = won => Math.max(0, P.gold + depth * 100 + P.xp * 2 + (won ? 1000 : 0) - (P.retries || 0) * 150);
+  // Consejos cuando el jugador se atasca (cada uno se muestra una sola vez por capa o por partida)
+  let tipsSeen = new Set(), depthT0 = 0;
+  const tip = (k, txt) => { if (tipsSeen.has(k)) return; tipsSeen.add(k); say('Consejo: ' + txt); };
+  const dirTo = o => ['este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste', 'norte', 'noreste'][((Math.round(Math.atan2(o.y - P.y, o.x - P.x) / (Math.PI / 4)) % 8) + 8) % 8];
+  const tips = () => {
+    if (P.hp < P.max * .35 && P.patches > 0) tip('hp' + depth, 'te queda poca vida: pulsa R para aplicar un parche.');
+    else if (P.hp < P.max * .35 && P.spells.includes('hotfix') && P.cpu >= 4) tip('hf' + depth, 'elige «Parche en caliente» con Q y lánzalo con F para curarte.');
+    if (foesAround(P.x, P.y).length >= 3) tip('crowd' + depth, 'te rodean: retrocede a un pasillo para que te ataquen de uno en uno.');
+    if (P.energy < 100 && P.energy > 0) tip('cafe', 'te quedas sin energía: busca café (taza blanca) o empezarás a perder vida.');
+    if (P.spells.length > 1 && P.cpu >= cpuMax() && turn > 40) tip('cpu', 'tienes la CPU llena: usa tus hechizos (F lanza, Q cambia). Se recarga sola.');
+    if (stairs && turn - depthT0 > 260 && !tipsSeen.has('stairs' + depth)) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (seen[stairs.y + dy]) seen[stairs.y + dy][stairs.x + dx] = true;
+      tip('stairs' + depth, `llevas mucho en esta capa. La salida verde está al ${dirTo(stairs)} y ya aparece en el mapa.`);
+    }
+  };
+  const DEATH_TIPS = {
+    gusano: 'los gusanos se replican al golpearlos: acábalos rápido o usa un Pulso EMP.', keylogger: 'el keylogger roba criptos y huye: con el MFA reforzado no te toca.',
+    phisher: 'el phisher te confunde: pelea pegado a una pared para no dar tumbos lejos.', troyano: 'los parches que aparecen junto a enemigos pueden ser troyanos: el Wireshark los delata.',
+    rootkit: 'el rootkit es casi invisible: el Escaneo de puertos lo revela.', 'botnet DDoS': 'la botnet ataca dos veces por turno: aturde con SYN flood o congela con Cuarentena.',
+  };
+  const deathTip = () => !killer ? 'bebe café (taza blanca) cuando la energía baje de 100.' : DEATH_TIPS[killer.n] || (killer.d >= 8 ? 'contra los enemigos fuertes llega con escudo (Cifrado AES), parches y cúrate antes de bajar.' : 'pelea en los pasillos, de uno en uno, y aplica un parche (R) antes de quedarte sin vida.');
+  const retry = () => { // reintentar la capa actual: mismo personaje y equipo, vida al máximo, otra distribución
+    if ((P.retries || 0) >= 3) return;
+    P.hp = Math.ceil(P.max * .7); P.energy = Math.max(P.energy, 250); P.conf = 0; P.retries = (P.retries || 0) + 1; killer = null;
+    depth--; state = 'play'; cv.hidden = hud.hidden = false; gen(); render(); say(`Reconectas a la capa ${depth} con el 70% de vida. Te quedan ${3 - P.retries} reintentos.`);
+  };
   const die = c => {
     state = 'dying'; cause = c;
     pop(P.x, P.y, '#f2b33d', 40); fx.shake = now();
@@ -1069,7 +1107,9 @@ function dungeon(T) {
       '',
       ` <span class="g-dim">› ${esc(log[log.length - 1] || '')}</span>`,
       '',
-      ' [Espacio] reconectar desde la capa 1   [Esc] salir <span class="rv-cur"></span>',
+      ` <span class="g-ok">Consejo:</span> ${esc(deathTip())}`,
+      '',
+      (P.retries || 0) < 3 ? ` [Espacio] reintentar esta capa (70% de vida, quedan ${3 - (P.retries || 0)})   [R] empezar de cero   [Esc] salir <span class="rv-cur"></span>` : ' Sin reintentos: [R] empezar de cero   [Esc] salir <span class="rv-cur"></span>',
     ].join('\n'), 70);
   };
   const win = () => {
@@ -1096,7 +1136,8 @@ function dungeon(T) {
     ].join('\n'), 110);
   };
   const reset = () => {
-    P = { hp: 20, max: 20, atk: 3, def: 0, lvl: 1, xp: 0, energy: 450, gold: 0, patches: 2, conf: 0, kills: 0, x: 0, y: 0,
+    tipsSeen = new Set();
+    P = { hp: 20, max: 20, atk: 3, def: 0, lvl: 1, xp: 0, energy: 450, gold: 0, patches: 2, conf: 0, kills: 0, x: 0, y: 0, retries: 0,
       w: { ...WEAPONS[0] }, a: { ...ARMORS[0] }, spells: ['scan'], sel: 0, cpu: 8, shield: 0, priv: 0 };
     depth = 0; turn = 0; log = []; said = 0; shownLog = 0; killer = null; state = 'play'; cv.hidden = hud.hidden = false;
     size(); gen(); render();
@@ -1112,7 +1153,11 @@ function dungeon(T) {
   raf = requestAnimationFrame(frame);
   addEventListener('resize', size);
   return session(T, m, e => {
-    if (state !== 'play') { if ((state === 'dead' || state === 'won') && ['r', 'R', 'Enter', ' '].includes(e.key)) { e.preventDefault(); reset(); } return; }
+    if (state !== 'play') {
+      if (state === 'dead' && [' ', 'Enter'].includes(e.key)) { e.preventDefault(); retry(); }
+      else if ((state === 'dead' && ['r', 'R'].includes(e.key)) || (state === 'won' && ['r', 'R', 'Enter', ' '].includes(e.key))) { e.preventDefault(); reset(); }
+      return;
+    }
     const d = KEYS[e.key];
     if (d) { e.preventDefault(); return move(...d); }
     // Espacio o Enter: una sola tecla de acción según lo que tengas debajo (bajar, coger equipo o esperar)
@@ -1549,7 +1594,7 @@ function ciudad(T) {
   // Migración: el progreso antiguo tenía 6 armas; ahora hay 11 (5 de cuerpo a cuerpo nuevas)
   if (prog.own && prog.own.length === 6) { const o = prog.own, a = prog.ammo || []; prog.own = [o[0], false, false, false, false, false, o[1], o[2], o[3], o[4], o[5]]; prog.ammo = [0, 0, 0, 0, 0, 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 0]; }
   let P, cars, peds, drones, bullets, pickups, objs, birds, steam, bubbles, swings, mission, MI = prog.mi || 0, state = 'play', raf = 0, lastT = now(), hudT = 0, banner = null;
-  let curBarrio = '', needLeave = false, talk = null, shop = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0, waypoint = -1, poiLeave = null;
+  let lastFail = -1, curBarrio = '', needLeave = false, talk = null, shop = null, route = [], routeT = 0, routeKey = '', street = '', streetT = 0, ambT = 0, waypoint = -1, poiLeave = null;
   const keys = {};
   const base = blockMid(1, 1);
   const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -1590,7 +1635,7 @@ function ciudad(T) {
     const persona = kind === 'civ' ? pickOne(PERSONA_POOL) : null, pp = persona && PERSONAS[persona];
     const pal = PAL[kind] || { s: pp && pp.old ? '#78716c' : pickOne(SHIRTS), h: pp && pp.old ? '#e5e7eb' : pp && pp.cam ? '#fbbf24' : pickOne(HAIRS), k: pickOne(SKINS) };
     if (persona === 'valiente') pal.s = '#1f2937';
-    const p = { x, y, ang: Math.random() * 6.28, kind, persona, pal, hp: kind === 'boss' ? 650 : kind === 'gang' ? 40 : persona === 'valiente' ? 45 : 20, cd: Math.random(), flee: 0, tgt: null, stopT: 0, stun: 0 };
+    const p = { x, y, ang: Math.random() * 6.28, kind, persona, pal, hp: kind === 'boss' ? 580 : kind === 'gang' ? 40 : persona === 'valiente' ? 45 : 20, cd: Math.random(), flee: 0, tgt: null, stopT: 0, stun: 0 };
     p.max = p.hp; peds.push(p); return p;
   };
   const spawnBirds = (far = true) => {
@@ -1829,6 +1874,7 @@ function ciudad(T) {
   };
   const hurtPlayer = d => {
     if (state !== 'play') return;
+    P.lastHit = gameT;
     if (P.car) { hurtCar(P.car, d * .6, false); return; }
     if (P.armor > 0) { const ab = Math.min(P.armor, d * .7); P.armor -= ab; d -= ab; }
     P.hp -= d; P.fl = now(); fx.shake = now(); fx.floats.push({ x: P.x, y: P.y - 6, txt: `−${Math.round(d)}`, col: '#f87171', t: now() });
@@ -1930,7 +1976,7 @@ function ciudad(T) {
     }
   };
   const laneCar = (c, dt) => {
-    const sp = c.kind === 'van' ? 105 : c.type === 'sport' ? 68 : 55;
+    const sp = c.kind === 'van' ? 98 : c.type === 'sport' ? 68 : 55;
     const fx0 = DIRS[c.dir][0], fy0 = DIRS[c.dir][1];
     const blocker = [...cars, ...(P.car ? [] : [P])].find(o => o !== c && !o.dead && Math.hypot(o.x - c.x - fx0 * 15, o.y - c.y - fy0 * 15) < 11);
     const pedAhead = peds.some(p => Math.hypot(p.x - c.x - fx0 * 14, p.y - c.y - fy0 * 14) < 9);
@@ -1964,8 +2010,8 @@ function ciudad(T) {
   const missionIntro = i => ({
     0: [['Nodo', 'Por fin llegas. Soy Nodo, de la resistencia. Los Cifrados han secuestrado la red de toda la ciudad.'], ['Nodo', `Nuestra informante, Lía, te espera en ${interName(M_PT[0])}. Sigue la ruta amarilla y no llames la atención.`], ['Nodo', 'Con el dinero de las misiones podrás comprar armas en la armería y autos en AutoHash. Pulsa M para ver las tiendas.']],
     1: [['Nodo', `Lía confirmó que Los Cifrados guardan un pendrive con claves de descifrado en ${interName(M_PT[1])}.`], ['Nodo', 'Hay cuatro guardias. Toma el pendrive y vuelve aquí. En cuanto lo toques, sonarán todas sus alarmas.']],
-    2: [['Nodo', `El pendrive tenía la dirección de su servidor de mando y control: la plaza roja del Puerto Industrial, entre ${AVS[8]} y ${AVS[9]}.`], ['Nodo', 'Destruye los tres racks antes de 100 segundos o migrarán a otro servidor. Un bate o una katana también sirven.']],
-    3: [['Lía', '¡Una furgoneta negra con matrícula RW sale ahora mismo con datos robados del hospital!'], ['Lía', 'Necesitas un auto rápido: roba uno o usa el tuyo. Persíguela y destrúyela antes de 80 segundos.']],
+    2: [['Nodo', `El pendrive tenía la dirección de su servidor de mando y control: la plaza roja del Puerto Industrial, entre ${AVS[8]} y ${AVS[9]}.`], ['Nodo', 'Destruye los tres racks antes de 120 segundos o migrarán a otro servidor. Un bate o una katana también sirven.']],
+    3: [['Lía', '¡Una furgoneta negra con matrícula RW sale ahora mismo con datos robados del hospital!'], ['Lía', 'Necesitas un auto rápido: roba uno o usa el tuyo. Persíguela y destrúyela antes de 95 segundos.']],
     4: [['Nodo', 'Han montado cuatro antenas en las esquinas de la ciudad. Reparten el malware a cada teléfono.'], ['Nodo', 'Derríbalas todas, en el orden que quieras. Un todoterreno corta camino por los parques.']],
     5: [['Nodo', 'Es la hora. El jefe de Los Cifrados está en el muelle, al sureste, con toda su banda.'], ['Nodo', 'Pásate por la armería si te hace falta un chaleco. Si cae, sus claves maestras quedan libres para todos.']],
   }[i]);
@@ -1981,10 +2027,10 @@ function ciudad(T) {
     const guards = (p, n) => { for (let j = 0; j < n; j++) { const g = spawnPed('gang', p.x + rnd(-26, 26), p.y + rnd(-26, 26)); g.m = true; } };
     if (i === 0) { mission.kind = 'goto'; mission.pt = M_PT[0]; const l = spawnPed('lia', mission.pt.x + 14, mission.pt.y - 14); l.fixed = true; l.name = 'Lía'; l.m = true; }
     if (i === 1) { mission.kind = 'fetch'; const p = M_PT[1]; pickups.push({ x: p.x, y: p.y, k: 'drive', m: true }); mission.pt = p; guards(p, 4); }
-    if (i === 2) { mission.kind = 'destroy'; mission.time = 100; const c = blockMid(8, 6); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
-    if (i === 3) { mission.kind = 'van'; mission.time = 80; const v = spawnCar('van', false); mission.van = v; if (v) v.m = true; }
+    if (i === 2) { mission.kind = 'destroy'; mission.time = 120; const c = blockMid(8, 6); objs = [[-24, -16], [20, -10], [0, 22]].map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy, k: 'rack', hp: 90, max: 90 })); guards(c, 3); }
+    if (i === 3) { mission.kind = 'van'; mission.time = 95; const v = spawnCar('van', false); mission.van = v; if (v) v.m = true; }
     if (i === 4) { mission.kind = 'destroy'; objs = [inter(0, 0), inter(NBX, 0), inter(0, NBY - 1), inter(NBX, NBY)].map(p => ({ x: p.x, y: p.y, k: 'tower', hp: 110, max: 110, bx: p.bx, by: p.by })); }
-    if (i === 5) { mission.kind = 'boss'; const d = blockMid(10, 7); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 6); }
+    if (i === 5) { mission.kind = 'boss'; const d = blockMid(10, 7); const b = spawnPed('boss', d.x, d.y); b.m = true; mission.boss = b; guards(d, 5); }
   };
   const REWARD = [[150, 6, 'pistola de ping'], [400, 0, ''], [500, 7, 'escopeta DDoS'], [600, 8, 'subfusil de fuerza bruta'], [800, 9, 'lanzador EMP'], [2000, 10, 'cañón de fibra']];
   const missionDone = () => {
@@ -2001,8 +2047,19 @@ function ciudad(T) {
     if (MI >= CITY_MISSIONS.length) setTimeout(victory, 1600);
     else { const o = missionOutro(i); if (o) setTimeout(() => { if (state === 'play') showDialog(o); }, 900); }
   };
+  const MTIPS = [
+    'sigue la línea amarilla del GPS hasta Lía; está en un cruce.',
+    'los guardias disparan desde lejos: entra rápido, toma el pendrive y vuelve en auto por la ruta.',
+    'el cuerpo a cuerpo destroza los racks: un bate o la katana van de maravilla. Ve directo, hay tiempo límite.',
+    'roba o compra un deportivo y dispara mientras conduces: Espacio dispara hacia delante. El turbo del taller ayuda mucho.',
+    'las antenas están en las cuatro esquinas: un todoterreno corta camino por parques y playa.',
+    'compra un chaleco en la armería y pelea desde lejos con el cañón de fibra o el lanzador EMP. Elimina primero a los guardias.',
+  ];
+  const cityTips = new Set();
+  const cityTip = (k, txt) => { if (cityTips.has(k)) return; cityTips.add(k); say('Consejo: ' + txt); };
   const missionFail = why => {
-    say(`Misión fallida: ${why} Vuelve al refugio para reintentarlo.`); banner = { txt: 'MISIÓN FALLIDA', sub: why, t: now(), ok: false };
+    const fi = mission ? mission.i : -1;
+    say(`Misión fallida: ${why} Vuelve al refugio para reintentarlo.`); if (fi >= 0) setTimeout(() => say('Consejo: ' + MTIPS[fi]), 1200); banner = { txt: 'MISIÓN FALLIDA', sub: why, t: now(), ok: false };
     peds = peds.filter(p => !p.m); cars = cars.filter(c => !c.m); pickups = pickups.filter(p => !p.m); objs = []; mission = null;
   };
   const bossDown = () => { say('El jefe de Los Cifrados cae. Sus claves quedan libres para todos.'); missionDone(); };
@@ -2060,6 +2117,7 @@ function ciudad(T) {
   // ---------- Bucle ----------
   const update = dt => {
     gameT += dt; P.cd = Math.max(0, P.cd - dt);
+    if (gameT - (P.lastHit ?? -99) > 8 && P.hp > 0 && P.hp < 100) P.hp = Math.min(100, P.hp + 2.5 * dt); // la vida vuelve si evitas golpes
     const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), iy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
     if (P.car) {
       drive(P.car, -iy, ix, dt, keys.nitro);
@@ -2221,6 +2279,10 @@ function ciudad(T) {
       else if (pk.k === 'drive') { say('¡Tienes el pendrive! Sigue la ruta de vuelta al refugio antes de que te alcancen.'); if (mission) mission.kind = 'return'; crime(1.2); }
     }
     missionUpdate();
+    if (P.hp < 35) cityTip('hp', 'la vida se recupera sola si evitas golpes unos segundos. También puedes comer en el Mercado nocturno o curarte en el hospital (M marca el destino).');
+    if (Math.floor(P.heat) >= 3) cityTip('heat', 'para perder el rastreo, pinta el auto en el taller, invita una ronda en el Bar 0DAY o aléjate sin hacer daño a nadie.');
+    if (mission && gameT - mission.t0 > 70) cityTip('m' + mission.i + '-' + Math.floor(mission.t0), MTIPS[mission.i]);
+    if (!mission && MI >= 1 && !P.own.slice(GUN0).some(Boolean) && P.cash >= 150) cityTip('gun', 'ya puedes comprar armas en la Armería 0xDEAD, en el Barrio Neón (M la marca en el GPS).');
     for (const pl of PLACES) {
       if ((prog.visited || []).includes(pl.k) || dist(P, pl) > 24) continue;
       prog.visited = [...(prog.visited || []), pl.k]; P.cash += 60; persist();
@@ -2513,6 +2575,7 @@ function ciudad(T) {
   };
   const die = () => {
     state = 'dying'; burst(fx, P.x, P.y, '#f2b33d', 40); fx.shake = now();
+    lastFail = mission ? mission.i : -1;
     if (mission) missionFail('te desconectaron.');
     setTimeout(() => {
       state = 'dead'; cv.hidden = hud.hidden = true; dlg.hidden = true;
@@ -2523,6 +2586,8 @@ function ciudad(T) {
         ...boxed('*** CONEXIÓN PERDIDA ***', 'g-bad rv-glitch'),
         cols2(` ${dots('bajas')}${N(P.kills)}`, `${dots('misiones', 10)}${N(MI)}/${CITY_MISSIONS.length}`),
         cols2(` ${dots('criptos')}${N(P.cash)} ₿`, `${dots('factura', 10)}<b class="g-bad">−${lost} ₿</b>`),
+        '',
+        ` <span class="g-ok">Consejo:</span> ${esc(lastFail >= 0 ? MTIPS[lastFail] : 'evita pelear rodeado: retrocede, usa el auto de escudo y deja que la vida se recupere.')}`,
         '',
         ' [Espacio] despertar en el hospital   [Esc] salir <span class="rv-cur"></span>',
       ].join('\n'), 80);
