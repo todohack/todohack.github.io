@@ -12,7 +12,7 @@ Lo que me parece más inquietante de este caso no es el fraude en sí, sino lo f
 
 ## Tres formas de fraude con restaurantes
 
-Primero, una aclaración importante: no todo restaurante sin local es un fraude. Las **cocinas ocultas** (*dark kitchens*) son negocios reales que solo cocinan para reparto, con su cocina y sus permisos. El problema empieza cuando se miente sobre quién eres o si existes. Hay tres variantes:
+Primero, una aclaración importante: no todo restaurante sin local es un fraude. Las cocinas ocultas (*dark kitchens*) son negocios reales que solo cocinan para reparto, con su cocina y sus permisos. El problema empieza cuando se miente sobre quién eres o si existes. Hay tres variantes:
 
 1. **El restaurante inventado.** Se registra, cobra los pedidos y nunca entrega nada, o entrega comida de cualquier parte.
 2. **El impostor.** Usa el nombre, las fotos o el menú de un restaurante real y conocido para atraer pedidos.
@@ -26,7 +26,7 @@ Uber Eats confirmó la actividad fraudulenta y cerró ambas cuentas. Las habían
 
 ## Estados Unidos: restaurantes publicados sin permiso
 
-En diciembre de 2024, la Comisión Federal de Comercio de Estados Unidos (FTC) acusó a Grubhub de haber publicado restaurantes en su plataforma **sin su permiso** desde al menos 2019. Según la denuncia, llegaron a ser hasta 325.000, más de la mitad de los restaurantes disponibles en la app. Grubhub negó las acusaciones, pero aceptó un acuerdo: una sentencia de 140 millones de dólares, de los que paga 25, y la obligación de dejar de hacerlo.
+En diciembre de 2024, la Comisión Federal de Comercio de Estados Unidos (FTC) acusó a Grubhub de haber publicado restaurantes en su plataforma sin su permiso desde al menos 2019. Según la denuncia, llegaron a ser hasta 325.000, más de la mitad de los restaurantes disponibles en la app. Grubhub negó las acusaciones, pero aceptó un acuerdo: una sentencia de 140 millones de dólares, de los que paga 25, y la obligación de dejar de hacerlo.
 
 No es el mismo fraude que el de Canadá, pero deja ver el mismo problema: el cliente no siempre sabe si el restaurante que ve en la app ha aceptado estar ahí.
 
@@ -40,11 +40,15 @@ Según la agencia oficial Xinhua, la investigación sacó a la luz unas **67.000
 
 ## Dos trucos para atrapar al cliente con hambre
 
-**Fotos hechas con inteligencia artificial.** Un restaurante falso no tiene cocina, así que tampoco tiene fotos de su comida. La IA le resuelve el problema en segundos. El medio 404 Media encontró decenas de cocinas que anunciaban sus platos en DoorDash y Grubhub con imágenes generadas por IA, algunas con comida físicamente imposible. Y la OCDE registró casos en China de comercios que usaban imágenes y videos creados con IA de locales e interiores que no eran reales, para parecer más serios de lo que eran.
+### Fotos hechas con inteligencia artificial
+
+Un restaurante falso no tiene cocina, así que tampoco tiene fotos de su comida. La IA le resuelve el problema en segundos. El medio 404 Media encontró decenas de cocinas que anunciaban sus platos en DoorDash y Grubhub con imágenes generadas por IA, algunas con comida físicamente imposible. Y la OCDE registró casos en China de comercios que usaban imágenes y videos creados con IA de locales e interiores que no eran reales, para parecer más serios de lo que eran.
 
 Las pistas suelen estar en los detalles: platos demasiado perfectos y brillantes, todos con la misma luz, cubiertos o manos deformes, letreros con letras que no forman palabras, o un menú entero sin una sola foto "imperfecta" tomada con un celular.
 
-**Horarios que nadie más tiene.** Aquí no encontré un caso documentado, pero la lógica de la trampa es clara. A la medianoche o de madrugada casi todo está cerrado, y quien tiene hambre a esa hora tiene pocas opciones y menos paciencia para revisar. Un restaurante desconocido abierto 24 horas, o hasta muy tarde, sin reseñas y con fotos impecables, tiene el escenario perfecto: poca competencia y un cliente que no se va a detener a mirar.
+### Horarios que nadie más tiene
+
+Aquí no encontré un caso documentado, pero la lógica de la trampa es clara. A la medianoche o de madrugada casi todo está cerrado, y quien tiene hambre a esa hora tiene pocas opciones y menos paciencia para revisar. Un restaurante desconocido abierto 24 horas, o hasta muy tarde, sin reseñas y con fotos impecables, tiene el escenario perfecto: poca competencia y un cliente que no se va a detener a mirar.
 
 No todo restaurante nocturno es sospechoso. Pero si coinciden el horario extendido, la falta de reseñas y las fotos de IA, es momento de desconfiar.
 
