@@ -747,6 +747,78 @@ S['microsoft-authenticator-authmask'] = {
   },
 };
 
+S['caida-microsoft-365-noviembre'] = {
+  inks: [INK.blue, INK.yellow, INK.red],
+  m: { kicker: 'CASO 18 — CAÍDA', lines: ['M365'], size: 210, y: 340, sub: ['Microsoft 365 · 12–14 de noviembre de 2026', 'un defecto de julio · más del 80 % de servidores sin responder'] },
+  art() {
+    // rejilla de servidores de pasarela: 8 de cada 10 caídos; arriba, la línea de tiempo jul → nov
+    const x0 = 760, y0 = 260, cw = 64, ch = 40, gx = 14, gy = 16, cols = 10, rows = 8;
+    let ok = '', dead = '', labs = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const x = x0 + c * (cw + gx), y = y0 + r * (ch + gy), d = (r * cols + c) % 10 < 8 && rnd() < .92;
+      const box = rect(x, y, cw, ch, 'rx="5"') ;
+      if (d) dead += box + `<path d="M${f(x + 18)} ${f(y + 12)} l28 16 M${f(x + 46)} ${f(y + 12)} l-28 16" stroke="${PAPER}" stroke-width="4"/>`;
+      else ok += box;
+    }
+    const tl = `<path d="M${x0} 150 H${x0 + cols * (cw + gx) - gx}" stroke-width="4" fill="none"/>` + `<circle cx="${x0}" cy="150" r="10" stroke="none"/>` + `<circle cx="${x0 + cols * (cw + gx) - gx}" cy="150" r="10" stroke="none"/>`;
+    labs += T(x0, 120, 18, 'JUL · CAMBIO CON DEFECTO', { mono: true, ls: 1.5 }) + T(x0 + cols * (cw + gx) - gx, 120, 18, 'NOV · CAÍDA', { mono: true, a: 'end', ls: 1.5 }) + T(x0, y0 + rows * (ch + gy) + 18, 16, 'SERVIDORES DE LA PUERTA DE ENTRADA', { mono: true, ls: 1.5 });
+    const glow = halftone(x0 - 20, y0 - 20, cols * (cw + gx) + 30, rows * (ch + gy) + 30, 12, (x, y) => .2 + fbm(x / 130, y / 130) * .25, 30);
+    return ink(INK.yellow, glow, .8) + ink(INK.blue, ok + tl + labs, .85) + ink(INK.red, dead, .95);
+  },
+};
+
+S['faa-router-despegues-detenidos'] = {
+  inks: [INK.teal, INK.yellow, INK.red],
+  m: { kicker: 'CASO 19 — CAÍDA', lines: ['ground', 'stop'], size: 150, y: 290, sub: ['FAA · 13 de noviembre de 2026', 'un router nuevo · ~1.000 conexiones cada 4–5 s'] },
+  art() {
+    // un router nuevo inunda de conexiones una columna de equipos viejos; abajo, aviones en tierra
+    const rx = 760, ry = 300;
+    let teal = frame(rx, ry, 170, 110, 3, 'rx="12"') + T(rx + 85, ry + 62, 18, 'ROUTER', { mono: true, a: 'middle', w: 700, ls: 2 }) + T(rx + 85, ry + 90, 14, 'nuevo', { mono: true, a: 'middle', raw: true });
+    let red = '', yel = '';
+    for (let i = 0; i < 70; i++) {
+      const y = ry + 10 + rnd() * 90, x = rx + 190 + rnd() * 330, w = R(12, 40);
+      red += rect(x, y, w, 5, 'rx="2"');
+    }
+    const sx = 1300;
+    for (let k = 0; k < 5; k++) {
+      const y = 150 + k * 92, bad = k > 0 && k < 4;
+      const b = rect(sx, y, 200, 64, 'rx="8"');
+      if (bad) red += b + T(sx + 100, y + 40, 15, '¿ ? ¿ ?', { mono: true, a: 'middle', raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+      else teal += frame(sx, y, 200, 64, 3, 'rx="8"') + T(sx + 100, y + 40, 15, 'equipo viejo', { mono: true, a: 'middle', raw: true });
+    }
+    teal += T(sx + 100, 130, 15, 'RED DE LA FAA', { mono: true, a: 'middle', ls: 2, raw: true });
+    // aviones en tierra
+    const gy = 720;
+    teal += `<path d="M740 ${gy} H1520" stroke-width="4"/>`;
+    for (let a = 0; a < 5; a++) {
+      const x = 790 + a * 150;
+      teal += `<path d="M${x} ${gy - 18} h70 l18 -8 h-10 l-26 -18 h-12 l12 18 h-36 l-10 -10 h-8 l6 18z" stroke="none"/>`;
+    }
+    yel += halftone(rx + 170, ry - 20, 380, 150, 10, (x, y) => .8 - (x - rx - 170) / 420, 20);
+    return ink(INK.yellow, yel, .8) + ink(INK.teal, teal, .88) + ink(INK.red, red, .92);
+  },
+};
+
+S['restaurantes-falsos-apps-de-comida'] = {
+  inks: [INK.purple, INK.yellow, INK.red],
+  m: { kicker: 'CASO 20 — FRAUDE', lines: ['67.000'], size: 190, y: 340, sub: ['restaurantes que no existían', 'Canadá · Estados Unidos · China'] },
+  art() {
+    // pantalla de una app de comida: tarjetas de restaurantes; una no tiene dirección real
+    const px = 840, py = 70, pw = 520, ph = 720;
+    let pur = frame(px, py, pw, ph, 4, 'rx="40"') + rect(px + pw / 2 - 50, py + 22, 100, 10, 'rx="5"');
+    let red = '', yel = '';
+    const cards = [['TACOS DEL BARRIO', '4,8 ★ · 1,2 km'], ['DUSHKA BURGER', 'sin reseñas · ¿dirección?'], ['PIZZA NAPOLI', '4,6 ★ · 2,0 km'], ['SUSHI KAI', '4,7 ★ · 3,1 km']];
+    cards.forEach(([n, d], i) => {
+      const x = px + 36, y = py + 80 + i * 158, w = pw - 72, h = 130, fake = i === 1;
+      const thumb = rect(x + 14, y + 14, 102, 102, 'rx="10"');
+      const t = T(x + 136, y + 56, 20, n, { mono: true, w: 700, ls: 1, raw: true }) + T(x + 136, y + 92, 15, d, { mono: true, raw: true });
+      if (fake) { red += rect(x, y, w, h, 'rx="14"') + t.replace(/<text /g, `<text fill="${PAPER}" `); yel += halftone(x - 60, y - 50, w + 120, h + 100, 11, (xx, yy) => .8 - Math.hypot(xx - x - w / 2, yy - y - h / 2) / 240, 25); red += `<path d="M${f(x + 44)} ${f(y + 30)} c-22 0 -30 26 0 64 c30 -38 22 -64 0 -64z" fill="${PAPER}" stroke="none"/>` + `<path d="M${f(x + 26)} ${f(y + 36)} l40 50 M${f(x + 66)} ${f(y + 36)} l-40 50" stroke="${INK.red}" stroke-width="5"/>`; }
+      else pur += frame(x, y, w, h, 2.5, 'rx="14"') + thumb + t;
+    });
+    return ink(INK.yellow, yel, .8) + ink(INK.purple, pur, .86) + ink(INK.red, red, .95);
+  },
+};
+
 const META = {
   'Primer-Post': ['2024-08-18', '#PRESENTACIÓN', 'N.º 00'], 'Kali-Linux-para-Hackers': ['2024-08-22', '#LABORATORIO', 'LAB 01'], 'Virtualizadores': ['2024-08-26', '#VIRTUALIZACIÓN', 'LAB 02'],
   'deepseek-base-de-datos-expuesta': ['2025-02-01', 'T1595 · T1530', 'CASO 01'], 'bybit-robo-1500-millones': ['2025-02-26', 'T1195 · T1565', 'CASO 02'], 'ms-coop-llamada-mesa-de-ayuda': ['2025-05-09', 'T1656 · T1078', 'CASO 03'],
@@ -754,7 +826,7 @@ const META = {
   'collins-aerospace-aeropuertos': ['2025-09-25', 'T1486', 'CASO 07'], 'f5-codigo-big-ip-robado': ['2025-10-19', 'T1195.002 · T1190', 'CASO 08'], 'jaguar-land-rover-ciberataque': ['2025-10-24', 'T1486 · T1489', 'CASO 09'],
   'espionaje-dirigido-por-ia': ['2025-11-17', 'IA · APT', 'CASO 10'], 'stryker-equipos-borrados': ['2026-03-15', 'T1485 · T1561', 'CASO 11'], 'trivy-escaner-envenenado': ['2026-03-24', 'T1195.002 · T1552', 'CASO 12'],
   'canvas-shinyhunters-escuelas': ['2026-05-11', 'T1567 · T1491', 'CASO 13'], 'chatbot-meta-cuentas-instagram': ['2026-06-04', 'T1656 · T1098', 'CASO 14'],
-  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
+  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'caida-microsoft-365-noviembre': ['2026-11-17', '#RESILIENCIA', 'CASO 18'], 'faa-router-despegues-detenidos': ['2026-11-17', '#RESILIENCIA', 'CASO 19'], 'restaurantes-falsos-apps-de-comida': ['2026-11-17', '#FRAUDE', 'CASO 20'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
 };
 
 // número de serie = orden cronológico dentro de LAB/CASO/CERT; fecha = la del archivo del post

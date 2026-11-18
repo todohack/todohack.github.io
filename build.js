@@ -122,7 +122,7 @@ assert.match(markdown('::: leccion\n- Activa MFA\n:::'), /^<aside class="box box
 // ---------- Temas: las etiquetas de los posts se agrupan en pocos temas legibles ----------
 const TEMAS = {
   laboratorio: 'Laboratorio', identidad: 'Identidad y accesos', nube: 'Nube', 'cadena-de-suministro': 'Cadena de suministro',
-  ransomware: 'Ransomware y extorsión', 'ingenieria-social': 'Ingeniería social', vulnerabilidades: 'Vulnerabilidades', ia: 'Inteligencia artificial', certificaciones: 'Certificaciones',
+  ransomware: 'Ransomware y extorsión', 'ingenieria-social': 'Ingeniería social', vulnerabilidades: 'Vulnerabilidades', ia: 'Inteligencia artificial', certificaciones: 'Certificaciones', resiliencia: 'Caídas y resiliencia',
 };
 const TAG_TEMA = {
   laboratorio: 'laboratorio', kali: 'laboratorio', reconocimiento: 'laboratorio', virtualizacion: 'laboratorio', redes: 'laboratorio', wireshark: 'laboratorio', presentacion: 'laboratorio',
@@ -134,6 +134,8 @@ const TAG_TEMA = {
   vulnerabilidades: 'vulnerabilidades', parcheo: 'vulnerabilidades', web: 'vulnerabilidades', apt: 'vulnerabilidades',
   ia: 'ia', defensa: 'ia',
   certificaciones: 'certificaciones',
+  resiliencia: 'resiliencia', caidas: 'resiliencia', nube: 'nube',
+  fraude: 'ingenieria-social', consumidor: 'ingenieria-social',
 };
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
