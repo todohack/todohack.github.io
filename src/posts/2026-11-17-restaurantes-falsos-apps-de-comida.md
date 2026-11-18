@@ -38,6 +38,16 @@ Según la agencia oficial Xinhua, la investigación sacó a la luz unas **67.000
 
 > En los tres países, el fallo es el mismo: la app confiaba en lo que el restaurante decía de sí mismo. Es el mismo error de fondo que vemos en ciberseguridad cuando un sistema no verifica la identidad de quien se conecta.
 
+## Dos trucos para atrapar al cliente con hambre
+
+**Fotos hechas con inteligencia artificial.** Un restaurante falso no tiene cocina, así que tampoco tiene fotos de su comida. La IA le resuelve el problema en segundos. El medio 404 Media encontró decenas de cocinas que anunciaban sus platos en DoorDash y Grubhub con imágenes generadas por IA, algunas con comida físicamente imposible. Y la OCDE registró casos en China de comercios que usaban imágenes y videos creados con IA de locales e interiores que no eran reales, para parecer más serios de lo que eran.
+
+Las pistas suelen estar en los detalles: platos demasiado perfectos y brillantes, todos con la misma luz, cubiertos o manos deformes, letreros con letras que no forman palabras, o un menú entero sin una sola foto "imperfecta" tomada con un celular.
+
+**Horarios que nadie más tiene.** Aquí no encontré un caso documentado, pero la lógica de la trampa es clara. A la medianoche o de madrugada casi todo está cerrado, y quien tiene hambre a esa hora tiene pocas opciones y menos paciencia para revisar. Un restaurante desconocido abierto 24 horas, o hasta muy tarde, sin reseñas y con fotos impecables, tiene el escenario perfecto: poca competencia y un cliente que no se va a detener a mirar.
+
+No todo restaurante nocturno es sospechoso. Pero si coinciden el horario extendido, la falta de reseñas y las fotos de IA, es momento de desconfiar.
+
 ## ¿Y en Costa Rica?
 
 Hasta noviembre de 2026 no encontré ningún caso publicado de restaurantes falsos en apps de reparto en Costa Rica. Eso no significa que no ocurra: muchas estafas pequeñas nunca llegan a la prensa.
@@ -50,6 +60,8 @@ Lo que sí está claro es la regla. Todo negocio de comida en Costa Rica necesit
 - Desconfía de un restaurante nuevo sin reseñas, con fotos demasiado perfectas o un menú con faltas de ortografía.
 - Busca la dirección en un mapa: si ahí hay una tienda de ropa o una casa, algo no cuadra.
 - Haz una búsqueda inversa de las fotos (Google Lens): si salen en bancos de imágenes o en la web de otro restaurante, es mala señal.
+- Mira bien las fotos: comida demasiado perfecta, manos o cubiertos deformes y letreros ilegibles suelen delatar imágenes hechas con IA.
+- Ten más cuidado de noche: un local desconocido abierto hasta la madrugada, sin reseñas y con fotos impecables merece una revisión extra.
 - Si un restaurante conocido no hace envíos y aparece en la app con un nombre casi igual, sospecha de un impostor.
 - Si te estafan, repórtalo primero en la propia app para que te devuelvan el dinero y cierren la cuenta. Luego puedes presentar una denuncia ante la Dirección de Apoyo al Consumidor del MEIC y, si hubo engaño para quitarte dinero, ante el OIJ.
 :::
@@ -59,6 +71,8 @@ Lo que sí está claro es la regla. Todo negocio de comida en Costa Rica necesit
 - [FTC: acción contra Grubhub (diciembre de 2024)](https://ftc.gov/news-events/news/press-releases/2024/12/ftc-illinois-attorney-general-take-action-against-grubhub-harming-diners-workers-small-businesses)
 - [Yahoo Finance / Verdict Food Service: China clamps down on ghost kitchens on food delivery apps](https://finance.yahoo.com/economy/policy/articles/china-clamps-down-ghost-kitchens-145958867.html)
 - [Dexerto: Bad cake order sparks crackdown on China's ghost kitchens](https://www.dexerto.com/entertainment/bad-cake-order-sparks-crackdown-on-chinas-ghost-kitchens-3370551/)
+- [404 Media: Ghost kitchens are advertising AI-generated food on DoorDash and Grubhub](https://404media.co/ghost-kitchens-are-advertising-ai-generated-food-on-doordash-and-grubhub)
+- [OECD AI Incidents Monitor: AI-generated images used to deceive food delivery consumers in China](https://oecd.ai/en/incidents/2025-11-02-70cb)
 - [El Financiero: Permiso sanitario de funcionamiento, así se obtiene](https://www.elfinancierocr.com/negocios/permiso-sanitario-de-funcionamiento-asi-se-obtiene/ODIWCNRFKFF3PJESN4KXXXPQLU/story/)
 :::
 
