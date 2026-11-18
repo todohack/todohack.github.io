@@ -102,7 +102,7 @@ input, textarea { caret-color: var(--accent); }
 
 .theme-toggle {
   /* z-index por encima del bloque de identidad, que antes tapaba la mitad inferior del botón */
-  position: absolute !important; z-index: 3 !important; top: 12px; right: 12px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  position: absolute !important; z-index: 3 !important; top: 14px; right: 14px; display: grid; place-items: center; width: 40px; height: 40px; padding: 0;
   color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
   transition: background-color .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
 }
@@ -523,9 +523,9 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 
 /* Traducir: botón junto al de tema y menú de idiomas */
-.translate { position: absolute !important; z-index: 4 !important; top: 12px; right: 64px; width: 44px; height: 44px; margin: 0; padding: 0; }
+.translate { position: absolute !important; z-index: 4 !important; top: 14px; left: 14px; width: 40px; height: 40px; margin: 0; padding: 0; }
 .translate-btn {
-  display: grid; place-items: center; width: 44px; height: 44px; list-style: none; cursor: pointer;
+  display: grid; place-items: center; width: 40px; height: 40px; list-style: none; cursor: pointer;
   color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   transition: color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
 }
@@ -533,7 +533,7 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
 .translate-btn:hover, .translate[open] .translate-btn { color: var(--ink); border-color: var(--muted); }
 .translate-btn:active { transform: scale(.94); }
 .translate-menu {
-  position: absolute; right: -44px; top: calc(100% + 8px); width: 220px; padding: 10px; text-align: left;
+  position: absolute; left: 0; top: calc(100% + 8px); width: 220px; padding: 10px; text-align: left;
   background: var(--raised); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
 }
 .translate-menu p { margin: 2px 6px 8px; font-size: 13px; font-weight: 650; color: var(--ink); }
@@ -545,7 +545,7 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
   .sidebar { grid-template-columns: 40px 1fr auto auto; grid-template-areas: "avatar name translate toggle" "nav nav nav nav"; }
   .translate { position: relative !important; top: auto; right: auto; grid-area: translate; width: 40px; height: 40px; }
   .translate-btn { width: 40px; height: 40px; border-color: transparent; }
-  .translate-menu { right: -52px; }
+  .translate-menu { left: auto; right: -52px; }
 }
 
 /* Aviso de traducción (solo si el navegador está en otro idioma) */
