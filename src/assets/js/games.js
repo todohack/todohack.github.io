@@ -371,7 +371,7 @@ const WEAPONS = [
   { n: 'Rubber Ducky', d: 1, t: 1, p: 'fast', x: 'Teclea más rápido que tú: 30% de golpe doble.' },
   { n: 'payload ofuscado', d: 2, t: 2, p: 'pierce', x: 'El antivirus no lo ve venir: ignora la defensa.' },
   { n: 'XSS persistente', d: 2, t: 2, p: 'poison', x: 'Deja código malicioso: daño durante 3 turnos.' },
-  { n: 'diccionario rockyou', d: 5, t: 3, p: 'brute', x: 'Fuerza bruta: pega fuerte, pero falla 1 de cada 4.' },
+  { n: 'diccionario rockyou', d: 3, t: 3, p: 'brute', x: 'Fuerza bruta: falla 3 de cada 10, pero a veces encuentra la clave y pega doble.' },
   { n: 'secuestro de sesión', d: 3, t: 3, p: 'drain', x: 'Te quedas con su sesión: te curas un tercio del daño.' },
   { n: 'desbordamiento de búfer', d: 3, t: 4, p: 'stun', x: 'Segfault: 25% de dejarlo aturdido un turno.' },
   { n: 'Mimikatz', d: 3, t: 4, p: 'loot', x: 'Vuelca credenciales: cada baja te da criptos.' },
@@ -651,9 +651,10 @@ function dungeon(T) {
   const strike = (o, extra = true) => {
     if (o.hidden) { o.hidden = false; say(`¡Ese parche era un ${o.n}!`); }
     const w = P.w;
-    if (w.p === 'brute' && Math.random() < .25) { float(o.x, o.y, 'fallo', '#9ca3af'); say('Fallas: la contraseña no estaba en el diccionario.'); return; }
+    if (w.p === 'brute' && Math.random() < .3) { float(o.x, o.y, 'fallo', '#9ca3af'); say('Fallas: la contraseña no estaba en el diccionario.'); return; }
     let d = atkNow() + rnd(0, 2) - (w.p === 'pierce' || w.p === 'zero' ? 0 : o.f);
     if ((w.p === 'crit' || w.p === 'zero') && Math.random() < .25) { d *= 3; float(o.x, o.y - .6, '¡CRÍTICO!', '#f87171'); }
+    if (w.p === 'brute' && Math.random() < .25) { d *= 2; float(o.x, o.y - .6, 'clave encontrada', '#f2b33d'); }
     d = Math.max(1, d);
     if (hurt(o, d)) return;
     say(`Golpeas ${ART.a(o)} ${o.n} (−${d}).`);
