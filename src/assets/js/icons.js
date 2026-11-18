@@ -63,12 +63,35 @@ if (searchSvg) {
   sync();
 }
 
+// Compartir: el logo se convierte en flecha al pasar el ratón o enfocar; Instagram muestra ✓ al copiar
+const OUT = 'M7 17L17 7M8 7h9v9';
+document.querySelectorAll('.share-btn[data-icon]').forEach(a => {
+  const svg = a.querySelector('svg');
+  if (!svg) return;
+  const m = make(a.dataset.icon, 18, 2);
+  svg.replaceWith(m);
+  const on = () => m.morphTo(OUT), off = () => m.morphTo(a.dataset.icon);
+  a.addEventListener('mouseenter', on); a.addEventListener('mouseleave', off);
+  a.addEventListener('focus', on); a.addEventListener('blur', off);
+  a.addEventListener('copied', () => { m.morphTo(CHECK); setTimeout(off, 2500); });
+});
+
 // Copiar enlace: enlace → ✓ al copiar, y de vuelta a los 2,5 s
 document.querySelectorAll('.copy-link').forEach(b => {
-  const m = make(LINK, 16, 2);
+  const m = make(LINK, b.closest('.share-compact') ? 18 : 16, 2);
   b.prepend(m);
   b.addEventListener('copied', () => { m.morphTo(CHECK); setTimeout(() => m.morphTo(LINK), 2500); });
 });
+
+// Traducir: globo → X al abrir el menú de idiomas
+const GLOBE = 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z';
+const tr = document.querySelector('.translate');
+if (tr) {
+  const svg = tr.querySelector('.translate-btn svg');
+  const m = make(GLOBE, 20, 2);
+  svg.replaceWith(m);
+  tr.addEventListener('toggle', () => m.morphTo(tr.open ? CLOSE : GLOBE));
+}
 
 // Índice flotante (móvil): líneas → X al abrirlo
 const toc = document.querySelector('.toc');

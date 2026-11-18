@@ -241,6 +241,7 @@ ${post ? `<meta property="article:published_time" content="${post.date.toISOStri
     <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
     <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
   </button>
+  ${translateMenu(url)}
   <div class="side-id">
     <a class="avatar" href="/"><img src="/assets/img/${site.authorImg}" alt="${esc(site.author)}" width="96" height="96"></a>
     <p class="author-name">${esc(site.author)}</p>
@@ -305,12 +306,51 @@ function write(rel, html) {
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync(path.join(ROOT, 'src/assets'), path.join(OUT, 'assets'), { recursive: true });
 
+// ---------- Traducir ----------
+// Sin script de Google en el sitio: cada idioma enlaza a la página traducida por el proxy translate.goog.
+const LANGS = [['en', 'English'], ['pt', 'Português'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'], ['zh-CN', '中文'], ['ja', '日本語'], ['ko', '한국어'], ['ru', 'Русский'], ['ar', 'العربية'], ['hi', 'हिन्दी']];
+const GLOBE = 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z';
+const translateHost = new URL(site.url).hostname.replace(/-/g, '--').replace(/\./g, '-') + '.translate.goog';
+const translateMenu = url => `<details class="translate">
+    <summary class="translate-btn" aria-label="Traducir esta página" title="Traducir"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${GLOBE}"/></svg></summary>
+    <div class="translate-menu"><p>Traducir esta página</p><ul>${LANGS.map(([c, n]) => `<li><a href="https://${translateHost}${url}?_x_tr_sl=es&amp;_x_tr_tl=${c}&amp;_x_tr_hl=${c}" lang="${c}" rel="nofollow">${n}</a></li>`).join('')}</ul><p class="small">Traducción automática de Google.</p></div>
+  </details>`;
+
+// ---------- Compartir ----------
+// Trazos de Lucide (licencia ISC). Se pintan como SVG fijo y icons.js los cambia por morph-icon.
+const SHARE_ICONS = {
+  whatsapp: 'M7.9 20A9 9 0 1 0 4 16.1L2 22z',
+  facebook: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z',
+  instagram: 'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zM16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37zM17.5 6.5h.01',
+  linkedin: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2zM4 2a2 2 0 1 0 0 4a2 2 0 1 0 0-4z',
+  x: 'M4 4l11.7 16H20L8.3 4zM4 20l6.8-6.8M20 4l-6.8 6.8',
+  telegram: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+  correo: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6',
+};
+const shareSvg = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+function shareBar(p, compact) {
+  const url = `${site.url}/${p.slug}/`, u = encodeURIComponent(url), t = encodeURIComponent(p.title), tu = encodeURIComponent(`${p.title} ${url}`);
+  const links = [
+    ['whatsapp', 'WhatsApp', `https://wa.me/?text=${tu}`],
+    ['facebook', 'Facebook', `https://www.facebook.com/sharer/sharer.php?u=${u}`],
+    ['instagram', 'Instagram', null],
+    ['linkedin', 'LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
+    ['x', 'X', `https://x.com/intent/tweet?text=${t}&amp;url=${u}`],
+    ['telegram', 'Telegram', `https://t.me/share/url?url=${u}&amp;text=${t}`],
+    ['correo', 'Correo', `mailto:?subject=${t}&amp;body=${u}`],
+  ];
+  const label = n => compact ? '' : `<span>${n}</span>`;
+  const item = ([k, n, href]) => href
+    ? `<a class="share-btn share-${k}" href="${href}"${k === 'correo' ? '' : ' target="_blank" rel="noopener"'} aria-label="Compartir en ${n}" title="${n}" data-icon="${SHARE_ICONS[k]}">${shareSvg(SHARE_ICONS[k])}${label(n)}</a>`
+    : `<button type="button" class="share-btn share-${k} share-native" data-url="${url}" data-title="${esc(p.title)}" aria-label="Compartir en ${n}" title="${n}" data-icon="${SHARE_ICONS[k]}">${shareSvg(SHARE_ICONS[k])}${label(n)}</button>`;
+  return `<div class="share${compact ? ' share-compact' : ''}"><span class="share-label">Compartir</span>${links.map(item).join('')}<button type="button" class="copy-link share-btn" data-url="${url}" aria-label="Copiar enlace" title="Copiar enlace">${compact ? '' : '<span>Copiar enlace</span>'}</button></div>`;
+}
+
 // ---------- Páginas de posts ----------
 for (const [i, p] of posts.entries()) {
   const newer = posts[i - 1], older = posts[i + 1];
   const toc = p.headings.length >= 2
     ? `<aside class="toc-rail"><details class="toc" open><summary class="toc-title">En este artículo</summary><ol>${p.headings.map(h => `<li><a href="#${h.id}">${h.text}</a></li>`).join('')}</ol><a class="toc-top" href="#main">Volver arriba</a></details></aside>` : '';
-  const shareUrl = encodeURIComponent(`${site.url}/${p.slug}/`), shareTitle = encodeURIComponent(p.title);
   // Enlazado interno: hasta 3 posts que comparten tema, sin repetir los de anterior/siguiente.
   const related = posts.filter(q => q !== p && q !== newer && q !== older && q.temas.some(t => p.temas.includes(t))).slice(0, 3);
   write(`${p.slug}/index.html`, layout({
@@ -323,18 +363,14 @@ for (const [i, p] of posts.entries()) {
     <h1>${esc(p.title)}</h1>
     ${p.description ? `<p class="post-lead">${esc(p.description)}</p>` : ''}
     <p class="tags">${tagList(p.temas)}</p>
+    ${shareBar(p, true)}
   </header>
   ${p.img ? `<figure class="post-cover"><img src="/assets/img/${p.img}" alt="${esc(p['img-alt'] || p.title)}" width="1600" height="900"></figure>` : ''}
   <div class="prose">
 ${p.html}
   </div>
   <footer class="post-footer">
-    <div class="share">
-      <span>Compartir:</span>
-      <a href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://x.com/intent/tweet?text=${shareTitle}&amp;url=${shareUrl}" target="_blank" rel="noopener">X</a>
-      <button type="button" class="copy-link" data-url="${site.url}/${p.slug}/"><span>Copiar enlace</span></button>
-    </div>
+    ${shareBar(p, false)}
     ${related.length ? `<section class="related" aria-label="Sigue leyendo"><h2>Sigue leyendo</h2><ul>${related.map(q => `<li><a href="/${q.slug}/">${esc(q.title)}</a></li>`).join('')}</ul></section>` : ''}
     <nav class="post-nav" aria-label="Más artículos">
       ${older ? `<a rel="prev" href="/${older.slug}/"><span>Anterior</span>${esc(older.title)}</a>` : '<span></span>'}

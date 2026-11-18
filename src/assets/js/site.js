@@ -69,11 +69,34 @@ if (shots.length) {
   });
 }
 
-// Copiar enlace del artículo.
+// Aviso breve abajo de la pantalla (copiar enlace, Instagram).
+const toast = msg => {
+  let t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg;
+  t.classList.add('is-on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('is-on'), 3200);
+};
+const copyUrl = async (b, msg) => {
+  try { await navigator.clipboard.writeText(b.dataset.url); b.dispatchEvent(new Event('copied')); toast(msg); return true; }
+  catch { toast(b.dataset.url); return false; }
+};
+
+// Copiar enlace del artículo. Los botones compactos no tienen texto: solo el aviso.
 document.querySelectorAll('.copy-link').forEach(b => b.addEventListener('click', async () => {
-  const label = b.querySelector('span') || b;
-  try { await navigator.clipboard.writeText(b.dataset.url); label.textContent = 'Enlace copiado'; b.dispatchEvent(new Event('copied')); setTimeout(() => { label.textContent = 'Copiar enlace'; }, 2500); }
-  catch { label.textContent = b.dataset.url; }
+  const label = b.querySelector('span');
+  if (await copyUrl(b, 'Enlace copiado') && label) { label.textContent = 'Enlace copiado'; setTimeout(() => { label.textContent = 'Copiar enlace'; }, 2500); }
+}));
+
+// Instagram no acepta compartir con un enlace: en el móvil se abre el menú de compartir del sistema
+// (donde aparece Instagram); en la computadora se copia el enlace para pegarlo en Instagram.
+document.querySelectorAll('.share-native').forEach(b => b.addEventListener('click', async () => {
+  if (navigator.share) {
+    try { await navigator.share({ title: b.dataset.title, url: b.dataset.url }); } catch { /* cancelado */ }
+    return;
+  }
+  copyUrl(b, 'Enlace copiado: pégalo en tu historia o mensaje de Instagram');
 }));
 
 // Disqus solo carga al pedirlo (evita rastreadores y peso en cada visita).
@@ -348,3 +371,43 @@ if (welcome && welcomeData) {
     setTimeout(tick, 120);
   }
 }
+
+// ---------- Aviso de traducción según el idioma del navegador ----------
+// No se usa el país (un tico en EE. UU. quiere leer en español) ni se redirige solo: Google rastrea en inglés
+// y una redirección automática le escondería las páginas originales. Se ofrece, y se recuerda si se rechaza.
+(() => {
+  const OFFER = {
+    en: ['This page is in Spanish.', 'Read in English', 'No, thanks'],
+    pt: ['Esta página está em espanhol.', 'Ler em português', 'Não, obrigado'],
+    fr: ['Cette page est en espagnol.', 'Lire en français', 'Non merci'],
+    de: ['Diese Seite ist auf Spanisch.', 'Auf Deutsch lesen', 'Nein, danke'],
+    it: ['Questa pagina è in spagnolo.', 'Leggi in italiano', 'No, grazie'],
+    'zh-CN': ['此页面为西班牙语。', '用中文阅读', '不用了'],
+    ja: ['このページはスペイン語です。', '日本語で読む', 'いいえ'],
+    ko: ['이 페이지는 스페인어로 되어 있습니다.', '한국어로 읽기', '괜찮아요'],
+    ru: ['Эта страница на испанском.', 'Читать на русском', 'Нет, спасибо'],
+    ar: ['هذه الصفحة باللغة الإسبانية.', 'اقرأ بالعربية', 'لا، شكرًا'],
+    hi: ['यह पेज स्पेनिश में है।', 'हिंदी में पढ़ें', 'नहीं, धन्यवाद'],
+  };
+  const pref = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+  const base = pref.toLowerCase().startsWith('zh') ? 'zh-CN' : pref.slice(0, 2).toLowerCase();
+  if (!base || base === 'es' || !OFFER[base]) return;
+  try { if (localStorage.getItem('translate-offer') === 'no') return; } catch (e) {}
+  const link = document.querySelector(`.translate-menu a[lang="${base}"]`);
+  const main = document.getElementById('main');
+  if (!link || !main) return;
+  const [msg, yes, no] = OFFER[base];
+  const bar = document.createElement('div');
+  bar.className = 'translate-offer';
+  bar.lang = base;
+  if (base === 'ar') bar.dir = 'rtl';
+  bar.innerHTML = '<p></p><a class="btn"></a><button type="button" class="translate-offer-no"></button>';
+  bar.querySelector('p').textContent = msg;
+  const a = bar.querySelector('a');
+  a.textContent = yes;
+  a.href = link.href;
+  const b = bar.querySelector('button');
+  b.textContent = no;
+  b.addEventListener('click', () => { try { localStorage.setItem('translate-offer', 'no'); } catch (e) {} bar.remove(); });
+  main.prepend(bar);
+})();

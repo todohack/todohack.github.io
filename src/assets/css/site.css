@@ -495,3 +495,65 @@ morph-icon { display: inline-grid; line-height: 0; flex: none; }
 .related ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .related a { font-weight: 600; text-decoration: none; }
 .related a:hover { text-decoration: underline; }
+
+/* Compartir: botones con icono; color de la marca al pasar el ratón */
+.share .share-label { color: var(--muted); font-size: 14px; margin-right: 2px; }
+.share .share-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink);
+  font: 600 14px var(--sans); text-decoration: none; cursor: pointer;
+  transition: border-color .2s var(--ease), background-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+}
+.share .share-btn:hover, .share .share-btn:focus-visible { color: var(--brand, var(--ink)); border-color: var(--brand, var(--muted)); background: var(--surface); }
+.share .share-btn:active { transform: scale(.96); }
+.share-compact { gap: 8px; margin-top: 18px; }
+.share-compact .share-btn { width: 40px; height: 40px; padding: 0; justify-content: center; }
+.share-whatsapp { --brand: #25d366; }
+.share-facebook { --brand: #1877f2; }
+.share-instagram { --brand: #e4405f; }
+.share-linkedin { --brand: #0a66c2; }
+.share-telegram { --brand: #26a5e4; }
+.share-correo { --brand: var(--link); }
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; z-index: 40;
+  background: var(--ink); color: var(--bg); font: 600 14px var(--sans); padding: 10px 16px; border-radius: 999px; box-shadow: var(--shadow);
+  transition: opacity .2s var(--ease), transform .2s var(--ease); max-width: calc(100vw - 32px); text-align: center;
+}
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* Traducir: botón junto al de tema y menú de idiomas */
+.translate { position: absolute !important; z-index: 4 !important; top: 12px; right: 64px; width: 44px; height: 44px; margin: 0; padding: 0; }
+.translate-btn {
+  display: grid; place-items: center; width: 44px; height: 44px; list-style: none; cursor: pointer;
+  color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  transition: color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.translate-btn::-webkit-details-marker { display: none; }
+.translate-btn:hover, .translate[open] .translate-btn { color: var(--ink); border-color: var(--muted); }
+.translate-btn:active { transform: scale(.94); }
+.translate-menu {
+  position: absolute; right: -44px; top: calc(100% + 8px); width: 220px; padding: 10px; text-align: left;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+}
+.translate-menu p { margin: 2px 6px 8px; font-size: 13px; font-weight: 650; color: var(--ink); }
+.translate-menu p.small { margin: 8px 6px 2px; font-weight: 400; color: var(--muted); font-size: 12px; }
+.translate-menu ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.translate-menu a { display: block; padding: 8px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; }
+.translate-menu a:hover, .translate-menu a:focus-visible { background: var(--surface); color: var(--ink); }
+@media (max-width: 900px) {
+  .sidebar { grid-template-columns: 40px 1fr auto auto; grid-template-areas: "avatar name translate toggle" "nav nav nav nav"; }
+  .translate { position: relative !important; top: auto; right: auto; grid-area: translate; width: 40px; height: 40px; }
+  .translate-btn { width: 40px; height: 40px; border-color: transparent; }
+  .translate-menu { right: -52px; }
+}
+
+/* Aviso de traducción (solo si el navegador está en otro idioma) */
+.translate-offer {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 24px; padding: 12px 16px;
+  background: var(--accent-soft); border: 1px solid var(--line); border-radius: 14px; font-size: 15px;
+}
+.translate-offer p { margin: 0; flex: 1 1 200px; color: var(--ink); font-weight: 600; }
+.translate-offer .btn { min-height: 40px; padding: 8px 16px; }
+.translate-offer-no { background: none; border: 0; color: var(--muted); font: 600 14px var(--sans); cursor: pointer; padding: 8px; min-height: 40px; }
+.translate-offer-no:hover { color: var(--ink); }
