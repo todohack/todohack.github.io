@@ -728,8 +728,11 @@ html:active-view-transition-type(firewall)::view-transition-new(root) { animatio
 @media (max-width: 600px) { .term { font-size: 12.5px; } .term-in .term-ps { display: none; } .term-in label::before { content: '$'; color: #4ade80; } }
 
 /* Modo root: fósforo verde y líneas de barrido */
-:root.root-mode { --dot: #4ade80; --amber: #4ade80; --link: #86efac; --accent: #166534; --accent-hover: #15803d; --accent-soft: #10241a; --amber-bg: #10241a; }
-:root.root-mode body::after { content: ''; position: fixed; inset: 0; z-index: 90; pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .14) 2px 3px); mix-blend-mode: multiply; }
+/* Claro: verdes oscuros sobre fondos menta, para que el texto conserve el contraste */
+:root.root-mode { --dot: #15803d; --amber: #16a34a; --link: #166534; --accent: #166534; --accent-hover: #15803d; --accent-soft: #dcfce7; --amber-bg: #ecfdf3; }
+:root.root-mode[data-theme="dark"] { --dot: #4ade80; --amber: #4ade80; --link: #86efac; --accent: #166534; --accent-hover: #15803d; --accent-soft: #10241a; --amber-bg: #10241a; }
+:root.root-mode body::after { content: ''; position: fixed; inset: 0; z-index: 90; pointer-events: none; background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .035) 2px 3px); }
+:root.root-mode[data-theme="dark"] body::after { background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .14) 2px 3px); mix-blend-mode: multiply; }
 :root.root-mode .author-name::after { content: ' #'; color: var(--dot); font-family: var(--mono); }
 
 /* 404 como terminal */
