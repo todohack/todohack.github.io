@@ -141,6 +141,7 @@ const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '
 
 // ---------- Posts ----------
 const postsDir = path.join(ROOT, 'src/posts');
+const BUILD = (() => { try { return require('child_process').execSync('git rev-parse --short HEAD').toString().trim(); } catch { return 'local'; } })();
 const posts = fs.readdirSync(postsDir).filter(f => f.endsWith('.md')).map(file => {
   const { meta, body } = parseFront(fs.readFileSync(path.join(postsDir, file), 'utf8'));
   const m = file.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
@@ -187,12 +188,14 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
     blog: '<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/>',
     about: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    term: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M12 15h5"/>',
   };
   const NAV_D = {
     home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
     blog: 'M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M8.5 13h7M8.5 17h5',
     about: 'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0',
     search: 'M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5',
+    term: 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM7 9l3 3-3 3M12 15h5',
   };
   // Al pasar el ratón cada icono se transforma en su versión «hacker»: prompt, código, identidad verificada y mira de escaneo.
   const NAV_HOVER = {
@@ -200,6 +203,7 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
     blog: 'M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M10 12.5l-2.5 2.5 2.5 2.5M14 12.5l2.5 2.5-2.5 2.5',
     about: 'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21a8 8 0 0 1 11.5-7.2M16 19l2 2 4-4',
     search: 'M12 2v4M12 18v4M2 12h4M18 12h4M7 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0M12 11.5v1',
+    term: 'M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM7 12h2M12 9v6M15 12h2',
   };
   const navItem = (href, label, key, extra = '') => `<a href="${href}" data-icon="${NAV_D[key]}" data-hover="${NAV_HOVER[key]}"${nav === key ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAV_ICONS[key]}</svg><span>${label}</span>${extra}</a>`;
     // Redes y © en el lateral; en móvil el lateral es cabecera, así que se repiten al final del contenido.
@@ -209,6 +213,7 @@ function layout({ title, description, url, image, type = 'website', body, nav = 
       <a href="/feed.xml" title="RSS" data-icon="${ICONS.rss}">${icon('rss', 'RSS')}</a>
     </div>
     <p class="copyright">© ${new Date().getFullYear()} ${esc(site.author)}</p>
+    <p class="status-line" aria-hidden="true"><span class="st-dot"></span>build ${BUILD} · ${posts.length} casos · <span class="st-ping">-- ms</span></p>
 `;
   return `<!doctype html>
 <html lang="es">
@@ -259,6 +264,7 @@ ${post ? `<meta property="article:published_time" content="${post.date.toISOStri
     ${navItem('/blog/', 'Artículos', 'blog')}
     ${navItem('/sobre-mi/', 'Sobre mí', 'about')}
     ${navItem('/blog/?buscar', 'Buscar', 'search', '<kbd>/</kbd>')}
+    ${navItem('#terminal', 'Terminal', 'term', '<kbd>`</kbd>')}
   </nav>
   <footer class="side-foot">
 ${foot}  </footer>
@@ -470,12 +476,13 @@ for (const file of fs.readdirSync(path.join(ROOT, 'src/pages'))) {
   write(`${slug}/index.html`, layout({ title: m.title, description: m.description, url: `/${slug}/`, body: `<article class="post page"><header class="post-header"><h1>${esc(m.title)}</h1></header><div class="prose">${markdown(body)}</div></article>` }));
 }
 
-write('404.html', layout({ title: 'Página no encontrada', url: '/404.html', noindex: true, body: `<header class="page-header"><h1>Esta página no existe</h1><p class="section-lead">Puede que el enlace haya cambiado. Busca el tema en la lista de artículos.</p><p><a class="btn" href="/blog/">Ir a los artículos</a></p></header>` }));
+write('404.html', layout({ title: 'Página no encontrada', url: '/404.html', noindex: true, body: `<header class="page-header post-header nf"><p class="nf-code" aria-hidden="true">ERR 404 · ACCESO DENEGADO</p><h1>Esta página no existe</h1><pre class="nf-trace" aria-hidden="true"></pre><p class="section-lead">Puede que el enlace haya cambiado. Busca el tema en la lista de artículos.</p><p><a class="btn" href="/blog/">Ir a los artículos</a></p></header>` }));
 
 // ---------- sitemap y RSS ----------
 const day = d => d.toISOString().slice(0, 10);
 const urls = [['/', posts[0].date], ['/blog/', posts[0].date], ['/sobre-mi/', posts[0].date], ...posts.map(p => [`/${p.slug}/`, p.date])];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, d]) => `<url><loc>${site.url}${u}</loc><lastmod>${day(d)}</lastmod></url>`).join('\n')}\n</urlset>\n`);
+write('terminal.json', JSON.stringify(posts.map(p => ({ s: p.slug, t: p.title, d: p.description || '', f: day(p.date), g: p.tags || [] }))));
 write('robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
 write('feed.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>${esc(site.title)}</title><link>${site.url}/</link><description>${esc(site.description)}</description><language>es</language>\n${posts.map(p => `<item><title>${esc(p.title)}</title><link>${site.url}/${p.slug}/</link><guid>${site.url}/${p.slug}/</guid><pubDate>${p.date.toUTCString()}</pubDate><description>${esc(p.description || '')}</description></item>`).join('\n')}\n</channel></rss>\n`);
 

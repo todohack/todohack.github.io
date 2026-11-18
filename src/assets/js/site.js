@@ -436,3 +436,246 @@ if (welcome && welcomeData) {
   b.addEventListener('click', () => { try { localStorage.setItem('translate-offer', 'no'); } catch (e) {} bar.remove(); });
   main.prepend(bar);
 })();
+
+// ================= Detalles hacker =================
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const escH = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+let casesP; // índice de artículos para la terminal y la 404, se pide una sola vez
+const cases = () => casesP || (casesP = fetch('/terminal.json').then(r => r.json()).catch(() => []));
+
+// ---------- Modo root: Konami (↑↑↓↓←→←→BA) o el comando «root». Fósforo verde y líneas de barrido ----------
+const setRoot = on => {
+  root.classList.toggle('root-mode', on);
+  if (on && root.dataset.theme !== 'dark') toggle.click();
+  try { on ? sessionStorage.setItem('root', '1') : sessionStorage.removeItem('root'); } catch (e) {}
+};
+try { if (sessionStorage.getItem('root')) root.classList.add('root-mode'); } catch (e) {}
+{
+  const K = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+  let k = 0;
+  addEventListener('keydown', e => {
+    const key = e.key.toLowerCase();
+    k = key === K[k] ? k + 1 : (key === K[0] ? 1 : 0);
+    if (k === K.length) { k = 0; const on = !root.classList.contains('root-mode'); setRoot(on); toast(on ? '# acceso root concedido' : '$ de vuelta a usuario normal'); }
+  });
+}
+
+// ---------- Terminal: tecla ` o Ctrl+K, o «Terminal» en el menú ----------
+let term;
+const openTerm = () => {
+  if (!term) term = buildTerm();
+  if (!term.dlg.open) term.dlg.showModal();
+  term.input.focus();
+};
+function buildTerm() {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'term';
+  dlg.setAttribute('aria-label', 'Terminal de TodoHack');
+  dlg.innerHTML = `<div class="term-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="term-title">visitante@todohack: ~</span><button type="button" class="term-x" aria-label="Cerrar terminal">esc</button></div>
+<div class="term-out" role="log" aria-live="polite"></div>
+<form class="term-in"><label><span class="term-ps" aria-hidden="true">visitante@todohack:~$</span><input name="c" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Escribe un comando"></label></form>`;
+  document.body.append(dlg);
+  const out = dlg.querySelector('.term-out'), input = dlg.querySelector('input');
+  const print = (html, cls = '') => { const p = document.createElement('div'); p.className = 'tl ' + cls; p.innerHTML = html; out.append(p); out.scrollTop = out.scrollHeight; return p; };
+  const hist = []; let hi = 0;
+  const go = href => { dlg.close(); location.href = href; };
+  const pick = async a => { const L = await cases(); const n = parseInt(a, 10); return L[n - 1] || L.find(c => c.s === a); };
+  const row = (c, i) => `<span class="t-n">[${String(i + 1).padStart(2, '0')}]</span> <span class="t-d">${c.f}</span> <a href="/${c.s}/">${escH(c.t)}</a>`;
+  const C = {
+    help: () => print(`comandos:
+  <b>ls</b> [palabra]      lista los casos (filtra por palabra)
+  <b>cat</b> &lt;n&gt;           resumen del caso n
+  <b>open</b> &lt;n&gt;          abre el caso n (también: cd &lt;n&gt;)
+  <b>cd</b> blog|sobre-mi|~  ir a una sección
+  <b>grep</b> &lt;texto&gt;      busca en títulos, resúmenes y etiquetas
+  <b>whoami</b>  <b>date</b>  <b>uptime</b>  <b>neofetch</b>  <b>history</b>
+  <b>theme</b> [claro|oscuro]  <b>matrix</b>  <b>root</b>  <b>hack</b>
+  <b>clear</b>  <b>exit</b>
+atajos: ↑ ↓ historial · Tab autocompleta · Esc cierra`),
+    ls: async a => {
+      const L = await cases(), w = (a || '').toLowerCase();
+      const R = L.map((c, i) => [c, i]).filter(([c]) => !w || (c.t + ' ' + c.g.join(' ')).toLowerCase().includes(w));
+      print(R.length ? R.map(([c, i]) => row(c, i)).join('\n') : `ls: nada coincide con «${escH(a)}»`);
+    },
+    grep: async a => {
+      if (!a) return print('uso: grep &lt;texto&gt;', 't-err');
+      const L = await cases(), w = a.toLowerCase();
+      const R = L.map((c, i) => [c, i]).filter(([c]) => (c.t + ' ' + c.d + ' ' + c.g.join(' ')).toLowerCase().includes(w));
+      print(R.length ? R.map(([c, i]) => row(c, i)).join('\n') + `\n<span class="t-d">${R.length} coincidencia${R.length > 1 ? 's' : ''}</span>` : `grep: «${escH(a)}» no aparece en ningún caso`);
+    },
+    cat: async a => {
+      const c = await pick(a);
+      if (!c) return print(`cat: ${escH(a || '')}: no existe. Prueba «ls».`, 't-err');
+      print(`<b>${escH(c.t)}</b>\n<span class="t-d">${c.f} · ${c.g.map(escH).join(', ')}</span>\n${escH(c.d)}\n→ <a href="/${c.s}/">open ${escH(a)}</a>`);
+    },
+    open: async a => { const c = await pick(a); c ? go(`/${c.s}/`) : print(`open: ${escH(a || '')}: no existe. Prueba «ls».`, 't-err'); },
+    cd: a => {
+      const D = { '': '/', '~': '/', '/': '/', '..': '/', blog: '/blog/', articulos: '/blog/', 'sobre-mi': '/sobre-mi/', about: '/sobre-mi/' };
+      return (a || '') in D ? go(D[a || '']) : C.open(a);
+    },
+    whoami: () => print('visitante. Sin cuenta, sin contraseña, sin nombre: así debería ser internet.'),
+    date: () => print(new Date().toString()),
+    uptime: async () => {
+      const L = await cases(), first = L.length ? new Date(L[L.length - 1].f) : new Date();
+      print(`arriba desde ${first.toISOString().slice(0, 10)} · ${Math.floor((Date.now() - first) / 864e5)} días · ${L.length} casos publicados`);
+    },
+    neofetch: async () => {
+      const L = await cases(), st = document.querySelector('.status-line');
+      const logo = [
+        ' _____         _       _   _            _',
+        '|_   _|__   __| | ___ | | | | __ _  ___| | __',
+        "  | |/ _ \\ / _` |/ _ \\| |_| |/ _` |/ __| |/ /",
+        '  | | (_) | (_| | (_) |  _  | (_| | (__|   <',
+        '  |_|\\___/ \\__,_|\\___/|_| |_|\\__,_|\\___|_|\\_\\',
+      ].join('\n');
+      print(`<span class="t-logo">${escH(logo)}</span>
+<b>host</b>     todohack.github.io
+<b>casos</b>    ${L.length}
+<b>build</b>    ${st ? escH(st.textContent.split('·')[0].replace('build', '').trim()) : '?'}
+<b>tema</b>     ${root.dataset.theme === 'dark' ? 'oscuro' : 'claro'}${root.classList.contains('root-mode') ? ' (root)' : ''}
+<b>idioma</b>   ${escH(navigator.language || '?')}
+<b>shell</b>    todosh 1.0`);
+    },
+    history: () => print(hist.map((h, i) => `${String(i + 1).padStart(3)}  ${escH(h)}`).join('\n') || '(vacío)'),
+    theme: a => {
+      const want = a === 'claro' ? 'light' : a === 'oscuro' ? 'dark' : (root.dataset.theme === 'dark' ? 'light' : 'dark');
+      if (root.dataset.theme !== want) toggle.click();
+      print(`tema: ${want === 'dark' ? 'oscuro' : 'claro'}`);
+    },
+    matrix: () => { const on = root.classList.toggle('matrix-boost'); print(on ? 'matrix: al máximo. Mira el menú.' : 'matrix: de vuelta a la lluvia tenue.'); },
+    root: () => { const on = !root.classList.contains('root-mode'); setRoot(on); print(on ? '# acceso root concedido. Pista: ↑↑↓↓←→←→BA hace lo mismo.' : '$ de vuelta a usuario normal.'); },
+    sudo: () => print('[sudo] contraseña para visitante: ********\nvisitante no está en el archivo sudoers. Este incidente será reportado. (Es broma.)', 't-err'),
+    rm: () => print('rm: permiso denegado. No rompas lo que lees.', 't-err'),
+    hack: async () => {
+      input.disabled = true;
+      const steps = ['escaneando puertos de todohack.github.io…', 'puerto 443 abierto: es una web estática, no hay nada que robar', 'buscando contraseñas en el código fuente…', '0 encontradas: aquí no se guardan secretos en el código', 'probando inyección SQL…', 'no hay base de datos. Ni login. Ni formulario.'];
+      for (const s of steps) { print(`<span class="t-d">[${new Date().toLocaleTimeString()}]</span> ${s}`); await new Promise(r => setTimeout(r, calm ? 0 : 420)); }
+      print('Conclusión: lo que de verdad funciona es leer y practicar en laboratorios legales.\n→ <a href="/blog/">cd blog</a>', 't-ok');
+      input.disabled = false; input.focus();
+    },
+    clear: () => { out.textContent = ''; },
+    exit: () => dlg.close(),
+  };
+  Object.assign(C, { dir: C.ls, ll: C.ls, man: C.help, cls: C.clear, quit: C.exit });
+  const run = async line => {
+    print(`<span class="term-ps">visitante@todohack:~$</span> ${escH(line)}`, 't-cmd');
+    if (!line) return;
+    hist.push(line); hi = hist.length;
+    const [cmd, ...rest] = line.split(/\s+/);
+    const f = Object.hasOwn(C, cmd.toLowerCase()) && C[cmd.toLowerCase()];
+    if (f) await f(rest.join(' ').trim());
+    else print(`${escH(cmd)}: comando no encontrado. Escribe <b>help</b>.`, 't-err');
+  };
+  let queue = Promise.resolve(); // en orden: un comando lento no deja que el siguiente se le adelante
+  dlg.querySelector('form').addEventListener('submit', e => { e.preventDefault(); const v = input.value.trim(); input.value = ''; queue = queue.then(() => run(v)); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' && hi > 0) { e.preventDefault(); input.value = hist[--hi]; }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); hi = Math.min(hist.length, hi + 1); input.value = hist[hi] || ''; }
+    else if (e.key === 'Tab' && input.value) {
+      e.preventDefault();
+      const m = Object.keys(C).filter(k => k.startsWith(input.value.toLowerCase()));
+      if (m.length === 1) input.value = m[0] + ' ';
+      else if (m.length > 1) print(m.join('  '), 't-d');
+    }
+  });
+  dlg.querySelector('.term-x').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('close', () => { if (location.hash === '#terminal') history.replaceState(null, '', location.pathname + location.search); });
+  print(`TodoHack shell 1.0 · ${new Date().toLocaleDateString()}\nEscribe <b>help</b> para ver los comandos, o <b>ls</b> para ver los casos.`, 't-d');
+  return { dlg, input };
+}
+addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if ((e.key === '`' && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openTerm(); }
+});
+document.querySelectorAll('a[href="#terminal"]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openTerm(); }));
+if (location.hash === '#terminal') openTerm();
+
+// ---------- Línea de estado: ping real de esta carga (de la petición a la primera respuesta) ----------
+{
+  const ping = document.querySelectorAll('.st-ping');
+  const show = () => {
+    const n = performance.getEntriesByType('navigation')[0];
+    if (n && n.responseStart > 0) ping.forEach(p => { p.textContent = Math.max(1, Math.round(n.responseStart - n.requestStart)) + ' ms'; });
+  };
+  document.readyState === 'complete' ? show() : addEventListener('load', show);
+}
+
+// ---------- Pestaña oculta: el título avisa de la «conexión» en pausa ----------
+{
+  const t0 = document.title; let back;
+  document.addEventListener('visibilitychange', () => {
+    clearTimeout(back);
+    if (document.hidden) document.title = '// sesión en pausa… · TodoHack';
+    else { document.title = '> reconectado'; back = setTimeout(() => { document.title = t0; }, 1400); }
+  });
+}
+
+// ---------- Progreso de lectura con contador tipo descarga ----------
+{
+  const bar = document.querySelector('.progress'), post = document.querySelector('.post');
+  if (bar && post) {
+    const tag = document.createElement('div');
+    tag.className = 'progress-tag'; tag.setAttribute('aria-hidden', 'true');
+    document.body.append(tag);
+    let hide, busy = false;
+    const draw = () => {
+      const r = post.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)));
+      const n = Math.round(p * 12);
+      tag.textContent = `[${'▓'.repeat(n)}${'░'.repeat(12 - n)}] ${String(Math.round(p * 100)).padStart(3)}%${p >= .99 ? ' · caso leído' : ''}`;
+      tag.classList.add('on'); clearTimeout(hide); hide = setTimeout(() => tag.classList.remove('on'), 1200);
+      busy = false;
+    };
+    addEventListener('scroll', () => { if (!busy) { busy = true; requestAnimationFrame(draw); } }, { passive: true });
+  }
+}
+
+// ---------- Bloques de código como ventana de terminal, con su lenguaje y botón de copiar ----------
+document.querySelectorAll('.prose pre').forEach(pre => {
+  const code = pre.querySelector('code');
+  const lang = (code && (code.className.match(/lang-(\w+)/) || [])[1]) || 'shell';
+  const win = document.createElement('div');
+  win.className = 'code-win';
+  win.innerHTML = `<div class="code-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="code-lang">${escH(lang)}</span><button type="button" class="code-copy">copiar</button></div>`;
+  pre.before(win); win.append(pre);
+  const b = win.querySelector('button');
+  b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText((code || pre).textContent); b.textContent = 'copiado'; } catch (e) { b.textContent = 'no se pudo'; }
+    setTimeout(() => { b.textContent = 'copiar'; }, 1600);
+  });
+});
+
+// ---------- Menú: las etiquetas se «descifran» al pasar el ratón ----------
+if (!calm && matchMedia('(hover: hover)').matches) {
+  const G = '01<>/#$%&*+=?ABCDEFXZ';
+  document.querySelectorAll('.nav a span').forEach(s => {
+    const txt = s.textContent; let id;
+    s.closest('a').addEventListener('mouseenter', () => {
+      let f = 0; clearInterval(id);
+      id = setInterval(() => {
+        s.textContent = [...txt].map((c, i) => i < f / 2 ? c : G[Math.random() * G.length | 0]).join('');
+        if (++f > txt.length * 2) { clearInterval(id); s.textContent = txt; }
+      }, 28);
+    });
+  });
+}
+
+// ---------- 404: traza de terminal con la ruta pedida y casos parecidos ----------
+{
+  const tr = document.querySelector('.nf-trace');
+  if (tr) {
+    let path = location.pathname;
+    try { path = decodeURIComponent(path); } catch (e) {}
+    const words = path.toLowerCase().split(/[^a-z0-9áéíóúñ]+/).filter(w => w.length > 3);
+    tr.innerHTML = `$ curl -I https://todohack.github.io${escH(path)}\nHTTP/2 404\nx-motivo: la ruta no existe o cambió de nombre\n$ grep -ri "${escH(words.join(' ') || path)}" /blog`;
+    cases().then(L => {
+      const hits = L.filter(c => words.some(w => (c.s + ' ' + c.t).toLowerCase().includes(w))).slice(0, 3);
+      tr.innerHTML += '\n' + (hits.length ? hits.map(c => `→ <a href="/${c.s}/">${escH(c.t)}</a>`).join('\n') : '(sin coincidencias) → <a href="/blog/">cd /blog</a>');
+    });
+  }
+}
+
+// ---------- Para quien abre las herramientas de desarrollo ----------
+console.log('%c\n  T O D O H A C K\n', 'font: 700 20px monospace; color: #f2b33d; background: #0b111d; padding: 6px 12px;');
+console.log('%c¿Curioseando el código? Bien hecho: así se aprende.\nPulsa ` (o Ctrl+K) en la página para abrir la terminal. Y hay un código secreto clásico… ↑↑↓↓', 'font: 13px monospace; color: #93b4f2;');
