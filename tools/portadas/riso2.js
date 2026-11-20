@@ -870,6 +870,96 @@ S['bulo-apagon-17-noviembre'] = {
   },
 };
 
+// serie Efecto mariposa: una mariposa pequeña en cada portada
+const mariposa = (x, y, k = 1) => `<g transform="translate(${f(x)} ${f(y)}) scale(${k})" stroke="none"><path d="M0 0 C-30 -46 -78 -40 -70 -6 C-64 18 -24 14 0 0z M0 0 C30 -46 78 -40 70 -6 C64 18 24 14 0 0z M0 2 C-20 20 -50 44 -36 58 C-22 66 -8 34 0 2z M0 2 C20 20 50 44 36 58 C22 66 8 34 0 2z"/><rect x="-3" y="-20" width="6" height="56" rx="3"/></g>`;
+
+S['efecto-mariposa-brain-1986'] = {
+  inks: [INK.purple, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 01 — EFECTO MARIPOSA', lines: ['1986'], size: 210, y: 340, sub: ['Brain · el primer virus de PC', 'Lahore, Pakistán · un disquete'] },
+  art() {
+    // disquete de 5,25": el sector de arranque marcado en rojo y la etiqueta ©Brain
+    const x = 820, y = 150, w = 600, h = 620, cx = x + w / 2, cy = y + h / 2 + 30;
+    let pur = rect(x, y, w, h, 'rx="14"');
+    pur += `<circle cx="${cx}" cy="${cy}" r="70" fill="${PAPER}" stroke="none"/>` + rect(cx - 30, cy + 150, 60, 150, `rx="28" fill="${PAPER}"`) + `<circle cx="${cx + 150}" cy="${cy - 60}" r="14" fill="${PAPER}" stroke="none"/>`;
+    const lab = rect(x + 90, y + 40, w - 180, 120, `rx="6" fill="${PAPER}"`);
+    let red = `<path d="M${cx} ${cy} L${f(cx + 250 * Math.cos(.15))} ${f(cy + 250 * Math.sin(.15))} A250 250 0 0 1 ${f(cx + 250 * Math.cos(.75))} ${f(cy + 250 * Math.sin(.75))}z" stroke="none" opacity=".9"/>`;
+    red += T(x + w / 2, y + 120, 54, '©Brain', { a: 'middle' });
+    const yel = halftone(x - 50, y - 50, w + 100, h + 100, 12, (xx, yy) => .5 - Math.hypot(xx - cx, yy - cy) / 900, 30) + mariposa(1460, 130, .9);
+    return ink(INK.yellow, yel, .85) + ink(INK.purple, pur + lab, .9) + ink(INK.red, red, .95);
+  },
+};
+
+S['efecto-mariposa-gusano-morris'] = {
+  inks: [INK.teal, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 02 — EFECTO MARIPOSA', lines: ['1988'], size: 210, y: 340, sub: ['el gusano Morris', 'un 14 % que tumbó la red'] },
+  art() {
+    // red de nodos: el gusano salta de máquina en máquina; los rojos están infectados varias veces
+    const N = [];
+    for (let i = 0; i < 34; i++) N.push([R(800, 1460), R(130, 760)]);
+    let tea = '', red = '', yel = '';
+    N.forEach((a, i) => N.forEach((b, j) => { if (j > i && Math.hypot(a[0] - b[0], a[1] - b[1]) < 190) tea += `<path d="M${f(a[0])} ${f(a[1])} L${f(b[0])} ${f(b[1])}" stroke-width="2" fill="none" opacity=".55"/>`; }));
+    N.forEach(([x, y], i) => {
+      if (rnd() < .45) { red += `<circle cx="${f(x)}" cy="${f(y)}" r="20" stroke="none"/>`; const k = RI(2, 4); for (let q = 1; q < k; q++) red += `<circle cx="${f(x)}" cy="${f(y)}" r="${20 + q * 10}" fill="none" stroke-width="3"/>`; }
+      else tea += `<rect x="${f(x - 18)}" y="${f(y - 14)}" width="36" height="28" rx="4" stroke="none"/>`;
+    });
+    yel += halftone(780, 110, 700, 680, 12, (x, y) => .25 + fbm(x / 140, y / 140) * .3, 30) + mariposa(1470, 120, .8);
+    return ink(INK.yellow, yel, .8) + ink(INK.teal, tea, .86) + ink(INK.red, red, .95);
+  },
+};
+
+S['efecto-mariposa-iloveyou'] = {
+  inks: [INK.pink, INK.yellow, INK.blue],
+  m: { kicker: 'RETRO 03 — EFECTO MARIPOSA', lines: ['2000'], size: 210, y: 340, sub: ['ILOVEYOU · la carta de amor', 'LOVE-LETTER-FOR-YOU.TXT.vbs'] },
+  art() {
+    // sobre con corazón; detrás, copias del sobre que se multiplican hacia la libreta de direcciones
+    let blu = '', pink = '', yel = '';
+    for (let i = 0; i < 9; i++) { const x = 1180 + (i % 3) * 110, y = 120 + Math.floor(i / 3) * 90; blu += frame(x, y, 90, 60, 3, 'rx="4"') + `<path d="M${x} ${y} L${x + 45} ${y + 34} L${x + 90} ${y}" fill="none" stroke-width="3"/>`; }
+    const x = 820, y = 360, w = 520, h = 340;
+    blu += frame(x, y, w, h, 6, 'rx="10"') + `<path d="M${x} ${y} L${x + w / 2} ${y + 200} L${x + w} ${y}" fill="none" stroke-width="6"/>`;
+    pink += `<path d="M${x + w / 2} ${y + 290} C${x + w / 2 - 150} ${y + 190} ${x + w / 2 - 90} ${y + 90} ${x + w / 2} ${y + 150} C${x + w / 2 + 90} ${y + 90} ${x + w / 2 + 150} ${y + 190} ${x + w / 2} ${y + 290}z" stroke="none"/>`;
+    blu += T(x, y + h + 46, 20, '.TXT<tspan font-weight="800">.vbs</tspan> · A TODA TU LIBRETA', { mono: true, ls: 1.5, raw: true });
+    yel += halftone(x - 40, y - 40, w + 80, h + 80, 12, (xx, yy) => .55 - Math.hypot(xx - x - w / 2, yy - y - h / 2) / 500, 25) + mariposa(1460, 560, 1);
+    return ink(INK.yellow, yel, .85) + ink(INK.blue, blu, .86) + ink(INK.pink, pink, .95);
+  },
+};
+
+S['efecto-mariposa-blaster-patch-tuesday'] = {
+  inks: [INK.blue, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 04 — EFECTO MARIPOSA', lines: ['2003'], size: 210, y: 340, sub: ['Code Red · Slammer · Blaster', 'el origen del Patch Tuesday'] },
+  art() {
+    // calendario: el segundo martes de cada mes en rojo
+    const x0 = 820, y0 = 210, cw = 82, ch = 78, g = 8;
+    let blu = frame(x0 - 20, y0 - 110, 7 * (cw + g) + 30, 6 * (ch + g) + 140, 4, 'rx="14"'), red = '', yel = '';
+    ['L', 'M', 'M', 'J', 'V', 'S', 'D'].forEach((d, i) => { blu += T(x0 + i * (cw + g) + cw / 2, y0 - 30, 22, d, { mono: true, a: 'middle', w: 700 }); });
+    blu += T(x0, y0 - 66, 22, 'OCTUBRE 2003', { mono: true, w: 700, ls: 2 });
+    for (let d = 1; d <= 31; d++) {
+      const pos = d + 1, c = pos % 7, r = Math.floor(pos / 7), x = x0 + c * (cw + g), y = y0 + r * (ch + g);
+      if (d === 14) red += rect(x, y, cw, ch, 'rx="8"') + T(x + 12, y + 30, 22, String(d), { mono: true, w: 700 }).replace('<text ', `<text fill="${PAPER}" `) + T(x + cw / 2, y + 62, 18, 'PATCH', { mono: true, a: 'middle', w: 700, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+      else blu += frame(x, y, cw, ch, 2, 'rx="8"') + T(x + 12, y + 30, 20, String(d), { mono: true });
+    }
+    yel += halftone(x0 - 40, y0 - 130, 7 * (cw + g) + 70, 6 * (ch + g) + 180, 12, (x, y) => .2 + fbm(x / 120, y / 120) * .3, 30) + mariposa(1490, 110, .8);
+    return ink(INK.yellow, yel, .8) + ink(INK.blue, blu, .86) + ink(INK.red, red, .95);
+  },
+};
+
+S['efecto-mariposa-stuxnet'] = {
+  inks: [INK.federal, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 05 — EFECTO MARIPOSA', lines: ['2010'], size: 210, y: 340, sub: ['Stuxnet · daño físico', 'una memoria USB · cuatro días cero'] },
+  art() {
+    // fila de centrifugadoras; algunas en rojo, y una memoria USB que entra por la izquierda
+    let fed = '', red = '', yel = '';
+    for (let i = 0; i < 6; i++) {
+      const x = 900 + i * 95, y = 250, bad = i % 2 === 1 || i === 4;
+      const body = rect(x, y, 62, 420, 'rx="31"') + rect(x - 8, y + 430, 78, 26, 'rx="4"');
+      if (bad) red += body + `<path d="M${x + 10} ${y - 30} q21 -24 42 0" fill="none" stroke-width="5"/>`; else fed += body;
+    }
+    fed += frame(870, 700, 600, 60, 3, 'rx="6"') + T(890, 740, 20, 'PANTALLA: TODO NORMAL', { mono: true, w: 700, ls: 1.5 });
+    red += rect(800, 120, 120, 54, 'rx="8"') + rect(920, 132, 40, 30, 'rx="3"');
+    yel += halftone(860, 200, 620, 520, 12, (x, y) => .25 + fbm(x / 120, y / 120) * .3, 30) + mariposa(1460, 140, .8);
+    return ink(INK.yellow, yel, .8) + ink(INK.federal, fed, .86) + ink(INK.red, red, .95);
+  },
+};
+
 const META = {
   'Primer-Post': ['2024-08-18', '#PRESENTACIÓN', 'N.º 00'], 'Kali-Linux-para-Hackers': ['2024-08-22', '#LABORATORIO', 'LAB 01'], 'Virtualizadores': ['2024-08-26', '#VIRTUALIZACIÓN', 'LAB 02'],
   'deepseek-base-de-datos-expuesta': ['2025-02-01', 'T1595 · T1530', 'CASO 01'], 'bybit-robo-1500-millones': ['2025-02-26', 'T1195 · T1565', 'CASO 02'], 'ms-coop-llamada-mesa-de-ayuda': ['2025-05-09', 'T1656 · T1078', 'CASO 03'],
@@ -877,7 +967,7 @@ const META = {
   'collins-aerospace-aeropuertos': ['2025-09-25', 'T1486', 'CASO 07'], 'f5-codigo-big-ip-robado': ['2025-10-19', 'T1195.002 · T1190', 'CASO 08'], 'jaguar-land-rover-ciberataque': ['2025-10-24', 'T1486 · T1489', 'CASO 09'],
   'espionaje-dirigido-por-ia': ['2025-11-17', 'IA · APT', 'CASO 10'], 'stryker-equipos-borrados': ['2026-03-15', 'T1485 · T1561', 'CASO 11'], 'trivy-escaner-envenenado': ['2026-03-24', 'T1195.002 · T1552', 'CASO 12'],
   'canvas-shinyhunters-escuelas': ['2026-05-11', 'T1567 · T1491', 'CASO 13'], 'chatbot-meta-cuentas-instagram': ['2026-06-04', 'T1656 · T1098', 'CASO 14'],
-  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'caida-microsoft-365-noviembre': ['2026-11-17', '#RESILIENCIA', 'CASO 18'], 'faa-router-despegues-detenidos': ['2026-11-17', '#RESILIENCIA', 'CASO 19'], 'restaurantes-falsos-apps-de-comida': ['2026-11-17', '#FRAUDE', 'CASO 20'], 'optimizely-codigo-malicioso-178-sitios': ['2026-11-20', '#CADENA DE SUMINISTRO', 'CASO 21'], 'rakuten-datos-reales-en-pruebas': ['2026-11-20', '#PRIVACIDAD', 'CASO 22'], 'bulo-apagon-17-noviembre': ['2026-11-20', '#DESINFORMACIÓN', 'CASO 23'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
+  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'caida-microsoft-365-noviembre': ['2026-11-17', '#RESILIENCIA', 'CASO 18'], 'faa-router-despegues-detenidos': ['2026-11-17', '#RESILIENCIA', 'CASO 19'], 'restaurantes-falsos-apps-de-comida': ['2026-11-17', '#FRAUDE', 'CASO 20'], 'optimizely-codigo-malicioso-178-sitios': ['2026-11-20', '#CADENA DE SUMINISTRO', 'CASO 21'], 'rakuten-datos-reales-en-pruebas': ['2026-11-20', '#PRIVACIDAD', 'CASO 22'], 'bulo-apagon-17-noviembre': ['2026-11-20', '#DESINFORMACIÓN', 'CASO 23'], 'efecto-mariposa-brain-1986': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 01'], 'efecto-mariposa-gusano-morris': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 02'], 'efecto-mariposa-iloveyou': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 03'], 'efecto-mariposa-blaster-patch-tuesday': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 04'], 'efecto-mariposa-stuxnet': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 05'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
 };
 
 // número de serie = orden cronológico dentro de LAB/CASO/CERT; fecha = la del archivo del post

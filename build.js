@@ -136,6 +136,7 @@ const TAG_TEMA = {
   certificaciones: 'certificaciones',
   resiliencia: 'resiliencia', caidas: 'resiliencia', nube: 'nube',
   fraude: 'ingenieria-social', consumidor: 'ingenieria-social', desinformacion: 'ingenieria-social',
+  historia: 'vulnerabilidades', malware: 'vulnerabilidades',
 };
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
