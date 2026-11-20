@@ -135,7 +135,7 @@ const TAG_TEMA = {
   ia: 'ia', defensa: 'ia',
   certificaciones: 'certificaciones',
   resiliencia: 'resiliencia', caidas: 'resiliencia', nube: 'nube',
-  fraude: 'ingenieria-social', consumidor: 'ingenieria-social',
+  fraude: 'ingenieria-social', consumidor: 'ingenieria-social', desinformacion: 'ingenieria-social',
 };
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
