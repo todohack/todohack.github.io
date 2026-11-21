@@ -960,6 +960,62 @@ S['efecto-mariposa-stuxnet'] = {
   },
 };
 
+S['shareware-bbs-disquetes-infeccion'] = {
+  inks: [INK.green, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 06 — DESCARGAS PELIGROSAS', lines: ['BBS'], size: 220, y: 340, sub: ['shareware, disquetes y troyanos', '1982–1995 · pruébalo y paga'] },
+  art() {
+    // monitor de BBS con una descarga en curso; al lado, el disquete "AIDS" que pide rescate
+    const x = 800, y = 110, w = 560, h = 420;
+    let grn = frame(x, y, w, h, 6, 'rx="22"') + rect(x + w / 2 - 70, y + h + 4, 140, 40, 'rx="6"') + rect(x + w / 2 - 150, y + h + 44, 300, 18, 'rx="6"');
+    const lines = ['CONNECT 2400', 'TODOBBS - ZONA DE ARCHIVOS', '', '[1] JUEGOS  [2] UTILIDADES', 'DESCARGANDO: SUPERJUEGO.ZIP', ''];
+    lines.forEach((l, i) => { grn += T(x + 40, y + 70 + i * 44, 22, l, { mono: true, w: 700, raw: true }); });
+    let red = rect(x + 40, y + 330, 340, 26, 'rx="4"') + frame(x + 40, y + 330, 470, 26, 3, 'rx="4"');
+    // disquete de 3,5"
+    const dx = 1250, dy = 570, d = 200;
+    red += rect(dx, dy, d, d, 'rx="10"') + rect(dx + 50, dy, 130, 70, `rx="4" fill="${PAPER}"`) + rect(dx + 30, dy + 110, d - 60, 100, `rx="6" fill="${PAPER}"`);
+    red += T(dx + d / 2, dy + 160, 40, 'AIDS', { a: 'middle' }).replace('<text ', `<text fill="${INK.red}" `);
+    const yel = halftone(x - 40, y - 40, w + 80, h + 120, 12, (xx, yy) => .25 + fbm(xx / 120, yy / 120) * .3, 30) + mariposa(1470, 120, .7);
+    return ink(INK.yellow, yel, .8) + ink(INK.green, grn, .88) + ink(INK.red, red, .95);
+  },
+};
+
+S['portales-descarga-adware-instaladores'] = {
+  inks: [INK.blue, INK.yellow, INK.red],
+  m: { kicker: 'RETRO 07 — DESCARGAS PELIGROSAS', lines: ['adware'], size: 180, y: 340, sub: ['portales e instaladores', '2011–2016 · siguiente, siguiente…'] },
+  art() {
+    // ventana de instalador: casillas ya marcadas en rojo y un botón SIGUIENTE enorme
+    const x = 800, y = 120, w = 620, h = 640;
+    let blu = frame(x, y, w, h, 5, 'rx="14"') + rect(x, y, w, 60, 'rx="14"') + T(x + 30, y + 40, 22, 'INSTALADOR', { mono: true, w: 700, ls: 2, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+    blu += T(x + 40, y + 130, 26, 'Instalar programa.exe', { mono: true, w: 700, raw: true });
+    let red = '';
+    ['Barra de herramientas', 'Cambiar mi buscador', 'Cambiar página de inicio', 'Ofertas de socios'].forEach((t, i) => {
+      const yy = y + 200 + i * 80;
+      red += rect(x + 40, yy, 44, 44, 'rx="6"') + `<path d="M${x + 50} ${yy + 22} l10 12 l18 -24" fill="none" stroke="${PAPER}" stroke-width="6"/>`;
+      blu += T(x + 110, yy + 32, 24, t, { mono: true, raw: true });
+    });
+    blu += rect(x + w - 300, y + h - 110, 260, 70, 'rx="12"') + T(x + w - 170, y + h - 64, 26, 'SIGUIENTE ›', { mono: true, a: 'middle', w: 700, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+    const yel = halftone(x - 40, y + 160, w + 80, 360, 12, (xx, yy) => .3 + fbm(xx / 120, yy / 120) * .3, 30) + mariposa(1470, 110, .7);
+    return ink(INK.yellow, yel, .8) + ink(INK.blue, blu, .88) + ink(INK.red, red, .95);
+  },
+};
+
+S['descargas-falsas-anuncios-hoy'] = {
+  inks: [INK.purple, INK.yellow, INK.red],
+  m: { kicker: 'GUÍA — DESCARGAS PELIGROSAS', lines: ['Anuncio'], size: 170, y: 340, sub: ['sitios clonados y anuncios', 'cómo bajar programas hoy'] },
+  art() {
+    // resultados de búsqueda: el primero es un anuncio patrocinado con una letra cambiada
+    const x = 800, y = 110, w = 640;
+    let pur = frame(x, y, w, 70, 4, 'rx="35"') + T(x + 40, y + 46, 24, 'descargar programa gratis', { mono: true, raw: true }) + `<circle cx="${x + w - 50}" cy="${y + 35}" r="14" fill="none" stroke-width="4"/>`;
+    let red = rect(x, y + 110, w, 170, 'rx="14"');
+    red += T(x + 30, y + 154, 20, 'PATROCINADO', { mono: true, w: 700, ls: 2, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+    red += T(x + 30, y + 204, 30, 'programa-ofical.com', { mono: true, w: 700, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+    red += T(x + 30, y + 246, 20, 'Descarga gratis · versión completa', { mono: true, raw: true }).replace('<text ', `<text fill="${PAPER}" `);
+    [0, 1, 2].forEach(i => { const yy = y + 320 + i * 120; pur += rect(x + 30, yy, 260, 16, 'rx="8"') + rect(x + 30, yy + 36, w - 120, 12, 'rx="6"') + rect(x + 30, yy + 62, w - 220, 12, 'rx="6"'); });
+    const yel = halftone(x - 40, y + 80, w + 80, 240, 11, (xx, yy) => .8 - Math.hypot(xx - x - w / 2, yy - y - 195) / 380, 25) + mariposa(1490, 560, .7);
+    return ink(INK.yellow, yel, .82) + ink(INK.purple, pur, .86) + ink(INK.red, red, .95);
+  },
+};
+
 const META = {
   'Primer-Post': ['2024-08-18', '#PRESENTACIÓN', 'N.º 00'], 'Kali-Linux-para-Hackers': ['2024-08-22', '#LABORATORIO', 'LAB 01'], 'Virtualizadores': ['2024-08-26', '#VIRTUALIZACIÓN', 'LAB 02'],
   'deepseek-base-de-datos-expuesta': ['2025-02-01', 'T1595 · T1530', 'CASO 01'], 'bybit-robo-1500-millones': ['2025-02-26', 'T1195 · T1565', 'CASO 02'], 'ms-coop-llamada-mesa-de-ayuda': ['2025-05-09', 'T1656 · T1078', 'CASO 03'],
@@ -967,7 +1023,7 @@ const META = {
   'collins-aerospace-aeropuertos': ['2025-09-25', 'T1486', 'CASO 07'], 'f5-codigo-big-ip-robado': ['2025-10-19', 'T1195.002 · T1190', 'CASO 08'], 'jaguar-land-rover-ciberataque': ['2025-10-24', 'T1486 · T1489', 'CASO 09'],
   'espionaje-dirigido-por-ia': ['2025-11-17', 'IA · APT', 'CASO 10'], 'stryker-equipos-borrados': ['2026-03-15', 'T1485 · T1561', 'CASO 11'], 'trivy-escaner-envenenado': ['2026-03-24', 'T1195.002 · T1552', 'CASO 12'],
   'canvas-shinyhunters-escuelas': ['2026-05-11', 'T1567 · T1491', 'CASO 13'], 'chatbot-meta-cuentas-instagram': ['2026-06-04', 'T1656 · T1098', 'CASO 14'],
-  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'caida-microsoft-365-noviembre': ['2026-11-17', '#RESILIENCIA', 'CASO 18'], 'faa-router-despegues-detenidos': ['2026-11-17', '#RESILIENCIA', 'CASO 19'], 'restaurantes-falsos-apps-de-comida': ['2026-11-17', '#FRAUDE', 'CASO 20'], 'optimizely-codigo-malicioso-178-sitios': ['2026-11-20', '#CADENA DE SUMINISTRO', 'CASO 21'], 'rakuten-datos-reales-en-pruebas': ['2026-11-20', '#PRIVACIDAD', 'CASO 22'], 'bulo-apagon-17-noviembre': ['2026-11-20', '#DESINFORMACIÓN', 'CASO 23'], 'efecto-mariposa-brain-1986': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 01'], 'efecto-mariposa-gusano-morris': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 02'], 'efecto-mariposa-iloveyou': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 03'], 'efecto-mariposa-blaster-patch-tuesday': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 04'], 'efecto-mariposa-stuxnet': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 05'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
+  'nmap-desde-cero': ['2024-10-14', '#LABORATORIO', 'LAB 03'], 'certificacion-ehca-hacking-etico': ['2026-10-12', '#CERTIFICACIONES', 'CERT 01'], 'pmj-pentester-mentor-junior': ['2026-10-19', '#CERTIFICACIONES', 'CERT 04'], 'iso-27001-auditor-interno': ['2026-11-02', '#CERTIFICACIONES', 'CERT 05'], 'ley-8968-proteccion-datos-costa-rica': ['2026-11-02', '#PRIVACIDAD', 'CERT 06'], 'maquinas-pmj-pentesting': ['2026-11-03', '#LABORATORIO', 'LAB 08'], 'comptia-security-plus-en-que-consiste': ['2026-11-03', '#CERTIFICACIONES', 'GUÍA'], 'octubre-negro-2026': ['2026-11-03', '#VULNERABILIDADES', 'CASO 16'], 'microsoft-authenticator-authmask': ['2026-11-03', '#IDENTIDAD', 'CASO 17'], 'caida-microsoft-365-noviembre': ['2026-11-17', '#RESILIENCIA', 'CASO 18'], 'faa-router-despegues-detenidos': ['2026-11-17', '#RESILIENCIA', 'CASO 19'], 'restaurantes-falsos-apps-de-comida': ['2026-11-17', '#FRAUDE', 'CASO 20'], 'optimizely-codigo-malicioso-178-sitios': ['2026-11-20', '#CADENA DE SUMINISTRO', 'CASO 21'], 'rakuten-datos-reales-en-pruebas': ['2026-11-20', '#PRIVACIDAD', 'CASO 22'], 'bulo-apagon-17-noviembre': ['2026-11-20', '#DESINFORMACIÓN', 'CASO 23'], 'efecto-mariposa-brain-1986': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 01'], 'efecto-mariposa-gusano-morris': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 02'], 'efecto-mariposa-iloveyou': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 03'], 'efecto-mariposa-blaster-patch-tuesday': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 04'], 'efecto-mariposa-stuxnet': ['2026-11-20', '#EFECTO MARIPOSA', 'RETRO 05'], 'shareware-bbs-disquetes-infeccion': ['2026-11-20', '#DESCARGAS PELIGROSAS', 'RETRO 06'], 'portales-descarga-adware-instaladores': ['2026-11-20', '#DESCARGAS PELIGROSAS', 'RETRO 07'], 'descargas-falsas-anuncios-hoy': ['2026-11-20', '#DESCARGAS PELIGROSAS', 'GUÍA'], 'cisco-ccna-redes': ['2026-09-14', '#CERTIFICACIONES', 'CERT 02'], 'azure-fundamentals-az-900': ['2026-08-10', '#CERTIFICACIONES', 'CERT 03'], 'wireshark-tu-primera-captura': ['2024-11-18', '#LABORATORIO', 'LAB 05'], 'contrasenas-2fa-y-passkeys': ['2025-01-20', '#IDENTIDAD', 'LAB 06'], 'es-phishing-lee-las-cabeceras': ['2025-04-07', '#PHISHING', 'LAB 07'], 'php2shell-rce-en-php': ['2026-10-27', 'T1190', 'CASO 15'], 'asegura-tu-cuenta-de-azure': ['2025-06-23', '#AZURE · #IDENTIDAD', 'LAB 04'],
 };
 
 // número de serie = orden cronológico dentro de LAB/CASO/CERT; fecha = la del archivo del post
